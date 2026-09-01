@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "viewprinter": {
+      "type": "http",
+      "url": "https://viewprinter.tech/api/mcp"
+    }
+  }
+}

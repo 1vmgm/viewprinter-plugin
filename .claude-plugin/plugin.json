@@ -1,0 +1,12 @@
+{
+  "name": "viewprinter",
+  "description": "Schedule and publish social posts to TikTok, Instagram, Facebook, YouTube and X",
+  "version": "1.0.0",
+  "author": {
+    "name": "VMGM Software",
+    "email": "hello@vmgmsoftware.com"
+  },
+  "homepage": "https://viewprinter.tech",
+  "repository": "https://github.com/1vmgm/viewprinter-plugin",
+  "license": "MIT"
+}
