@@ -1,3 +1,5 @@
+<img src="assets/logo.png" alt="" width="76" align="left" hspace="14" vspace="4">
+
 # ViewPrinter for Claude Code
 
 Schedule and publish social posts to **TikTok, Instagram, Facebook, YouTube and
