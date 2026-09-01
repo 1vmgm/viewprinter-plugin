@@ -3,8 +3,8 @@
 # ViewPrinter for Claude Code
 
 Schedule and publish social posts to **TikTok, Instagram, Facebook, YouTube and
-X** from Claude — plan a week of content, upload media, queue posts, then check
-what went out.
+X** from Claude — plan a week of content, upload media, queue posts, check what
+went out, and track how each account is growing.
 
 This plugin connects Claude to [ViewPrinter](https://viewprinter.tech) and adds
 skills that teach it how the posting flow actually works: which platform accepts
@@ -41,8 +41,8 @@ up at [viewprinter.tech](https://viewprinter.tech).
   the platform constraints that decide where a post can go.
 - **`/viewprinter:media`** — the reserve → PUT → confirm upload flow, and why
   skipping the last step loses the file.
-- **`/viewprinter:accounts`** — connecting, reconnecting, and group membership
-  semantics.
+- **`/viewprinter:accounts`** — connecting, reconnecting, group membership
+  semantics, and reading follower performance.
 
 Claude loads these automatically when relevant; you don't have to invoke them.
 
