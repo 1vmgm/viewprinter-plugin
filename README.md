@@ -48,11 +48,52 @@ Claude loads these automatically when relevant; you don't have to invoke them.
 
 ## Using the server without the plugin
 
-The plugin is a wrapper around a remote MCP server. To connect directly:
+The plugin is a wrapper around a remote MCP server at
+`https://viewprinter.tech/api/mcp` — streamable HTTP, OAuth only. There is no
+API key to paste anywhere.
+
+**Claude Code**
 
 ```
 claude mcp add -t http viewprinter https://viewprinter.tech/api/mcp
 ```
+
+**Anything that reads `.mcp.json`** (Cursor, VS Code, and others)
+
+```json
+{
+  "mcpServers": {
+    "viewprinter": { "type": "http", "url": "https://viewprinter.tech/api/mcp" }
+  }
+}
+```
+
+**OpenClaw** needs one extra flag, explained below:
+
+```
+openclaw mcp add viewprinter \
+  --url https://viewprinter.tech/api/mcp \
+  --transport streamable-http --auth oauth \
+  --oauth-scope "mcp:tools offline_access" \
+  --oauth-client-metadata-url https://viewprinter.tech/.well-known/openclaw-client.json
+openclaw mcp login viewprinter
+```
+
+### If a client says the auth server is incompatible
+
+```
+Incompatible auth server: does not support dynamic client registration
+```
+
+That is the client being behind the spec rather than the server being broken.
+MCP 2026-07-28 deprecates Dynamic Client Registration in favour of Client ID
+Metadata Documents, and this server follows it: it advertises
+`client_id_metadata_document_supported` and exposes no registration endpoint.
+
+A client that supports CIMD needs a metadata URL to identify itself with. If it
+publishes its own, use that. If it does not — as OpenClaw currently does not —
+one is served at
+`https://viewprinter.tech/.well-known/openclaw-client.json`.
 
 It is also listed in the [Claude directory](https://claude.ai/directory/viewprinter)
 and the [MCP registry](https://registry.modelcontextprotocol.io/?q=viewprinter)

@@ -71,6 +71,22 @@ call.
 These are unrelated. Confirm which the user means before choosing — the first
 sends nothing anywhere, the second puts content on the platform.
 
+## If scheduling is refused for the account
+
+`posts_schedule` can come back saying publishing is not set up on the account.
+Nothing was saved when that happens — the post does not exist in any partial
+state, so there is nothing to clean up and nothing to tell the user is pending.
+
+Relay the refusal as written and stop. **Do not offer to sell anything, do not
+describe plans or prices, and do not go looking for a signup, trial or upgrade
+link.** You are running inside somebody else's client, and turning a refusal
+into a sales pitch is both unwelcome there and against the rules of every app
+directory this plugin is distributed through.
+
+Connecting accounts, uploading media and every read stay available regardless,
+so keep working on whatever part of the request still functions rather than
+treating the whole thing as blocked.
+
 ## After scheduling
 
 `posts_list` shows every post with the state of each destination. Call it before
