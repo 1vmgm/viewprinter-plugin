@@ -1,14 +1,17 @@
 ---
 name: viewprinter-social-manager
 description: >-
-  Use to schedule or publish a social post to TikTok, Instagram, Facebook, YouTube or X
-  through ViewPrinter, to upload media for one, to amend or cancel a post that has not gone
-  out, or to read how published posts and connected accounts are performing. Run when the
-  user says "post this", "schedule this", "queue it for Tuesday", "cancel that post",
-  "connect my TikTok", or asks how a post or account did. It publishes to real public
-  accounts, so it checks platform rules before composing and never reports a post as sent
-  until the server has said so. It does NOT write the content strategy, and it does not
-  cover platforms ViewPrinter cannot connect to.
+  Use ONLY for work that goes through a connected ViewPrinter account: scheduling or
+  publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading, describing,
+  listing or PERMANENTLY DELETING media held in ViewPrinter; amending or cancelling a post
+  that has not gone out; managing named groups of accounts; and reading follower and post
+  performance. Two capabilities are destructive and irreversible: publishing to a real
+  public account, and media_delete, which erases a stored file and its bytes. Listing media
+  or posts reads everything in the user's ViewPrinter workspaces, not just one item.
+  Requires ViewPrinter to be connected — do NOT use it to draft copy the user has no
+  intention of posting, to schedule anything anywhere else, or for a platform ViewPrinter
+  does not support. A bare "post this" with no ViewPrinter account in play is not this
+  skill.
 metadata:
   version: 1.1.0
 license: MIT
@@ -22,9 +25,16 @@ platforms, accounts, groups, media and posts.
 
 One rule outranks the rest:
 
-> **Publishing is real, public and irreversible.** Once a platform has published, nothing in
-> this skill takes it back. Say what will go out, to which accounts, at what exact time,
-> before it goes — and never claim a post is scheduled until the tool has returned.
+> **Two actions here cannot be undone. Confirm both explicitly before calling them.**
+>
+> 1. **Publishing.** Once a platform has published, nothing in this skill takes it back.
+>    Say what will go out, to which accounts, at what exact time, before it goes — and never
+>    claim a post is scheduled until the tool has returned.
+> 2. **`media_delete`.** It erases the stored file and its bytes, and a queued post that
+>    depends on that file loses it. Name the file and say what still references it, then
+>    wait for an explicit yes. Never delete media as a tidy-up step inside a posting flow.
+
+Everything else here either reads, or creates something that can still be stopped.
 
 ## Connecting, if the tools are not available yet
 
