@@ -5,6 +5,18 @@
 Upload your media, prepare a week of posts, schedule them to **TikTok, Instagram,
 Facebook, YouTube and X**, and check what actually went out.
 
+### Install
+
+```bash
+npx skills add https://viewprinter.tech    # the skill, from our domain — any agent
+npx skills add 1vmgm/viewprinter-plugin    # the skill, from this repo
+```
+
+The scheme is required on the first one: a bare hostname is treated as a git
+repository. Either installs the skill only — neither installs the MCP server,
+because the skills CLI has no MCP handling. For both together, install the
+plugin in Claude Code or Codex (below).
+
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
 and includes one skill covering posting, media and accounts, which routes to nine
 rules read only when they apply. The skill teaches the workflow; the hosted MCP
