@@ -1,0 +1,33 @@
+{
+  "name": "viewprinter",
+  "description": "Schedule and publish social posts to TikTok, Instagram, Facebook, YouTube and X, and track account performance",
+  "version": "1.2.0",
+  "author": {
+    "name": "VMGM Software",
+    "email": "hello@vmgmsoftware.com"
+  },
+  "homepage": "https://viewprinter.tech",
+  "repository": "https://github.com/1vmgm/viewprinter-plugin",
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "ViewPrinter",
+    "shortDescription": "Schedule social posts and check delivery.",
+    "longDescription": "Connect your social accounts, upload media, manage drafts and scheduled posts, and read account performance through ViewPrinter.",
+    "developerName": "VMGM Software",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://viewprinter.tech",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "defaultPrompt": [
+      "Show my connected social accounts.",
+      "Help me prepare a week of posts.",
+      "Check which scheduled posts were delivered."
+    ]
+  }
+}

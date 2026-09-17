@@ -20,14 +20,15 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..')
 const out = join(here, 'dist', 'viewprinter-social-manager')
 
-/** The three Claude Code skills, and what each becomes in the package. */
+/** The three shared skills, and what each becomes in the package. */
 const REFERENCES = ['posting', 'media', 'accounts']
 
 await rm(join(here, 'dist'), { recursive: true, force: true })
 await mkdir(join(out, 'references'), { recursive: true })
 
 await cp(join(here, 'SKILL.md'), join(out, 'SKILL.md'))
-await cp(join(here, 'evals'), join(out, 'evals'), { recursive: true })
+await mkdir(join(out, 'evals'), { recursive: true })
+await cp(join(repo, 'evals', 'workflows.json'), join(out, 'evals', 'evals.json'))
 
 for (const name of REFERENCES) {
   const src = await readFile(join(repo, 'skills', name, 'SKILL.md'), 'utf8')

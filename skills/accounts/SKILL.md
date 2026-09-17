@@ -1,4 +1,5 @@
 ---
+name: accounts
 description: Connect social accounts to ViewPrinter, see which are connected or need reconnecting, organise them into named groups, and read follower performance. Use when connecting an account, checking what is connected, fixing a disconnected account, or managing groups.
 ---
 

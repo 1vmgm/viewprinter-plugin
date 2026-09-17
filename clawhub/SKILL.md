@@ -13,7 +13,7 @@ description: >-
   does not support. A bare "post this" with no ViewPrinter account in play is not this
   skill.
 metadata:
-  version: 1.1.0
+  version: 1.2.0
 license: MIT
 allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts)
 ---
@@ -23,16 +23,15 @@ allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts)
 Queue posts to social accounts somebody has already connected. Eighteen tools, grouped as
 platforms, accounts, groups, media and posts.
 
-One rule outranks the rest:
+Before publishing, make sure the content, destinations and time are covered by
+the user's approval. Use approval already given in the conversation; ask only
+for missing or changed details. State the resolved time and destinations before
+the action, and report success only after the tool returns.
 
-> **Two actions here cannot be undone. Confirm both explicitly before calling them.**
->
-> 1. **Publishing.** Once a platform has published, nothing in this skill takes it back.
->    Say what will go out, to which accounts, at what exact time, before it goes — and never
->    claim a post is scheduled until the tool has returned.
-> 2. **`media_delete`.** It erases the stored file and its bytes, and a queued post that
->    depends on that file loses it. Name the file and say what still references it, then
->    wait for an explicit yes. Never delete media as a tidy-up step inside a posting flow.
+Before `media_delete`, name the file, check what depends on it, and obtain
+explicit authorization to erase it. Never delete media as incidental cleanup
+in a posting workflow. Publishing cannot be recalled by these tools, and
+media deletion erases the stored bytes.
 
 Everything else here either reads, or creates something that can still be stopped.
 
@@ -42,23 +41,19 @@ ViewPrinter is a remote MCP server at `https://viewprinter.tech/api/mcp` — str
 OAuth only. There is no API key to paste anywhere, and any instruction to obtain one is
 wrong.
 
-Its authorization server uses Client ID Metadata Documents rather than Dynamic Client
-Registration, because MCP 2026-07-28 deprecates DCR. A client that only implements DCR
-refuses before reaching a sign-in page:
+The authorization server advertises Client ID Metadata Documents (CIMD). A
+client that only attempts Dynamic Client Registration (DCR) may fail with:
 
     Incompatible auth server: does not support dynamic client registration
 
-That is the client being behind the spec, not the server being broken. In OpenClaw, pass a
-metadata URL and it skips DCR entirely:
+Use the client's supported CIMD login flow. In Codex CLI:
 
-    openclaw mcp add viewprinter \
-      --url https://viewprinter.tech/api/mcp \
-      --transport streamable-http --auth oauth \
-      --oauth-scope "mcp:tools offline_access" \
-      --oauth-client-metadata-url https://viewprinter.tech/.well-known/openclaw-client.json
-    openclaw mcp login viewprinter
+    codex mcp add viewprinter --url https://viewprinter.tech/api/mcp
+    codex mcp login viewprinter
 
-Signing in happens in a browser and cannot happen inside a conversation.
+In OpenClaw, use its CIMD-capable connection flow and the metadata URL
+`https://viewprinter.tech/.well-known/openclaw-client.json` where required.
+Let the user complete the browser sign-in. Do not request credentials in chat.
 
 ## The order that works
 

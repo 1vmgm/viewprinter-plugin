@@ -1,4 +1,5 @@
 ---
+name: media
 description: Upload images or video to ViewPrinter so they can be attached to a post, using the reserve/PUT/confirm flow. Use when attaching media to a post, uploading a file, or listing, describing or deleting files already uploaded.
 ---
 
@@ -6,6 +7,12 @@ description: Upload images or video to ViewPrinter so they can be attached to a 
 
 Uploading is **three steps, not one.** The bytes never travel through the API —
 they go straight to storage — so a single tool call cannot do it.
+
+The client must be able to read the file and make an HTTP PUT. If it cannot,
+explain which upload step is unavailable and use an already uploaded file or
+ask the user to upload through ViewPrinter. Do not call `media_confirm` until
+the bytes have actually been uploaded. Never expose the signed upload URL in
+a public post or user-facing log.
 
 ## The flow
 

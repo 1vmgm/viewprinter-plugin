@@ -1,4 +1,5 @@
 ---
+name: posting
 description: Schedule a social post to one or more connected accounts through ViewPrinter — checking platform rules first, then queueing, amending or cancelling it. Use when the user wants to post, schedule, draft, reschedule or cancel something on TikTok, Instagram, Facebook, YouTube or X.
 ---
 
@@ -47,8 +48,14 @@ state.
 
 ## Scheduling
 
-`posts_schedule` records the intent and queues it. Nothing publishes during the
-call.
+Before scheduling or releasing a held draft, make sure the content, destinations
+and time are covered by the user's approval. Use approval already given in the
+conversation; ask only for missing or changed details. State the resolved time
+and destinations before the action. Publishing cannot be recalled by these tools.
+
+`posts_schedule` records the intent and queues it (unless `draft: true`). A
+queued post can begin publishing immediately. Report success only after the
+tool returns, and distinguish queue acceptance from delivery.
 
 - Omit `scheduled_at` to send as soon as possible; otherwise pass ISO 8601.
   Resolve relative times ("tomorrow at 9") against the user's timezone and state
