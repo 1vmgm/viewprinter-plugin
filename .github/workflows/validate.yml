@@ -9,6 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Layout first: it is the cheapest check and the one whose failure makes
+      # every later error confusing. Shared with vmgm/agent-skills so a skill
+      # has the same shape wherever it lives.
+      - name: Every skill has the same layout
+        run: ./scripts/lint-shape.sh
+      - name: Nothing machine-specific ships
+        run: ./scripts/lint-portability.sh
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

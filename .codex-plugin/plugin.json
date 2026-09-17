@@ -10,7 +10,7 @@
   "repository": "https://github.com/1vmgm/viewprinter-plugin",
   "license": "MIT",
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./mcp.json",
   "interface": {
     "displayName": "ViewPrinter",
     "shortDescription": "Schedule social posts and check delivery.",

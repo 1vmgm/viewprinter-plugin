@@ -2,6 +2,7 @@
 """Build deterministic release ZIPs and a source/checksum receipt. No publishing."""
 import hashlib
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path
@@ -19,7 +20,11 @@ def archive(path, entries):
         for name, data in sorted(entries.items()):
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             info.create_system = 3
-            info.external_attr = 0o100644 << 16
+            # Mode from the path, not from the filesystem: the build stays
+            # reproducible on any checkout, and a shell script keeps the bit it
+            # needs. Every file was 0644, so an extracted package shipped a
+            # preflight that could not run and failed its own shape lint.
+            info.external_attr = (0o100755 if name.endswith('.sh') else 0o100644) << 16
             out.writestr(info, data)
     return {'file': path.name, 'sha256': digest(path.read_bytes()), 'bytes': path.stat().st_size,
             'files': {name: digest(data) for name, data in sorted(entries.items())}}
@@ -42,9 +47,19 @@ def build():
     generated = release_inputs(clawroot, SINGLE_SKILL_FILES)
     claw = {f'viewprinter-social-manager/{name}': path.read_bytes()
             for name, path in generated.items()}
-    for name in ['posting', 'media', 'accounts']:
-        source = (ROOT / 'skills' / name / 'SKILL.md').read_text().split('---', 2)[2].lstrip()
-        generated = (clawroot / 'references' / f'{name}.md').read_text()
+    # Every reference must survive the copy unchanged. Read from disk rather than a
+    # hardcoded list: a list stops covering a reference the moment somebody adds one,
+    # and the drift it exists to catch would ship unnoticed.
+    references = sorted(path.stem for path in (ROOT / 'skills' / 'viewprinter' / 'references' / 'rules').glob('*.md'))
+    if not references:
+        raise ValueError('No references found to verify')
+    for name in references:
+        text = (ROOT / 'skills' / 'viewprinter' / 'references' / 'rules' / f'{name}.md').read_text()
+        # Mirror clawhub/build.mjs: strip frontmatter only if there is any.
+        # Rules carry none; SKILL.md does. Splitting unconditionally raises on
+        # a file without it, which is why this is a match rather than a split.
+        source = re.sub(r'\A---\n.*?\n---\n', '', text, count=1, flags=re.S).lstrip()
+        generated = (clawroot / 'references' / 'rules' / f'{name}.md').read_text()
         if source != generated:
             raise ValueError(f'Generated reference drift: {name}')
     result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)

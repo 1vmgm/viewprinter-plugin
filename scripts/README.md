@@ -1,5 +1,20 @@
 # Package checks
 
+Two tiers, because one of them needs nothing installed.
+
+## Runs anywhere — no dependencies
+
+```bash
+./scripts/lint-shape.sh          # every skill has the same layout
+./scripts/lint-portability.sh    # nothing machine-specific ships
+```
+
+Bash and coreutils only. These are the gate: CI runs them first, and a
+contributor can run them on a fresh clone. `lint-shape.sh` is byte-identical to
+the one in `vmgm/agent-skills`, so a skill has the same shape wherever it lives.
+
+## Maintainer build step — needs Python
+
 Use Python 3.11+ and Node.js 20+. The plugin itself runs through the hosted MCP
 service; these dependencies are for maintainers building release artifacts.
 
@@ -10,6 +25,14 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s scripts -p 'test_*.py' -v
 .venv/bin/python scripts/build.py
 ```
+
+Two files are generated and must not be hand-edited; the validator fails if they
+are, and names the command that regenerates them:
+
+| Generated | From | Regenerate with |
+|---|---|---|
+| `.codex-plugin/plugin.json` | `plugin.json` | `python scripts/set_version.py --sync` |
+| `clawhub/SKILL.md` | `clawhub/frontmatter.md` + `skills/viewprinter/SKILL.md` | `node clawhub/build.mjs` |
 
 The validator checks the portable manifests against pinned official schemas,
 skill metadata, shared identity/versions, marketplace paths, assets, evaluation

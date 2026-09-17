@@ -55,7 +55,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertNotEqual(archive.read(name), marker)
 
     def test_declared_file_symlink_is_rejected(self):
-        path = self.root / 'skills/media/SKILL.md'
+        path = self.root / 'skills/viewprinter/references/rules/media-upload.md'
         outside = self.base / 'external-skill.md'
         outside.write_bytes(path.read_bytes())
         path.unlink()
@@ -107,13 +107,16 @@ class ReleaseTests(unittest.TestCase):
         self.run_script('validate.py')
 
     def test_bad_input_never_partly_updates_versions(self):
-        names = (*JSON_FILES, 'clawhub/SKILL.md')
+        names = (*JSON_FILES, 'clawhub/frontmatter.md', 'clawhub/SKILL.md')
         before = {name: (self.root / name).read_bytes() for name in names}
         for version in ['../outside', '01.2.3', '1.2.3-01', '1.2', '1.2.3\n']:
             with self.subTest(version=version):
                 self.run_script('set_version.py', version, success=False)
                 self.assertEqual({name: (self.root / name).read_bytes() for name in names}, before)
-        (self.root / 'clawhub/SKILL.md').write_text('Missing frontmatter\n')
+        # Corrupt the AUTHORED frontmatter, not the generated SKILL.md. The
+        # version lives in frontmatter.md now; SKILL.md is rebuilt from it, so
+        # damaging the generated file proves nothing about aborting the write.
+        (self.root / 'clawhub/frontmatter.md').write_text('Missing frontmatter\n')
         self.run_script('set_version.py', '2.0.0', success=False)
         self.assertEqual({name: (self.root / name).read_bytes() for name in JSON_FILES},
                          {name: before[name] for name in JSON_FILES})
@@ -126,6 +129,14 @@ class ReleaseTests(unittest.TestCase):
         extracted = self.base / 'extracted'
         with zipfile.ZipFile(self.root / 'dist' / first[0]['file']) as archive:
             archive.extractall(extracted)
+            # zipfile.extractall drops the stored mode; unzip(1) restores it.
+            # Without this the extracted tree has a preflight it cannot run, and
+            # the test would be asserting a property of Python rather than of
+            # the package we ship.
+            for info in archive.infolist():
+                mode = info.external_attr >> 16
+                if mode:
+                    (extracted / info.filename).chmod(mode & 0o777)
         self.root = extracted / 'viewprinter'
         self.run_script('build.py')
         self.assertEqual(json.loads((self.root / 'dist/release.json').read_text())['artifacts'], first)

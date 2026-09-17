@@ -27,8 +27,10 @@ repository edits and builds do not replace it.
 - `.codex-plugin/plugin.json`: Codex compatibility manifest.
 - `.claude-plugin/plugin.json` and `.mcp.json`: Claude metadata.
 - `.agents/plugins/marketplace.json`: marketplace for the root package.
-- `skills/`: canonical posting, media, and account workflows.
-- `clawhub/SKILL.md`: single-skill entry point routing to generated references.
+- `skills/viewprinter/`: the canonical skill. `SKILL.md` routes; `rules/` holds
+  one file per mistake worth preventing.
+- `clawhub/SKILL.md`: the ClawHub-facing entry point; `build.mjs` copies the
+  rules in as `references/`.
 - `evals/workflows.json`: behavior scenarios; definitions are not test results.
 
 The portable OpenAI extension takes precedence over the compatibility overlay.

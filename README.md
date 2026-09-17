@@ -6,8 +6,9 @@ Upload your media, prepare a week of posts, schedule them to **TikTok, Instagram
 Facebook, YouTube and X**, and check what actually went out.
 
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
-and includes three skills for posting, media, and account management. The skills
-teach the workflow; the hosted MCP service provides the tools.
+and includes one skill covering posting, media and accounts, which routes to nine
+rules read only when they apply. The skill teaches the workflow; the hosted MCP
+service provides the tools.
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
 accounts you want to use. There is no ViewPrinter API key to copy into a config.
@@ -35,7 +36,7 @@ Start a new Codex session and ask:
 
 > Use ViewPrinter to show my connected accounts and which need reconnecting.
 
-Complete browser sign-in if prompted. The plugin includes all three skills and
+Complete browser sign-in if prompted. The plugin includes the skill and
 the MCP connection; you do not need a second standalone MCP configuration.
 
 For updates, removal, and standalone skills, see [Codex setup](docs/codex.md).
@@ -68,9 +69,9 @@ do not replace the package already submitted for review.
 - “Which posts failed, and on which destinations?”
 - “How have my accounts grown since last week?”
 
-The assistant can select the relevant skill from your request. In Claude Code,
-you can also invoke `/viewprinter:posting`, `/viewprinter:media`, or
-`/viewprinter:accounts`. Codex exposes the same namespaced skills in its selector.
+The assistant selects the skill from your request. In Claude Code you can also
+invoke `/viewprinter` directly, and Codex exposes the same namespaced skill in
+its selector.
 
 ## What you can do
 
@@ -84,7 +85,7 @@ you can also invoke `/viewprinter:posting`, `/viewprinter:media`, or
 
 Uploads require a client that can read the file and send an HTTP PUT. Where that
 is unavailable, use media already uploaded to ViewPrinter or upload through the
-ViewPrinter site. The media skill covers reserve → PUT → confirm.
+ViewPrinter site. `references/rules/media-upload.md` covers reserve → PUT → confirm.
 
 A draft **held in ViewPrinter** stays out of the queue. A platform draft can
 upload content to the social platform for you to finish there. Name the kind you

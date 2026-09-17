@@ -1,6 +1,6 @@
 # Codex setup
 
-The full plugin bundles three skills and the hosted MCP connection. See
+The full plugin bundles one skill and the hosted MCP connection. See
 [compatibility](compatibility.md) for tested versions and workflow coverage.
 
 ## Install this checkout
@@ -61,14 +61,13 @@ in ViewPrinter.
 ## Standalone skills
 
 For a Codex surface that supports skills but not plugins, ask `$skill-installer`
-to install `skills/posting`, `skills/media`, and `skills/accounts` from
+to install `skills/viewprinter` — one skill routing to its `rules/` — from
 `1vmgm/viewprinter-plugin` after this release is published. For local development,
 Codex discovers skill folders under `~/.agents/skills/` or a project's
 `.agents/skills/`.
 
-The standalone names are `posting`, `media`, and `accounts`. Check for existing
-skills with those names. The full plugin namespaces them as `viewprinter:posting`,
-`viewprinter:media`, and `viewprinter:accounts`.
+The standalone name is `viewprinter`. Check for an existing skill with that
+name. The full plugin namespaces it as `viewprinter:viewprinter`.
 
 Add the separate tool connection for the standalone path:
 

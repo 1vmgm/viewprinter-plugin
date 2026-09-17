@@ -30,8 +30,7 @@ Current repository:
 
 ### 1. Make the shared skills valid across supported clients
 
-Files: skills/posting/SKILL.md, skills/media/SKILL.md,
-skills/accounts/SKILL.md.
+Files: skills/viewprinter/SKILL.md and skills/viewprinter/rules/*.md.
 
 - Add explicit name fields matching the existing skill directories.
 - Keep names and paths stable so Claude's existing commands continue to work.
@@ -63,7 +62,7 @@ Files: new root plugin.json and mcp.json; existing Claude files remain.
 - Do not introduce a Node service or duplicate the hosted MCP implementation.
 
 Acceptance: package schemas and paths validate; Codex loads the installed
-package and its three skills; existing Claude packaging still loads.
+package and its skill; existing Claude packaging still loads.
 
 ### 3. Provide an actual Codex installation path
 
@@ -81,7 +80,7 @@ Files: new .agents/plugins/marketplace.json; installation documentation.
   cannot conceal a missing package dependency or create duplicate tools.
 
 Acceptance: a new user can follow the documented commands, authenticate, discover
-the three skills and call ViewPrinter without editing internal files by hand.
+the skill and call ViewPrinter without editing internal files by hand.
 The pending public-directory review is not a prerequisite for this local/Git path.
 
 ### 4. Verify behavior, not only file layout
