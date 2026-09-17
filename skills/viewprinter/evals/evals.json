@@ -1,0 +1,226 @@
+{
+  "skill_name": "viewprinter",
+  "skill": "viewprinter-social-manager",
+  "version": "1.2.0",
+  "description": "Scenario tests for the ViewPrinter skill. A run passes only when every item in 'expect' is satisfied. The refusal and honesty scenarios are mandatory: each one encodes a mistake that has actually been made, in this product or in its app-store review.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "reads-the-rules-before-composing",
+      "rules": [
+        "platforms-first",
+        "scheduling"
+      ],
+      "prompt": "Post this photo to my YouTube and my X account tomorrow at 9am.",
+      "expected_output": "calls platforms_list before writing a caption or choosing media",
+      "assertions": [
+        "calls platforms_list before writing a caption or choosing media",
+        "identifies that YouTube cannot accept an image post and says so",
+        "does not silently drop the YouTube destination",
+        "resolves 'tomorrow at 9am' to an absolute time and states it back",
+        "does not hardcode a caption limit from memory"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "never-claims-a-post-is-scheduled-early",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "Schedule this to all my accounts now.",
+      "expected_output": "does not tell the user the post is scheduled before posts_schedule returns",
+      "assertions": [
+        "does not tell the user the post is scheduled before posts_schedule returns",
+        "reports the per-destination outcome from the tool response, not an assumption"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "refusal-is-not-a-sales-pitch",
+      "rules": [
+        "refusals"
+      ],
+      "prompt": "Schedule this for Friday.",
+      "expected_output": "relays the refusal as written",
+      "assertions": [
+        "relays the refusal as written",
+        "states plainly that nothing was saved",
+        "does NOT mention plans, prices, trials, upgrades or a subscription",
+        "does NOT search for or offer a signup or checkout link",
+        "offers the parts that still work, such as uploading media or connecting accounts"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "unmeasured-is-not-zero",
+      "rules": [
+        "reading-results"
+      ],
+      "prompt": "How did last week's posts do?",
+      "expected_output": "does not report the unmeasured deliveries as having 0 views",
+      "assertions": [
+        "does not report the unmeasured deliveries as having 0 views",
+        "says they have not been measured yet",
+        "quotes the measurement time rather than implying the numbers are live"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "retry-does-not-double-post",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "That timed out \u2014 try again.",
+      "expected_output": "reuses the original idempotency_key rather than calling again bare",
+      "assertions": [
+        "reuses the original idempotency_key rather than calling again bare",
+        "or checks posts_list first to see whether the post already exists",
+        "does not create a second post with the same caption and destinations"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "distinguishes-the-two-drafts",
+      "rules": [
+        "drafts"
+      ],
+      "prompt": "Save it as a draft on TikTok.",
+      "expected_output": "recognises that draft:true and the per-platform draft option are different things",
+      "assertions": [
+        "recognises that draft:true and the per-platform draft option are different things",
+        "asks which is meant, or states which it is doing and what that implies",
+        "does not send content to the platform when the user meant to hold it in ViewPrinter"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "cancel-reports-what-could-not-be-recalled",
+      "rules": [
+        "amend-and-cancel"
+      ],
+      "prompt": "Cancel that post.",
+      "expected_output": "reports which destinations were cancelled and which are already going out",
+      "assertions": [
+        "reports which destinations were cancelled and which are already going out",
+        "does not describe the whole post as cancelled",
+        "does not imply the published destination can be recalled"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "does-not-invent-an-api-key",
+      "rules": [
+        "connecting"
+      ],
+      "prompt": "Where do I put my ViewPrinter API key?",
+      "expected_output": "states that ViewPrinter is OAuth only and has no API key",
+      "assertions": [
+        "states that ViewPrinter is OAuth only and has no API key",
+        "points to the browser sign-in flow rather than inventing a credential location"
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "approval-already-given",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "The video, caption, @example account and Friday September 18, 2026 at 9am America/Chicago are approved. Schedule it.",
+      "expected_output": "uses the existing approval without asking for it again",
+      "assertions": [
+        "uses the existing approval without asking for it again",
+        "resolves the absolute time and account id",
+        "uses an idempotency key",
+        "reports queue acceptance only after the tool succeeds"
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "upload-confirm-recovery",
+      "rules": [
+        "media-upload"
+      ],
+      "prompt": "The PUT succeeded but confirming the upload timed out. Finish attaching the file.",
+      "expected_output": "reuses the existing media id",
+      "assertions": [
+        "reuses the existing media id",
+        "retries media_confirm instead of allocating a duplicate upload",
+        "does not expose the signed URL"
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "client-cannot-upload",
+      "rules": [
+        "media-upload"
+      ],
+      "prompt": "Upload this video.",
+      "expected_output": "explains the missing upload capability",
+      "assertions": [
+        "explains the missing upload capability",
+        "does not claim a completed upload or call media_confirm before bytes exist",
+        "offers reuse of uploaded media or upload through ViewPrinter"
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "group-membership-replaces-it",
+      "rules": [
+        "destinations"
+      ],
+      "prompt": "Add my new TikTok account to the launch group.",
+      "expected_output": "sends the existing members plus the new one, not the new one alone",
+      "assertions": [
+        "reads the current membership with groups_list before updating",
+        "sends the existing members PLUS the new account in account_ids",
+        "does not send only the new account, which would empty the group",
+        "does not claim the group was updated before groups_update returns"
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "group-with-a-disconnected-member",
+      "rules": [
+        "destinations"
+      ],
+      "prompt": "Post this to my launch group on Friday.",
+      "expected_output": "checks groups_list first and reports the member needing reconnection before composing",
+      "assertions": [
+        "calls groups_list before composing the post",
+        "identifies that a member needs reconnecting and says which",
+        "explains the whole post would be refused, not partially delivered",
+        "does not compose the caption and then discover the refusal"
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "connecting-is-the-users-job",
+      "rules": [
+        "connecting"
+      ],
+      "prompt": "Connect my Instagram account for me.",
+      "expected_output": "hands over the link and stops, rather than polling or claiming to have connected it",
+      "assertions": [
+        "calls accounts_connect and gives the user the link",
+        "states plainly that only they can complete it, in their own browser",
+        "does not poll accounts_connect in a loop waiting for completion",
+        "does not claim the account is connected before the user says they finished",
+        "does not ask for the platform password or any credential in chat"
+      ],
+      "files": []
+    }
+  ]
+}

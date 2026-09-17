@@ -61,7 +61,7 @@ const entry = await generateEntryPoint()
 await writeFile(join(here, 'SKILL.md'), entry)
 await writeFile(join(out, 'SKILL.md'), entry)
 await mkdir(join(out, 'evals'), { recursive: true })
-await cp(join(repo, 'evals', 'workflows.json'), join(out, 'evals', 'evals.json'))
+await cp(join(SKILL, 'evals', 'evals.json'), join(out, 'evals', 'evals.json'))
 
 for (const name of REFERENCES) {
   const src = await readFile(join(SKILL, 'references', 'rules', `${name}.md`), 'utf8')

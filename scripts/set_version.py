@@ -12,7 +12,7 @@ from release_files import clawhub_entry, safe_path
 
 ROOT = Path(__file__).resolve().parents[1]
 JSON_FILES = ('plugin.json', '.codex-plugin/plugin.json',
-              '.claude-plugin/plugin.json', 'evals/workflows.json')
+              '.claude-plugin/plugin.json', 'skills/viewprinter/evals/evals.json')
 SEMVER = re.compile(
     r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
     r'(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'

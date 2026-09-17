@@ -12,13 +12,13 @@ PLUGIN_FILES = (
     'skills/viewprinter/references/rules/media-upload.md', 'skills/viewprinter/references/rules/platforms-first.md',
     'skills/viewprinter/references/rules/reading-results.md', 'skills/viewprinter/references/rules/refusals.md',
     'skills/viewprinter/references/rules/scheduling.md',
-    'clawhub/build.mjs', 'clawhub/frontmatter.md', 'clawhub/SKILL.md', 'evals/workflows.json',
+    'clawhub/build.mjs', 'clawhub/frontmatter.md', 'clawhub/SKILL.md',
     'docs/codex.md', 'docs/compatibility.md', 'docs/openclaw.md',
     'docs/troubleshooting.md', 'scripts/README.md', 'scripts/build.py',
     'scripts/validate.py', 'scripts/release_files.py', 'scripts/set_version.py',
     'scripts/test_release.py', 'scripts/requirements.txt',
     'scripts/plugin.schema.json', 'scripts/mcp.schema.json', 'scripts/lint-shape.sh', 'scripts/lint-portability.sh',
-    'skills/viewprinter/scripts/preflight.sh',
+    'skills/viewprinter/scripts/preflight.sh', 'skills/viewprinter/evals/evals.json',
 )
 
 SINGLE_SKILL_FILES = (

@@ -120,12 +120,31 @@ def validate():
 
     wrapper = (ROOT / 'clawhub/SKILL.md').read_text()
     require(str(yaml.safe_load(wrapper.split('---', 2)[1])['metadata']['version']) == portable['version'], 'ClawHub version drift')
-    evaluations = read_json('evals/workflows.json')
+    # One definition, at the location Anthropic's runner, our own lint-shape.sh
+    # and ClawHub's package format all expect. build.mjs copies it into the
+    # package; nothing else holds a second copy.
+    evaluations = read_json('skills/viewprinter/evals/evals.json')
+    require(evaluations['skill_name'] == skill.name, 'evals.json skill_name must match the skill')
     require(evaluations['version'] == portable['version'], 'Evaluation version drift')
     names = [case['name'] for case in evaluations['evals']]
     require(len(names) == len(set(names)), 'Duplicate evaluation name')
+    ids = [case['id'] for case in evaluations['evals']]
+    require(ids == list(range(1, len(ids) + 1)), 'Evaluation ids must run 1..n without gaps')
     for case in evaluations['evals']:
-        require(case['input'] and case['expect'], f'Incomplete evaluation: {case["name"]}')
+        require(case['prompt'] and case['assertions'],
+                f'Incomplete evaluation: {case["name"]}')
+    # Which rule a case covers is declared, not guessed. Matching on the name
+    # missed amend-and-cancel, whose case is called
+    # cancel-reports-what-could-not-be-recalled — a heuristic that silently
+    # passes the wrong thing is worse than no check.
+    covered = set()
+    for case in evaluations['evals']:
+        require(case.get('rules'), f'Evaluation declares no rules: {case["name"]}')
+        for rule in case['rules']:
+            require(rule in references, f'{case["name"]} names a rule that does not exist: {rule}')
+            covered.add(rule)
+    missing = sorted(set(references) - covered)
+    require(not missing, f'No evaluation covers: {", ".join(missing)}')
 
     for path in [ROOT / 'README.md', ROOT / 'DISTRIBUTION.md', *ROOT.glob('docs/*.md')]:
         for target in re.findall(r'\]\(([^)\s]+)\)', path.read_text()):
