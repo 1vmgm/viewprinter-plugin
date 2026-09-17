@@ -95,9 +95,9 @@ def set_version(root, version):
             path.write_bytes(originals[path])
         raise
     sync_codex(root)
-    # clawhub/SKILL.md is generated from the frontmatter just written plus the
+    # clawhub/entry.md is generated from the frontmatter just written plus the
     # canonical skill. Without this a version bump left the two disagreeing.
-    safe_path(root, 'clawhub/SKILL.md').write_text(clawhub_entry(root))
+    safe_path(root, 'clawhub/entry.md').write_text(clawhub_entry(root))
     return version
 
 

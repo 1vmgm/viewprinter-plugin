@@ -36,7 +36,7 @@ class ReleaseTests(unittest.TestCase):
 
     def versions(self):
         versions = [json.loads((self.root / name).read_text())['version'] for name in JSON_FILES]
-        text = (self.root / 'clawhub/SKILL.md').read_text()
+        text = (self.root / 'clawhub/entry.md').read_text()
         versions.append(yaml.safe_load(text.split('---', 2)[1])['metadata']['version'])
         return versions
 
@@ -87,10 +87,10 @@ class ReleaseTests(unittest.TestCase):
                 path.unlink()
 
     def test_release_version_updates_every_source(self):
-        body_before = (self.root / 'clawhub/SKILL.md').read_text().split('---', 2)[2]
+        body_before = (self.root / 'clawhub/entry.md').read_text().split('---', 2)[2]
         self.run_script('set_version.py', '2.3.4-rc.1+build.2')
         self.assertEqual(self.versions(), ['2.3.4-rc.1+build.2'] * 5)
-        self.assertEqual((self.root / 'clawhub/SKILL.md').read_text().split('---', 2)[2], body_before)
+        self.assertEqual((self.root / 'clawhub/entry.md').read_text().split('---', 2)[2], body_before)
         self.run_script('validate.py')
         self.run_script('build.py')
         self.assertTrue((self.root / 'dist/viewprinter-2.3.4-rc.1+build.2.zip').is_file())
@@ -107,7 +107,7 @@ class ReleaseTests(unittest.TestCase):
         self.run_script('validate.py')
 
     def test_bad_input_never_partly_updates_versions(self):
-        names = (*JSON_FILES, 'clawhub/frontmatter.md', 'clawhub/SKILL.md')
+        names = (*JSON_FILES, 'clawhub/frontmatter.md', 'clawhub/entry.md')
         before = {name: (self.root / name).read_bytes() for name in names}
         for version in ['../outside', '01.2.3', '1.2.3-01', '1.2', '1.2.3\n']:
             with self.subTest(version=version):

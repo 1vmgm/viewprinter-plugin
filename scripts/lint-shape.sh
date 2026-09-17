@@ -42,5 +42,13 @@ for sk in skills/*/; do
   done < <(find "$sk/templates" -type f ! -name '*.json' 2>/dev/null)
   [ $FAIL -eq 0 ] && printf "  \033[32m✓\033[0m %s\n" "$name"
 done
+# A SKILL.md anywhere else is installed as a skill. `npx skills add owner/repo`
+# scans the whole repository, so clawhub/SKILL.md — a build input — was being
+# installed alongside the real one, with its references left behind in dist/ and
+# every link in it dead. Generated copies live under a different name.
+while IFS= read -r stray; do
+  printf "  \033[31m✗\033[0m %-28s SKILL.md outside skills/: %s\n" "(repo)" "$stray"; FAIL=1
+done < <(find . -name SKILL.md -not -path './.git/*' -not -path './skills/*' -not -path '*/dist/*' -not -path '*/node_modules/*' 2>/dev/null | sed 's|^\./||')
+
 echo
 [ $FAIL -eq 0 ] && echo "  shape lint PASSED" || { echo "  shape lint FAILED — see the layout at the top of scripts/lint-shape.sh"; exit 1; }

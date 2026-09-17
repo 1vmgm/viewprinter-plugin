@@ -12,7 +12,7 @@ PLUGIN_FILES = (
     'skills/viewprinter/references/rules/media-upload.md', 'skills/viewprinter/references/rules/platforms-first.md',
     'skills/viewprinter/references/rules/reading-results.md', 'skills/viewprinter/references/rules/refusals.md',
     'skills/viewprinter/references/rules/scheduling.md',
-    'clawhub/build.mjs', 'clawhub/frontmatter.md', 'clawhub/SKILL.md',
+    'clawhub/build.mjs', 'clawhub/frontmatter.md', 'clawhub/entry.md',
     'docs/codex.md', 'docs/compatibility.md', 'docs/openclaw.md',
     'docs/troubleshooting.md', 'scripts/README.md', 'scripts/build.py',
     'scripts/validate.py', 'scripts/release_files.py', 'scripts/set_version.py',

@@ -32,7 +32,7 @@ are, and names the command that regenerates them:
 | Generated | From | Regenerate with |
 |---|---|---|
 | `.codex-plugin/plugin.json` | `plugin.json` | `python scripts/set_version.py --sync` |
-| `clawhub/SKILL.md` | `clawhub/frontmatter.md` + `skills/viewprinter/SKILL.md` | `node clawhub/build.mjs` |
+| `clawhub/entry.md` | `clawhub/frontmatter.md` + `skills/viewprinter/SKILL.md` | `node clawhub/build.mjs` |
 
 The validator checks the portable manifests against pinned official schemas,
 skill metadata, shared identity/versions, marketplace paths, assets, evaluation
@@ -75,7 +75,7 @@ For a fresh local Codex cache version without changing the release prefix:
 ```
 
 Both commands synchronize `plugin.json`, `.codex-plugin/plugin.json`,
-`.claude-plugin/plugin.json`, `clawhub/SKILL.md`, and `evals/workflows.json`.
+`.claude-plugin/plugin.json`, `clawhub/entry.md`, and the skill's `evals/evals.json`.
 The command validates the version and parses every source before writing.
 Use an explicit release version again before publishing; do not publish a
 local `+codex.` development version by accident.

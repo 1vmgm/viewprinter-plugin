@@ -5,7 +5,7 @@
  * that exact shape — one skill routing to references/ — so this copies it across
  * rather than reassembling it. Rather than write the guidance twice, which is
  * how the two copies drifted the first time and how an app review found copy in
- * one surface contradicting another, clawhub/SKILL.md stays the ClawHub-facing
+ * one surface contradicting another, clawhub/entry.md stays the ClawHub-facing
  * entry point and the references are copied straight across.
  *
  * skills/ stays the single source. Edit there, never in dist/.
@@ -53,12 +53,16 @@ async function generateEntryPoint() {
 await rm(join(here, 'dist'), { recursive: true, force: true })
 await mkdir(join(out, 'references', 'rules'), { recursive: true })
 
-// clawhub/SKILL.md is GENERATED, not authored — see generateEntryPoint below.
+// clawhub/entry.md is GENERATED, not authored — see generateEntryPoint below.
 // It was a hand-maintained second copy of the canonical skill, which is the exact
 // drift an app review caught before. Only the frontmatter differs for ClawHub, so
 // only the frontmatter is authored.
 const entry = await generateEntryPoint()
-await writeFile(join(here, 'SKILL.md'), entry)
+// entry.md at the repo root of clawhub/, SKILL.md only inside the package.
+// `npx skills add` scans for SKILL.md ANYWHERE in a repository, so a second one
+// here was installed as a second skill — with its references left behind in
+// dist/, so every link in it was dead.
+await writeFile(join(here, 'entry.md'), entry)
 await writeFile(join(out, 'SKILL.md'), entry)
 await mkdir(join(out, 'evals'), { recursive: true })
 await cp(join(SKILL, 'evals', 'evals.json'), join(out, 'evals', 'evals.json'))
