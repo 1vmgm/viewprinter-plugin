@@ -65,9 +65,27 @@ def build():
     result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
     source_commit = result.stdout.strip() if result.returncode == 0 else None
     status = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, capture_output=True, text=True)
+    # A third artifact: the skill alone, SKILL.md at the archive ROOT.
+    #
+    # This is what `npx skills add viewprinter.tech` fetches. The well-known
+    # discovery provider looks for exactly `SKILL.md` — files.get('SKILL.md') —
+    # and normalizeArchivePath in the CLI sanitises paths without stripping a
+    # common prefix, so the nested layout the other two zips use would simply
+    # not be found. Same deterministic machinery, so the digest published in the
+    # index stays stable across rebuilds.
+    skill_root = ROOT / 'skills' / 'viewprinter'
+    skill_files = {
+        str(path.relative_to(skill_root)): path.read_bytes()
+        for path in sorted(skill_root.rglob('*')) if path.is_file()
+    }
+    if 'SKILL.md' not in skill_files:
+        raise ValueError('Skill archive must carry SKILL.md at its root')
+    bare_zip = safe_path(ROOT, f'dist/viewprinter-skill-{version}.zip')
+
     receipt = {'version': version, 'sourceCommit': source_commit,
                'dirty': bool(status.stdout.strip()) if status.returncode == 0 else None,
-               'artifacts': [archive(plugin_zip, bundle), archive(skill_zip, claw)]}
+               'artifacts': [archive(plugin_zip, bundle), archive(skill_zip, claw),
+                             archive(bare_zip, skill_files)]}
     receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
     for item in receipt['artifacts']:
         print(f'{item["file"]}: {item["sha256"]}')
