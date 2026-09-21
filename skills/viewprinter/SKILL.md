@@ -45,7 +45,9 @@ is not connected, and nothing below applies. Say so and hand it back:
 1. **See what exists** — `accounts_list`, `groups_list`, `media_list`
 2. **Learn the rules** — `platforms_list`, before composing anything
 3. **Get the media in** — `media_upload` → PUT → `media_confirm`
-4. **Queue it** — `posts_schedule`
+4. **Confirm label choices, then queue it** — ask about promotional-content and
+   AI labels before `posts_schedule` or releasing a draft; see
+   `references/rules/scheduling.md`
 5. **Read what happened** — `posts_list`, `posts_performance`,
    `accounts_performance`
 
@@ -61,7 +63,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | `platforms-first` | CRITICAL | Never state platform limits from memory |
 | `media-upload` | CRITICAL | Uploading is three steps, and step three is the one that counts |
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
-| `scheduling` | CRITICAL | Approval, absolute times, and not posting twice |
+| `scheduling` | CRITICAL | Approval, opt-in promotional/AI labels, absolute times, and not posting twice |
 | `drafts` | HIGH | The word means two unrelated things |
 | `refusals` | HIGH | A refused post was never saved, and is not a sales opening |
 | `amend-and-cancel` | HIGH | What can still be changed, and what cannot be recalled |

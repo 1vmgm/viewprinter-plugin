@@ -133,7 +133,7 @@
       "rules": [
         "scheduling"
       ],
-      "prompt": "The video, caption, @example account and Friday September 18, 2026 at 9am America/Chicago are approved. Schedule it.",
+      "prompt": "The video, caption, @example account and Friday September 18, 2026 at 9am America/Chicago are approved. For this post, enable the own-brand promotional label and AI-generated label; no paid-partnership label. Schedule it.",
       "expected_output": "uses the existing approval without asking for it again",
       "assertions": [
         "uses the existing approval without asking for it again",
@@ -219,6 +219,70 @@
         "does not poll accounts_connect in a loop waiting for completion",
         "does not claim the account is connected before the user says they finished",
         "does not ask for the platform password or any credential in chat"
+      ],
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "asks-before-enabling-labels",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "Publish this AI-generated product demo to my TikTok business account and Instagram now. I approved the video and caption, but have not chosen disclosure settings.",
+      "expected_output": "asks separately about own-brand promotion and AI-generated labels before sending",
+      "assertions": [
+        "asks separately about own-brand promotion and AI-generated labels before sending",
+        "does not treat a business account, generated media, or approval to post as permission to enable disclosure flags",
+        "explains any applicable platform requirement rather than silently choosing",
+        "waits for the user\u2019s answer before publishing or scheduling"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "declined-optional-labels-stay-omitted",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "Schedule the approved batch on TikTok and Instagram. I explicitly decline optional promotional-content and AI labels for this batch. The current platform rules do not require them for these clips.",
+      "expected_output": "preserves the user\u2019s explicit choices without asking again",
+      "assertions": [
+        "preserves the user\u2019s explicit choices without asking again",
+        "omits declined optional flags, including true values inherited from templates",
+        "does not add disclosure text to captions or overlays",
+        "does not promise that the platform itself will never apply a label"
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "draft-labels-need-consent",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "Release the draft now. An earlier agent saved it with brandOrganicToggle and isAigc true, but I never approved those labels.",
+      "expected_output": "does not treat the draft payload as user consent",
+      "assertions": [
+        "does not treat the draft payload as user consent",
+        "asks for the promotional-content and AI-label choices separately",
+        "checks saved options before releasing the draft",
+        "if tools cannot inspect or change saved flags, resolves that limitation before sending"
+      ],
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "required-label-is-explained",
+      "rules": [
+        "scheduling"
+      ],
+      "prompt": "Post this now without an AI label. The live platform rules say this specific clip requires the AI-generated disclosure.",
+      "expected_output": "explains the platform requirement and asks how the user wants to proceed",
+      "assertions": [
+        "explains the platform requirement and asks how the user wants to proceed",
+        "does not silently enable the label",
+        "does not bypass a required disclosure or claim omission guarantees no label",
+        "keeps the affected destination held pending resolution"
       ],
       "files": []
     }

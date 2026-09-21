@@ -18,6 +18,37 @@ details. **State the resolved time and destinations before the action.**
 
 Publishing cannot be recalled by these tools.
 
+## Promotional-content and AI labels require an explicit choice
+
+**Always ask whether the user wants promotional-content and AI labels before
+publishing or scheduling, unless their explicit answer already covers this
+post or batch.** These are separate choices. Approval to post, an account's
+business status, a brand mention, generated media, or an old agent's payload
+is not consent to enable them.
+
+This applies to TikTok `brandOrganicToggle` (own-brand promotion),
+`brandContentToggle` (paid partnership), and `isAigc` (AI-generated content),
+and Instagram `isAiGenerated`, plus equivalent options exposed by
+`platforms_list` on other platforms. Explain the applicable choices in plain
+language; do not bundle paid partnership with own-brand promotion.
+
+Ask, for example: "For this batch, do you want the own-brand promotional label
+on TikTok? Separately, do you want AI-generated labels on TikTok and Instagram?"
+Ask about paid partnership when applicable. Wait for the answer; silence or a
+preselected UI option is not consent. One explicit answer can cover the named
+batch and platforms; do not ask again within that approved scope.
+
+Only enable a flag after an explicit opt-in. If the user declines an optional
+label, omit its parameter rather than inheriting `true` from an example,
+template, prior post, or draft. Check saved options before releasing a draft;
+if the tools cannot inspect or change them, resolve that before sending it.
+Do not add disclosure wording to captions or overlays without approval either.
+
+If current platform rules require a disclosure, explain the requirement and
+ask how the user wants to proceed. Keep that destination held until resolved;
+do not silently enable the flag or promise that omission prevents labels the
+platform applies itself. Record the user's choices with the publishing request.
+
 ## Calling it
 
 `posts_schedule` records the intent and queues it (unless `draft: true`). A
