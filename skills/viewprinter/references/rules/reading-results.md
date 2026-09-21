@@ -27,5 +27,12 @@ account, each with how far it moved over the period, ordered by followers.
 
 ## Context
 
+Read publication from each destination, not only the parent post. A parent may
+still say `scheduled` while a destination reports `published` with its live URL.
+Report queued, published, failed and unverified destinations separately. For a
+trial reel, successful publication does not establish later automatic sharing
+to followers. Compare trials with other trials of similar age; their initial
+non-follower audience differs from an ordinary Reel's audience.
+
 - Not every platform reports every metric. A metric a platform does not return
   is absent, not zero — the same rule as an unmeasured account.

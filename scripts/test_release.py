@@ -65,6 +65,29 @@ class ReleaseTests(unittest.TestCase):
         self.assertFalse((self.root / 'dist').exists())
         self.assertFalse((self.root / 'clawhub/dist').exists())
 
+    def test_trial_guidance_ships_in_every_artifact(self):
+        self.run_script('build.py')
+        version = self.versions()[0]
+        packages = [
+            (f'viewprinter-{version}.zip', 'viewprinter/skills/viewprinter/'),
+            (f'viewprinter-social-manager-{version}.zip', 'viewprinter-social-manager/'),
+            (f'viewprinter-skill-{version}.zip', ''),
+        ]
+        for filename, prefix in packages:
+            with self.subTest(artifact=filename):
+                with zipfile.ZipFile(self.root / 'dist' / filename) as archive:
+                    for rule in ['platforms-first', 'scheduling', 'reading-results']:
+                        relative = f'references/rules/{rule}.md'
+                        source = self.root / 'skills/viewprinter' / relative
+                        self.assertEqual(archive.read(prefix + relative), source.read_bytes())
+                    scheduling = archive.read(prefix + 'references/rules/scheduling.md').decode()
+                    self.assertIn('SS_PERFORMANCE', scheduling)
+                    self.assertIn('MANUAL', scheduling)
+                    self.assertIn('explicit choice', scheduling)
+                    cases = json.loads(archive.read(prefix + 'evals/evals.json'))['evals']
+                    self.assertIn('trial-schema-error-is-connection-specific',
+                                  [case['name'] for case in cases])
+
     def test_declared_parent_symlink_is_rejected(self):
         outside = self.base / 'external-skills'
         shutil.move(self.root / 'skills', outside)

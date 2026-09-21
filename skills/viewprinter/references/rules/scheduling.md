@@ -64,6 +64,28 @@ queued post can begin publishing immediately.
   ignored — check `platforms_list` for what each option does and where it
   applies.
 
+## Instagram trial reels
+
+When the live capabilities and connected schema expose `trialReel`, preserve
+the user's chosen audience and promotion mode:
+
+- `platform_options.instagram.trialReel: MANUAL` keeps a trial until the creator
+  chooses to share it with everyone.
+- `SS_PERFORMANCE` permits Instagram to share the trial with followers if it
+  performs well. This is organic distribution, not a paid boost, and requires
+  approval for that broader sharing.
+
+Confirm current applicability with `platforms_list`; do not assume every media
+type can be a trial. Omitting `trialReel` creates an ordinary Reel, and
+`shareToFeed: false` is not a substitute. Never publish an ordinary Reel merely
+to test whether the trial option works. For schema mismatches, follow
+`platforms-first.md` and validate a held draft before releasing it.
+
+Keep disclosure-label choices separate from trial promotion. Record the exact
+options submitted. A published response alone does not prove trial mode or
+later sharing to followers; use the accepted request for the former, and report
+the latter as unknown unless the current tools explicitly expose that state.
+
 ## Afterwards
 
 **Report success only after the tool returns**, and distinguish queue acceptance

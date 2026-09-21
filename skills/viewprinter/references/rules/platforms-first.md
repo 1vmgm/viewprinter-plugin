@@ -23,6 +23,32 @@ is treated.
 
 This is cheaper than composing a post, having it refused, and guessing.
 
+## A capability exists, but one connection rejects it
+
+The live capability response and a client's loaded tool schema can be different
+versions. Compare the exact option and enum in `platforms_list` with the current
+tool declaration. Distinguish stale displayed help from an actual runtime error.
+
+- Scope an error to the connection that returned it. One connector rejecting an
+  option does not establish a ViewPrinter or social-platform outage.
+- After a connection refresh, rediscover the available tools. An updated,
+  authenticated MCP connection may expose an option an older connector lacks.
+  Confirm its declaration and access to the intended account before using it.
+- Check structured errors and `isError` before reading a success payload. An
+  `additionalProperties` validation failure is not a saved or queued post.
+- A workspace permission restriction is not a stale-schema workaround: ask for
+  an authorized refresh or correction rather than bypassing that restriction.
+- Retry the same approved intent with the same idempotency key, checking for an
+  existing post first if the prior result was ambiguous. Never drop the rejected
+  option if doing so changes who sees the content or how it is published.
+
+For a newly exposed publishing option, validate an authorized request as a held
+`draft: true` post first. Preserve the exact request and accepted response, then
+release that same draft only when publication is already approved. A held draft
+does not prove the downstream platform will accept delivery; verify it separately.
+If no authorized connection supports the option, report the specific blocker
+with both schema versions rather than substituting a different post type.
+
 ## Three shapes that eliminate whole plans
 
 Check these against `platforms_list` rather than trusting the summary here, but

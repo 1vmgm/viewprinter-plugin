@@ -34,6 +34,21 @@ Complete browser sign-in; do not paste passwords or tokens into the conversation
 If a social account needs reconnecting after login, ask for an
 `accounts_connect` link for that account.
 
+## A trial option works in another agent but is rejected here
+
+Compare the exact connection and tool declaration with `platforms_list`. A
+client's cached schema may lack `platform_options.instagram.trialReel` even
+though the live service exposes `MANUAL` and `SS_PERFORMANCE`. An
+`additionalProperties` rejection is a failed request, not a queued post.
+
+Refresh the authorized connection and rediscover its schema. If the updated
+connection exposes the option, confirm account access, check for an existing
+post, and retry the approved intent as a held draft with the same idempotency
+key. Release it only with approval, and verify the destination's delivery.
+Do not route around workspace permissions, drop the trial option, or publish
+an ordinary Reel as a fallback. Report a persistent mismatch as a connector
+issue, not as evidence that Instagram trials are unavailable.
+
 ## An uploaded file is missing
 
 The workflow is reserve → PUT bytes → confirm. Reserving a URL alone does not
