@@ -18,12 +18,13 @@ absence.
 
 ## Per destination, not aggregate
 
-`posts_performance` reports each destination separately, because the same post
-does not do the same numbers everywhere. Summing them into one figure throws away
+`posts_list` reports numbers for each destination separately, because the same
+post does not do the same numbers everywhere. Summing them into one figure throws away
 the finding the user actually wants: which destination worked.
 
-`accounts_performance` gives followers, posts, total likes and following per
-account, each with how far it moved over the period, ordered by followers.
+`accounts_list` with `metrics: true` gives followers, posts, total likes and
+following per account, each with how far it moved over the period, ordered by
+followers.
 
 ## Context
 

@@ -11,7 +11,8 @@ nothing anywhere when they expected it staged on the platform.
 ## The two meanings
 
 - **`draft: true` on the post holds it in ViewPrinter.** Nothing is queued and
-  nothing reaches any platform. `posts_update` with `draft: false` sends it.
+  nothing reaches any platform. `posts_save` with its `post_id` and
+  `draft: false` sends it.
 - **The per-platform `draft` option inside `platform_options` uploads to the
   platform** for a creator to finish there.
 

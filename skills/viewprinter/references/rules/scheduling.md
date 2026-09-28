@@ -51,8 +51,8 @@ platform applies itself. Record the user's choices with the publishing request.
 
 ## Calling it
 
-`posts_schedule` records the intent and queues it (unless `draft: true`). A
-queued post can begin publishing immediately.
+`posts_save` without a `post_id` records the intent and queues it (unless
+`draft: true`). A queued post can begin publishing immediately.
 
 - Omit `scheduled_at` to send as soon as possible; otherwise pass ISO 8601.
   Resolve relative times ("tomorrow at 9") against the user's timezone and state
@@ -93,5 +93,6 @@ from delivery. A post that is queued has not yet gone out.
 
 ## Context
 
-- Applies to releasing a held draft as well as to a fresh post: `posts_update`
-  with `draft: false` sends it, and that needs the same approval.
+- Applies to releasing a held draft as well as to a fresh post: `posts_save`
+  with its `post_id` and `draft: false` sends it, and that needs the same
+  approval.

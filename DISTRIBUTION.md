@@ -10,7 +10,7 @@ MCP service remains hosted separately.
 | Codex | Portable package, compatibility manifest, repository marketplace | Local installation support; see verification |
 | Claude Code | Claude manifest and shared skills | Existing community marketplace path retained |
 | ClawHub | Generated single-skill bundle | Existing listing `@1vmgm/viewprinter-social-manager`; new builds are not automatically published |
-| OpenAI directory | Remote MCP submission with skills | **Pending review**, confirmed by the owner |
+| OpenAI directory | Remote MCP submission with skills | Published; the imported skill is 1.2.x until a new version is submitted with 1.3.0 |
 | LobeHub | No release | Deferred; repository access was declined |
 
 Version 1.2.0 is the local package version for this work, not a claim that it is
@@ -63,7 +63,7 @@ versioned release with the supported CLI. The existing workflow is:
 ```bash
 node clawhub/build.mjs
 npx clawhub skill publish clawhub/dist/viewprinter-social-manager \
-  --slug viewprinter-social-manager --owner 1vmgm --version 1.2.0 \
+  --slug viewprinter-social-manager --owner 1vmgm --version <version> \
   --changelog "Codex packaging and shared workflow updates" --categories automation \
   --topics viewprinter,tiktok,instagram,scheduling
 ```

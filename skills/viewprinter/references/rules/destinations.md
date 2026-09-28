@@ -28,18 +28,19 @@ plainly rather than letting them assume it updates.
 
 ## Changing a group
 
-`groups_update`'s `account_ids` is the **full membership afterwards, not a list
-to add.** Whatever you send replaces what was there. To add one account, send
-the existing members plus the new one. Omit `account_ids` entirely to rename or
-re-describe without touching membership.
+`groups_save` finds the group by name. Its `account_ids` is the **full
+membership afterwards, not a list to add.** Whatever you send replaces what was there. To add one account, send
+the existing members plus the new one. Omit `account_ids` entirely to rename
+(`new_name`) or re-describe without touching membership.
 
 **Getting this wrong silently empties a group.** There is no error; the group
 simply has fewer members than the user thinks.
 
 ## Context
 
-- `groups_create` — names are unique per workspace, matched without regard to
-  case, and all members must share a workspace.
+- `groups_save` with a name that does not exist creates the group, and then
+  needs `account_ids`. Names are unique per workspace, matched without regard
+  to case, and all members must share a workspace.
 - `groups_delete` removes the name and membership only. The accounts stay
   connected, and posts already scheduled through the group are unaffected,
   because a post records accounts rather than the group.

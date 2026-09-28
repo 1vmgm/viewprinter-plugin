@@ -13,7 +13,7 @@ description: >-
   does not support. A bare "post this" with no ViewPrinter account in play is not this
   skill.
 metadata:
-  version: "1.2.1"
+  version: "1.3.0"
 license: MIT
 allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts)
 ---
@@ -59,14 +59,14 @@ is not connected, and nothing below applies. Say so and hand it back:
 
 1. **See what exists** — `accounts_list`, `groups_list`, `media_list`
 2. **Learn the rules** — `platforms_list`, before composing anything
-3. **Get the media in** — `media_upload` → PUT → `media_confirm`
+3. **Get the media in** — `media_upload`, then PUT the bytes; that is all
 4. **Confirm label choices, then queue it** — ask about promotional-content and
-   AI labels before `posts_schedule` or releasing a draft; see
+   AI labels before `posts_save` creates a post or releases a draft; see
    `references/rules/scheduling.md`
-5. **Read what happened** — `posts_list`, `posts_performance`,
-   `accounts_performance`
+5. **Read what happened** — `posts_list` (filters, one post, numbers per
+   destination) and `accounts_list` with `metrics: true`
 
-Nothing publishes until `posts_schedule` returns. Do not tell anyone a post is
+Nothing publishes until `posts_save` returns. Do not tell anyone a post is
 scheduled before it does.
 
 ## Rules
@@ -76,7 +76,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | Rule | Priority | Covers |
 |---|---|---|
 | `platforms-first` | CRITICAL | Live platform rules and connection-specific schema mismatches |
-| `media-upload` | CRITICAL | Uploading is three steps, and step three is the one that counts |
+| `media-upload` | CRITICAL | Uploading is two steps, and the second is yours |
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |

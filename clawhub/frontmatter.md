@@ -13,7 +13,7 @@ description: >-
   does not support. A bare "post this" with no ViewPrinter account in play is not this
   skill.
 metadata:
-  version: "1.2.1"
+  version: "1.3.0"
 license: MIT
 allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts)
 ---

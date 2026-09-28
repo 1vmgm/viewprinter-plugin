@@ -4,7 +4,7 @@
 
 ## What goes wrong
 
-`posts_schedule` comes back saying publishing is not set up on the account, and
+`posts_save` comes back saying publishing is not set up on the account, and
 the response is either to invent a pending state that does not exist, or to turn
 the refusal into a pitch.
 
