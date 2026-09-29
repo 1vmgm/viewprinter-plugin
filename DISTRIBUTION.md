@@ -9,8 +9,8 @@ MCP service remains hosted separately.
 | --- | --- | --- |
 | Codex | Portable package, compatibility manifest, repository marketplace | Local installation support; see verification |
 | Claude Code | Claude manifest and shared skills | Existing community marketplace path retained |
-| ClawHub | Generated single-skill bundle | Existing listing `@1vmgm/viewprinter-social-manager`; new builds are not automatically published |
-| OpenAI directory | Remote MCP submission with skills | Published; the imported skill is 1.2.x until a new version is submitted with 1.3.0 |
+| ClawHub | Generated single-skill bundle | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
+| OpenAI directory | Remote MCP submission with skills | 1.0.0 published; 1.3.1 (skill 1.3.1, widgets in the tool scan) replacing the 1.3.0 review, 2026-09-29 |
 | LobeHub | No release | Deferred; repository access was declined |
 
 Version 1.2.0 is the local package version for this work, not a claim that it is
