@@ -9,16 +9,30 @@ through the API — they go straight to storage — so one tool call cannot do i
 
 Stopping after step one leaves nothing: the URL expires and no file exists.
 
-## The flow
+## When the person has the file
+
+They attached it in the chat, or it is on their phone or computer. Call
+**`media_upload` with no arguments**, as an ordinary tool call — not from
+code, and without trying to send the file yourself. Chat apps that show
+widgets (Claude, ChatGPT) put an upload box under the call: tell the person to
+use it. It takes one video or up to ten photos, and posts their media ids to
+the chat, in picking order, when they are in. Where no box appears, give them
+`upload_page` — any device, no sign-in, an hour.
+
+## When you hold the file
+
+A terminal agent or a server that can make HTTP requests:
 
 1. **`media_upload`** — pass `kind` and the exact `mime_type` the PUT will send.
    Returns an `id`, a short-lived `url`, and `expires_in_seconds`.
 2. **PUT the bytes to that `url`** yourself, with a `Content-Type` matching the
    `mime_type` you declared, and no other headers. A mismatch fails the upload.
 
-That is all. The file is recorded on its own once the PUT succeeds: pass the
-`id` to `posts_save`, `media_save` or anything else that takes a media id
-straight away. It shows in `media_list` within a few minutes.
+Apps that show widgets never get `url` — the box is the way there.
+
+Either way the file is recorded on its own once it arrives: pass the `id` to
+`posts_save`, `media_save` or anything else that takes a media id. It shows in
+`media_list` within a few minutes.
 
 If a flow is interrupted after a successful PUT, use the id you already have —
 do not start a new upload.
