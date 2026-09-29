@@ -1,7 +1,7 @@
 {
   "skill_name": "viewprinter",
   "skill": "viewprinter-social-manager",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Scenario tests for the ViewPrinter skill. A run passes only when every item in 'expect' is satisfied. The refusal and honesty scenarios are mandatory: each one encodes a mistake that has actually been made, in this product or in its app-store review.",
   "evals": [
     {
