@@ -47,13 +47,41 @@ def codex_manifest(root):
     return json.dumps(manifest, indent=2) + '\n'
 
 
+# Cursor's Marketplace reads .cursor-plugin/plugin.json. Its MCP entries infer
+# the transport from `url` and do not document a `type`, so the server is given
+# inline as a bare URL rather than pointing at either mcp file: the portable one
+# says "streamable-http" and Claude's says "http", and Cursor names neither.
+CURSOR_IDENTITY = CODEX_IDENTITY + ('keywords',)
+
+
+def cursor_manifest(root):
+    """Build .cursor-plugin/plugin.json from the portable manifest."""
+    portable = json.loads(safe_path(root, 'plugin.json').read_text())
+    servers = json.loads(safe_path(root, 'mcp.json').read_text())['mcpServers']
+    manifest = {'name': portable['name'],
+                'displayName': portable['extensions']['com.openai']['interface']['displayName']}
+    manifest.update({key: portable[key] for key in CURSOR_IDENTITY if key != 'name'})
+    manifest['logo'] = 'assets/logo.png'
+    manifest['skills'] = './skills/'
+    manifest['mcpServers'] = {name: {'url': server['url']} for name, server in servers.items()}
+    return json.dumps(manifest, indent=2) + '\n'
+
+
+DERIVED = (('.codex-plugin/plugin.json', codex_manifest),
+           ('.cursor-plugin/plugin.json', cursor_manifest))
+
+
 def sync_codex(root):
-    path = safe_path(root, '.codex-plugin/plugin.json')
-    generated = codex_manifest(root)
-    if path.read_text() != generated:
-        path.write_text(generated)
-        return True
-    return False
+    """Regenerate every derived manifest; True when any file changed."""
+    changed = False
+    for name, build in DERIVED:
+        path = safe_path(root, name)
+        generated = build(root)
+        if not path.exists() or path.read_text() != generated:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(generated)
+            changed = True
+    return changed
 
 
 def set_version(root, version):
@@ -105,11 +133,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('version', nargs='?', help='Release version, for example 1.2.1')
     parser.add_argument('--dev', action='store_true', help='Replace build metadata with a fresh local Codex suffix')
-    parser.add_argument('--sync', action='store_true', help='Regenerate .codex-plugin/plugin.json from plugin.json and exit')
+    parser.add_argument('--sync', action='store_true', help='Regenerate the derived Codex and Cursor manifests from plugin.json and exit')
     args = parser.parse_args()
     if args.sync:
         changed = sync_codex(ROOT)
-        print('Regenerated .codex-plugin/plugin.json' if changed else '.codex-plugin/plugin.json already matches plugin.json')
+        print('Regenerated derived manifests' if changed else 'Derived manifests already match plugin.json')
         return
     if bool(args.version) == args.dev:
         parser.error('Provide a version or --dev, but not both')

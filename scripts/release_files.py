@@ -3,7 +3,7 @@ from pathlib import Path, PurePosixPath
 
 
 PLUGIN_FILES = (
-    'plugin.json', 'mcp.json', '.codex-plugin/plugin.json',
+    'plugin.json', 'mcp.json', '.codex-plugin/plugin.json', '.cursor-plugin/plugin.json',
     '.claude-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json',
     'README.md', 'DISTRIBUTION.md', 'LICENSE', 'assets/logo.png',
     'skills/viewprinter/SKILL.md',

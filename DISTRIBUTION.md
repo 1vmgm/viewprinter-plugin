@@ -11,6 +11,7 @@ MCP service remains hosted separately.
 | Claude Code | Claude manifest and shared skills | Existing community marketplace path retained |
 | ClawHub | Generated single-skill bundle | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
 | OpenAI directory | Remote MCP submission with skills | 1.0.0 published; 1.3.1 (skill 1.3.1, widgets in the tool scan) replacing the 1.3.0 review, 2026-09-29 |
+| Cursor Marketplace | `.cursor-plugin/plugin.json`, derived from `plugin.json` by `set_version.py`; remote server inline as a bare URL | Manifest added 2026-09-29; not yet submitted at cursor.com/marketplace/publish (manual review) |
 | LobeHub | No release | Deferred; repository access was declined |
 
 Version 1.2.0 is the local package version for this work, not a claim that it is
