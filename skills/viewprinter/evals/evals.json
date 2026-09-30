@@ -337,6 +337,41 @@
         "does not create a second post"
       ],
       "files": []
+    },
+    {
+      "id": 22,
+      "name": "caption-edit-keeps-delivery",
+      "rules": [
+        "captions",
+        "amend-and-cancel"
+      ],
+      "prompt": "Change the Facebook caption on tomorrow's post to the new one I sent.",
+      "expected_output": "reads the post's destinations and changes only the words, without touching time or other platforms",
+      "assertions": [
+        "reads the post's destinations before editing",
+        "notices when the caption is shared with other platforms and asks before changing their copy",
+        "calls posts_save with post_id and content only, without scheduled_at",
+        "sends real line breaks, not literal \\n text",
+        "reports the edit only after the tool returns"
+      ],
+      "files": []
+    },
+    {
+      "id": 23,
+      "name": "caption-is-native-and-truthful",
+      "rules": [
+        "captions"
+      ],
+      "prompt": "Write the TikTok and Instagram captions for this demo video and schedule them.",
+      "expected_output": "writes a caption per platform from the video's specifics and the user's brief, with one next step and no invented claims",
+      "assertions": [
+        "writes a different caption for each platform rather than pasting one everywhere",
+        "opens with a specific detail from the video instead of a generic line",
+        "uses one call to action, taken from the user's brief or asked for",
+        "does not invent a customer story, result or guarantee",
+        "checks lengths against platforms_list"
+      ],
+      "files": []
     }
   ]
 }

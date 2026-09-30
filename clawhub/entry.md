@@ -31,7 +31,7 @@ truth for what can publish and what each one accepts. See
 
 ## If the tools are not there yet
 
-The nine rules below all assume `platforms_list`, `media_upload` and the rest are
+The ten rules below all assume `platforms_list`, `media_upload` and the rest are
 callable. Installed as a plugin they are — the manifest brings the server. But a
 skill can be installed on its own, and then none of them exist.
 
@@ -80,6 +80,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |
+| `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `refusals` | HIGH | A refused post was never saved, and is not a sales opening |
 | `amend-and-cancel` | HIGH | What can still be changed, and what cannot be recalled |
 | `connecting` | MEDIUM | Only the user can finish it |

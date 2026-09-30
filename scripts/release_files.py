@@ -7,7 +7,7 @@ PLUGIN_FILES = (
     '.claude-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json',
     'README.md', 'DISTRIBUTION.md', 'LICENSE', 'assets/logo.png',
     'skills/viewprinter/SKILL.md',
-    'skills/viewprinter/references/rules/amend-and-cancel.md', 'skills/viewprinter/references/rules/connecting.md',
+    'skills/viewprinter/references/rules/amend-and-cancel.md', 'skills/viewprinter/references/rules/captions.md', 'skills/viewprinter/references/rules/connecting.md',
     'skills/viewprinter/references/rules/destinations.md', 'skills/viewprinter/references/rules/drafts.md',
     'skills/viewprinter/references/rules/media-upload.md', 'skills/viewprinter/references/rules/platforms-first.md',
     'skills/viewprinter/references/rules/reading-results.md', 'skills/viewprinter/references/rules/refusals.md',
@@ -23,7 +23,7 @@ PLUGIN_FILES = (
 
 SINGLE_SKILL_FILES = (
     'SKILL.md',
-    'references/rules/amend-and-cancel.md', 'references/rules/connecting.md',
+    'references/rules/amend-and-cancel.md', 'references/rules/captions.md', 'references/rules/connecting.md',
     'references/rules/destinations.md', 'references/rules/drafts.md',
     'references/rules/media-upload.md', 'references/rules/platforms-first.md',
     'references/rules/reading-results.md', 'references/rules/refusals.md',
