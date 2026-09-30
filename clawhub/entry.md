@@ -5,7 +5,8 @@ description: >-
   publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading, describing,
   listing or PERMANENTLY DELETING media held in ViewPrinter; amending or cancelling a post
   that has not gone out; managing named groups of accounts; and reading follower and post
-  performance. Two capabilities are destructive and irreversible: publishing to a real
+  performance, including linking each post to the video and format that made it and
+  comparing it with the account's own normal. Two capabilities are destructive and irreversible: publishing to a real
   public account, and media_delete, which erases a stored file and its bytes. Listing media
   or posts reads everything in the user's ViewPrinter workspaces, not just one item.
   Requires ViewPrinter to be connected — do NOT use it to draft copy the user has no
@@ -13,9 +14,11 @@ description: >-
   does not support. A bare "post this" with no ViewPrinter account in play is not this
   skill.
 metadata:
-  version: "1.3.1"
+  version: "1.4.0"
 license: MIT
-allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts)
+allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts), and
+  scripts/learn.py, a local Python helper that reads saved post lists and writes
+  link records inside the project; it makes no network calls
 ---
 
 # ViewPrinter
@@ -31,7 +34,7 @@ truth for what can publish and what each one accepts. See
 
 ## If the tools are not there yet
 
-The ten rules below all assume `platforms_list`, `media_upload` and the rest are
+The eleven rules below all assume `platforms_list`, `media_upload` and the rest are
 callable. Installed as a plugin they are — the manifest brings the server. But a
 skill can be installed on its own, and then none of them exist.
 
@@ -54,6 +57,7 @@ is not connected, and nothing below applies. Say so and hand it back:
 - Grouping accounts so a post can name the set instead of listing ids
 - Uploading an image or video to attach to a post
 - Asking how a post did, or how an account is growing
+- Asking which posts or formats worked, and what to make more of
 
 ## The shape of the work
 
@@ -64,7 +68,8 @@ is not connected, and nothing below applies. Say so and hand it back:
    AI labels before `posts_save` creates a post or releases a draft; see
    `references/rules/scheduling.md`
 5. **Read what happened** — `posts_list` (filters, one post, numbers per
-   destination) and `accounts_list` with `metrics: true`
+   destination) and `accounts_list` with `metrics: true`; to learn which formats
+   work, link each post when it is scheduled and compare fairly (`learning`)
 
 Nothing publishes until `posts_save` returns. Do not tell anyone a post is
 scheduled before it does.
@@ -80,11 +85,12 @@ Read the one that covers what you are about to do. Do not read all of them.
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |
-| `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `refusals` | HIGH | A refused post was never saved, and is not a sales opening |
 | `amend-and-cancel` | HIGH | What can still be changed, and what cannot be recalled |
+| `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `connecting` | MEDIUM | Only the user can finish it |
 | `reading-results` | MEDIUM | Measured when it was measured, and missing is not zero |
+| `learning` | MEDIUM | Link each post to what made it, compare with its own account's normal, decide what to make more of |
 
 ## Honesty constraints that hold everywhere
 

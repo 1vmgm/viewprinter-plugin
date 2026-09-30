@@ -1,7 +1,7 @@
 {
   "skill_name": "viewprinter",
   "skill": "viewprinter-social-manager",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Scenario tests for the ViewPrinter skill. A run passes only when every item in 'expect' is satisfied. The refusal and honesty scenarios are mandatory: each one encodes a mistake that has actually been made, in this product or in its app-store review.",
   "evals": [
     {
@@ -370,6 +370,57 @@
         "uses one call to action, taken from the user's brief or asked for",
         "does not invent a customer story, result or guarantee",
         "checks lengths against platforms_list"
+      ],
+      "files": []
+    },
+    {
+      "id": 24,
+      "name": "compares-within-account-and-age",
+      "rules": [
+        "learning",
+        "reading-results"
+      ],
+      "prompt": "Which of our video formats is working? Tell me what to make more of.",
+      "expected_output": "collects every page of posts_list, runs the learning report, and presents per-format suggestions with their evidence for the user to decide",
+      "assertions": [
+        "collects every posts_list page for the accounts involved rather than a ranked sample",
+        "compares each post only with its own account's posts of similar age and the same trial or ordinary mode",
+        "keeps promoted posts out of the comparison and says so",
+        "presents double down, vary, retire or keep testing as suggestions with the evidence behind each",
+        "does not claim installs or sales from views or engagement"
+      ],
+      "files": []
+    },
+    {
+      "id": 25,
+      "name": "one-viral-post-is-not-a-format",
+      "rules": [
+        "learning"
+      ],
+      "prompt": "This one video got 300k views. Should we make everything like it?",
+      "expected_output": "explains that one outlier does not prove a format and proposes varying around it one change at a time",
+      "assertions": [
+        "does not call the format a winner from one post",
+        "uses the format's median and share of posts above the account's normal",
+        "proposes changing one thing at a time around the outlier"
+      ],
+      "files": []
+    },
+    {
+      "id": 26,
+      "name": "links-each-post-at-scheduling",
+      "rules": [
+        "learning",
+        "scheduling"
+      ],
+      "prompt": "Schedule these three approved videos for tomorrow and make sure we can learn from them later.",
+      "context": "The videos come from a batch with item names and versions. Posting is approved.",
+      "expected_output": "after posts_save returns, records one link per destination with post id, account id, batch, item, version and format",
+      "assertions": [
+        "links each destination right after scheduling, not weeks later",
+        "uses the post id and account id as the key",
+        "does not match posts to videos by caption",
+        "treats a destination with no measurement yet as unmeasured, not zero"
       ],
       "files": []
     }

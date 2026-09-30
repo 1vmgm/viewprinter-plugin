@@ -1,6 +1,6 @@
 ---
 name: viewprinter
-description: Schedule and publish social posts to TikTok, Instagram, Facebook, YouTube and X through ViewPrinter — connecting accounts, uploading media, queueing and amending posts, and reading how they performed. Use when the user wants to post, schedule, draft, reschedule or cancel something, connect or reconnect a social account, organise accounts into groups, upload a video or image, or ask how a post or account is doing.
+description: Schedule and publish social posts to TikTok, Instagram, Facebook, YouTube and X through ViewPrinter — connecting accounts, uploading media, queueing and amending posts, reading how they performed, and learning which posts and formats worked. Use when the user wants to post, schedule, draft, reschedule or cancel something, connect or reconnect a social account, organise accounts into groups, upload a video or image, or ask how a post or account is doing or which formats to make more of.
 ---
 
 # ViewPrinter
@@ -16,7 +16,7 @@ truth for what can publish and what each one accepts. See
 
 ## If the tools are not there yet
 
-The ten rules below all assume `platforms_list`, `media_upload` and the rest are
+The eleven rules below all assume `platforms_list`, `media_upload` and the rest are
 callable. Installed as a plugin they are — the manifest brings the server. But a
 skill can be installed on its own, and then none of them exist.
 
@@ -39,6 +39,7 @@ is not connected, and nothing below applies. Say so and hand it back:
 - Grouping accounts so a post can name the set instead of listing ids
 - Uploading an image or video to attach to a post
 - Asking how a post did, or how an account is growing
+- Asking which posts or formats worked, and what to make more of
 
 ## The shape of the work
 
@@ -49,7 +50,8 @@ is not connected, and nothing below applies. Say so and hand it back:
    AI labels before `posts_save` creates a post or releases a draft; see
    `references/rules/scheduling.md`
 5. **Read what happened** — `posts_list` (filters, one post, numbers per
-   destination) and `accounts_list` with `metrics: true`
+   destination) and `accounts_list` with `metrics: true`; to learn which formats
+   work, link each post when it is scheduled and compare fairly (`learning`)
 
 Nothing publishes until `posts_save` returns. Do not tell anyone a post is
 scheduled before it does.
@@ -65,11 +67,12 @@ Read the one that covers what you are about to do. Do not read all of them.
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |
-| `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `refusals` | HIGH | A refused post was never saved, and is not a sales opening |
 | `amend-and-cancel` | HIGH | What can still be changed, and what cannot be recalled |
+| `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `connecting` | MEDIUM | Only the user can finish it |
 | `reading-results` | MEDIUM | Measured when it was measured, and missing is not zero |
+| `learning` | MEDIUM | Link each post to what made it, compare with its own account's normal, decide what to make more of |
 
 ## Honesty constraints that hold everywhere
 

@@ -66,6 +66,9 @@ await writeFile(join(here, 'entry.md'), entry)
 await writeFile(join(out, 'SKILL.md'), entry)
 await mkdir(join(out, 'evals'), { recursive: true })
 await cp(join(SKILL, 'evals', 'evals.json'), join(out, 'evals', 'evals.json'))
+// The learning rule runs this helper, so it ships with the rule that names it.
+await mkdir(join(out, 'scripts'), { recursive: true })
+await cp(join(SKILL, 'scripts', 'learn.py'), join(out, 'scripts', 'learn.py'))
 
 for (const name of REFERENCES) {
   const src = await readFile(join(SKILL, 'references', 'rules', `${name}.md`), 'utf8')

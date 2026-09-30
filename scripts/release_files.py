@@ -7,7 +7,7 @@ PLUGIN_FILES = (
     '.claude-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json',
     'README.md', 'DISTRIBUTION.md', 'LICENSE', 'assets/logo.png',
     'skills/viewprinter/SKILL.md',
-    'skills/viewprinter/references/rules/amend-and-cancel.md', 'skills/viewprinter/references/rules/captions.md', 'skills/viewprinter/references/rules/connecting.md',
+    'skills/viewprinter/references/rules/amend-and-cancel.md', 'skills/viewprinter/references/rules/captions.md', 'skills/viewprinter/references/rules/learning.md', 'skills/viewprinter/references/rules/connecting.md',
     'skills/viewprinter/references/rules/destinations.md', 'skills/viewprinter/references/rules/drafts.md',
     'skills/viewprinter/references/rules/media-upload.md', 'skills/viewprinter/references/rules/platforms-first.md',
     'skills/viewprinter/references/rules/reading-results.md', 'skills/viewprinter/references/rules/refusals.md',
@@ -18,16 +18,17 @@ PLUGIN_FILES = (
     'scripts/validate.py', 'scripts/release_files.py', 'scripts/set_version.py',
     'scripts/test_release.py', 'scripts/requirements.txt',
     'scripts/plugin.schema.json', 'scripts/mcp.schema.json', 'scripts/lint-shape.sh', 'scripts/lint-portability.sh',
-    'skills/viewprinter/scripts/preflight.sh', 'skills/viewprinter/evals/evals.json',
+    'skills/viewprinter/scripts/preflight.sh', 'skills/viewprinter/scripts/learn.py', 'skills/viewprinter/scripts/test_learn.py', 'skills/viewprinter/evals/evals.json',
 )
 
 SINGLE_SKILL_FILES = (
     'SKILL.md',
-    'references/rules/amend-and-cancel.md', 'references/rules/captions.md', 'references/rules/connecting.md',
+    'references/rules/amend-and-cancel.md', 'references/rules/captions.md', 'references/rules/learning.md', 'references/rules/connecting.md',
     'references/rules/destinations.md', 'references/rules/drafts.md',
     'references/rules/media-upload.md', 'references/rules/platforms-first.md',
     'references/rules/reading-results.md', 'references/rules/refusals.md',
     'references/rules/scheduling.md',
+    'scripts/learn.py',
     'evals/evals.json',
 )
 
