@@ -1,0 +1,5 @@
+#!/bin/sh
+# This repository is public. Refuse a commit that carries account or post ids,
+# home paths, private addresses, or anything in private/denylist.txt.
+# Enable once per clone: git config core.hooksPath .githooks
+exec python3 scripts/lint_privacy.py --staged
