@@ -18,6 +18,12 @@ details. **State the resolved time and destinations before the action.**
 
 Publishing cannot be recalled by these tools.
 
+For a bulk instruction that refers to existing work, reconcile the approved,
+unscheduled inventory across the conversation's batches before choosing the
+count. Keep source batch, item and final version with every placement; the most
+recent gallery section is not necessarily the complete requested scope. State
+the resolved inventory and use the authorization already given.
+
 ## Promotional-content and AI labels require an explicit choice
 
 **Always ask whether the user wants promotional-content and AI labels before
@@ -66,6 +72,30 @@ platform applies itself. Record the user's choices with the publishing request.
 
 ## Instagram trial reels
 
+### Check the account, not just the option
+
+`platforms_list` reporting `trialReel` means ViewPrinter supports the option;
+it does not establish that a particular Instagram account can use it. An
+active connection and content-publishing permission do not establish trial
+eligibility either. This matters especially for a newly connected account.
+
+Check the current "About trial reels" guidance in the Instagram Help Center
+for public-account, account-type, follower and recommendation requirements.
+Follower thresholds can change; do not treat a remembered number or secondary
+report as a verified current rule. Account metrics may be stale or absent;
+missing followers are unknown, not zero.
+
+Before a bulk trial rollout on an account without known trial access, look for
+an explicit account eligibility result, or confirm the Trial option in its
+Instagram sharing screen. If neither is available, report eligibility as
+unverified. A held ViewPrinter draft validates the request, not Instagram's
+acceptance. Any limited publishing check still needs authorization; if it is
+refused, preserve the error and stop the dependent rollout. Never silently
+substitute regular Reels. A successful trial on one account proves nothing
+about another account's eligibility.
+
+### Preserve the audience and promotion choice
+
 When the live capabilities and connected schema expose `trialReel`, preserve
 the user's chosen audience and promotion mode:
 
@@ -91,10 +121,36 @@ the latter as unknown unless the current tools explicitly expose that state.
 **Report success only after the tool returns**, and distinguish queue acceptance
 from delivery. A post that is queued has not yet gone out.
 
+For a batch, record a checkpoint after each successful save and readback, before
+starting the next placement:
+
+    python3 scripts/learn.py checkpoint --batch <batch> --item <item> --version <n> \
+      --account-id <account> --key <idempotency-key> --post-id <post> \
+      --status saved [--details <file.json>|-]
+
+Statuses are `held`, `saved`, `verified`, `amended`, `canceled` and `failed`. Pass the
+idempotency key on every event: it is how a failed save is matched to the retry that
+succeeds. Each event is one line in the batch's log, `history/posting/<batch>.jsonl`,
+never a file per post or destination. `--details` carries only what a resume needs: the accepted
+settings `posts_list` does not return, or the fields a readback verified. Do not keep
+whole `posts_list` pages per destination. A later refusal does not roll back earlier
+successes: run `learn.py checkpoints --batch <batch>` and reconcile it with the live
+queue before reporting the saved count or retrying. Compare complete creative/version
+IDs and idempotency keys; similarly named A/B variants are not the same request.
+Never change a key to force a retry past a duplicate warning.
+
 Keep the returned post id and each destination's account id with what was posted:
 the file, its version and the batch it came from. A result can only be traced back
 to the version that earned it if that record is made now: `scripts/learn.py link`,
 described in `learning`.
+
+Separate accepted request settings from independent readback evidence. Verify
+the fields `posts_list` actually returns, and keep the exact accepted value in the
+saved checkpoint's details for settings it does not expose, such as a cover or
+disclosure flag. Do not say
+an unreturned setting was read back. Report a requested but unsupported setting
+as a capability gap, preserving the user's choice while unaffected placements
+continue; omission is only acceptable when their instructions cover it.
 
 ## Context
 

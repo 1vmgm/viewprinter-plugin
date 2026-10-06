@@ -46,7 +46,7 @@ const REFERENCES = (await readdir(join(SKILL, 'references', 'rules')))
 async function generateEntryPoint() {
   const frontmatter = (await readFile(join(here, 'frontmatter.md'), 'utf8')).trimEnd()
   const canonical = await readFile(join(SKILL, 'SKILL.md'), 'utf8')
-  const body = canonical.replace(/^---\n[\s\S]*?\n---\n/, '').trimStart()
+  const body = canonical.replace(/^---\n[\s\S]*?\n---\n/, '').trimStart().replaceAll('../account-group-review/', 'account-group-review/')
   return `${frontmatter}\n\n${body}`
 }
 
@@ -78,7 +78,7 @@ for (const name of REFERENCES) {
   // whether to LOAD the skill. Inside the package these are reference
   // documents already chosen, so frontmatter would be a second, conflicting
   // description. Kept as a safeguard in case a reference ever grows one.
-  const body = src.replace(/^---\n[\s\S]*?\n---\n/, '').trimStart()
+  const body = src.replace(/^---\n[\s\S]*?\n---\n/, '').trimStart().replaceAll('../account-group-review/', 'account-group-review/')
 
   // Written with no provenance header. An HTML comment saying where the file
   // came from reads to a security scanner as hidden instructions — ClawHub's
@@ -88,5 +88,7 @@ for (const name of REFERENCES) {
   // repo, not smuggled into the artifact where only a machine reads it.
   await writeFile(join(out, 'references', 'rules', `${name}.md`), body)
 }
+
+await cp(join(repo, 'skills', 'account-group-review'), join(out, 'account-group-review'), {recursive:true, filter: source => !source.includes('__pycache__') && !source.split('/').at(-1).startsWith('test_')})
 
 console.log(`built ${out} with ${REFERENCES.length} references`)

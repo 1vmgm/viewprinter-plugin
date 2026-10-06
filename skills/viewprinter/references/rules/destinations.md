@@ -26,6 +26,19 @@ the whole composition.
 members, now". If the user's intent is "always everyone in this group", say so
 plainly rather than letting them assume it updates.
 
+## Respect confirmed account roles
+
+Before assigning existing creative to an account, check the user's current account-role
+mapping and project routing memory. A similar handle, product name, active connection,
+or an older proposed plan does not override a confirmed role such as UGC or memes.
+Keep confirmed routes distinct from proposals and preserve the stable account IDs.
+Use authorization already given; ask for a replacement handle only when it is missing.
+When a named format is a subset of a mixed batch, state the exact format and count
+being moved so the remaining formats are not silently reassigned.
+If the user explicitly groups several formats into one account lane, carry all of
+those formats together. An account called “UGC” can include adjacent formats; do
+not narrow the user’s grouping to a technical `ugc-hook-demo` format identifier.
+
 ## Changing a group
 
 `groups_save` finds the group by name. Its `account_ids` is the **full

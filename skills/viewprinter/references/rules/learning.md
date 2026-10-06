@@ -38,6 +38,25 @@ Run this once for each destination `posts_save` returns, while the details are a
 - To backfill, use only receipts that name the post id. Never match posts to videos by
   caption or by how they look.
 
+### Keep review galleries synchronized
+
+When the creative has an ongoing content-production format, keep its canonical
+review and exact item/version IDs. Record the complete intended workspace/account
+plan in each item's `distribution.targets`, including authorized destinations that
+have not yet saved successfully. A successful subset must not look like a complete
+plan. Preserve rejected or withdrawn destinations with an explicit reason.
+
+Store finalized native `captions` (and YouTube title), copyRevision, media hash and
+approval/finalization evidence with that version. After linking every destination,
+save dated `posts_list` readbacks and run the content-production skill's
+`review_delivery.py`, then `review_gallery.py`. See its workspace reference for the
+manifest and receipt schemas. Keep accepted request fields separately when readback
+does not expose them; never label those fields independently verified.
+
+The local review finishes at scheduling. Refresh it after the accepted handoff or an explicitly requested creative/copy revision; do not keep it polling publication status. Every required destination must have an accepted receipt before the item is Scheduled. A published receipt can establish past scheduling, but the review has no Posted stage. Later delivery failures and performance are managed in the ViewPrinter product, not reopened as review tasks. Preserve accepted scheduling evidence and original observation times when importing later delivery records for learning.
+
+New creative versions, changed copy/media or added required destinations need their own matching handoff. A new unscheduled batch makes its existing format active again. Archive is an optional local organization action, independent of scheduling; it preserves source files and remote posts. This bookkeeping does not authorize additional publication, remote group changes or deployment.
+
 ## Compare fairly
 
 1. **Collect everything**: `posts_list` for the accounts involved, every source and
@@ -77,3 +96,15 @@ format does when it wins reach but not engagement, or the reverse.
 - Changing the hook, song, cover and length together is exploration. A controlled test
   changes one thing.
 - Views, reach and engagement do not show installs or sales.
+
+## Inspect the creative behind the numbers
+
+Match the published media to its source export before diagnosing why it worked. Post
+captions are not on-screen hooks, and a current preferred generator is not evidence of
+which model made an older winner: use the source requests or mark it unknown.
+
+A video-analysis model can extract candidate text and visual events. When possible,
+withhold performance counts during that first pass, then check its observations against
+the exported frames and edit timeline. Estimated timestamps and inferred viewer motives
+are not measurements. Compare both strong posts and relevant weaker peers; an observed
+creative difference is a hypothesis until a fair test isolates it.

@@ -49,6 +49,19 @@ does not prove the downstream platform will accept delivery; verify it separatel
 If no authorized connection supports the option, report the specific blocker
 with both schema versions rather than substituting a different post type.
 
+## Publishing controls and editorial advice are different
+
+An empty platform-options schema means this connection exposes no optional
+controls for that platform. Do not borrow another platform's cover, AI or
+promotional-label keys. Record the user's explicit choice and report any
+requested control the integration cannot supply. Automatic platform labeling
+may still occur; a missing disclosure flag does not prove that it always will.
+
+Use live limits and supported fields to construct a valid request. Editorial
+notes about ideal length or performance are not universal measured results.
+Preserve the user's approved description and platform-specific writing brief;
+see `captions.md` before changing copy to follow a generic performance claim.
+
 ## Three shapes that eliminate whole plans
 
 Check these against `platforms_list` rather than trusting the summary here, but

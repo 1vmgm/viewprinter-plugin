@@ -77,16 +77,20 @@ def validate():
     require(legacy_mcp['type'] == 'http', 'Claude transport')
     require(legacy_mcp['url'] == mcp['mcpServers']['viewprinter']['url'] == 'https://viewprinter.tech/api/mcp', 'Endpoint drift')
 
-    # One skill, with its rules beside it. It was three top-level skills until
-    # the platform rules — which govern what you may upload as much as what you
-    # may post — had to live in one of them and were missing from the others.
+    # Publishing stays consolidated; companion workflows can be separate skills.
     skills = sorted(path for path in (ROOT / 'skills').iterdir() if path.is_dir())
-    require(len(skills) == 1, f'Expected one skill, found {len(skills)}')
-    skill = skills[0]
+    require(any(path.name == 'viewprinter' for path in skills), 'Missing publishing skill')
+    for candidate in skills:
+        candidate_text = (candidate / 'SKILL.md').read_text()
+        metadata = yaml.safe_load(candidate_text.split('---', 2)[1])
+        require(metadata['name'] == candidate.name, f'Skill name: {candidate.name}')
+        require(isinstance(metadata['description'], str) and metadata['description'].strip(),
+                f'Description: {candidate.name}')
+        preflight = candidate / 'scripts' / 'preflight.sh'
+        require(preflight.is_file() and preflight.stat().st_mode & 0o111,
+                f'Missing executable preflight: {candidate.name}')
+    skill = ROOT / 'skills' / 'viewprinter'
     text = (skill / 'SKILL.md').read_text()
-    metadata = yaml.safe_load(text.split('---', 2)[1])
-    require(metadata['name'] == skill.name, f'Skill name: {skill.name}')
-    require(isinstance(metadata['description'], str) and metadata['description'].strip(), f'Description: {skill.name}')
 
     # Every rule is routed to from SKILL.md and every route resolves. A rule
     # nothing points at is never read; a route with no file is a dead end the
@@ -152,7 +156,7 @@ def validate():
                 continue
             relative = target.split('#', 1)[0]
             require((path.parent / relative).exists(), f'Broken link in {path.name}: {target}')
-    print(f'Package valid: {portable["name"]} {portable["version"]}; 1 skill, {len(references)} references; {len(names)} evaluation cases (definitions only).')
+    print(f'Package valid: {portable["name"]} {portable["version"]}; {len(skills)} skills, {len(references)} publishing references; {len(names)} evaluation cases (definitions only).')
 
 
 if __name__ == '__main__':

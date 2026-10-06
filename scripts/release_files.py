@@ -7,6 +7,19 @@ PLUGIN_FILES = (
     '.claude-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json',
     'README.md', 'DISTRIBUTION.md', 'LICENSE', 'assets/logo.png',
     'skills/viewprinter/SKILL.md',
+    'skills/account-group-review/SKILL.md',
+    'skills/account-group-review/references/brief.md',
+    'skills/account-group-review/references/facebook.md',
+    'skills/account-group-review/references/instagram.md',
+    'skills/account-group-review/references/research.json',
+    'skills/account-group-review/references/research.md',
+    'skills/account-group-review/references/tiktok.md',
+    'skills/account-group-review/references/youtube.md',
+    'skills/account-group-review/scripts/build_review.py',
+    'skills/account-group-review/scripts/shared_identity.py',
+    'skills/account-group-review/scripts/test_shared_identity.py',
+    'skills/account-group-review/scripts/preflight.sh',
+    'skills/account-group-review/templates/group.json',
     'skills/viewprinter/references/rules/amend-and-cancel.md', 'skills/viewprinter/references/rules/captions.md', 'skills/viewprinter/references/rules/learning.md', 'skills/viewprinter/references/rules/connecting.md',
     'skills/viewprinter/references/rules/destinations.md', 'skills/viewprinter/references/rules/drafts.md',
     'skills/viewprinter/references/rules/media-upload.md', 'skills/viewprinter/references/rules/platforms-first.md',
@@ -33,6 +46,10 @@ SINGLE_SKILL_FILES = (
 )
 
 
+ACCOUNT_FILES = tuple(n for n in PLUGIN_FILES if n.startswith('skills/account-group-review/') and '/test_' not in n)
+SINGLE_SKILL_FILES += tuple(n.removeprefix('skills/') for n in ACCOUNT_FILES)
+
+
 def clawhub_entry(root):
     """ClawHub's SKILL.md: its own frontmatter, the canonical skill's body.
 
@@ -42,7 +59,7 @@ def clawhub_entry(root):
     import re
     frontmatter = (root / 'clawhub' / 'frontmatter.md').read_text().rstrip('\n')
     canonical = (root / 'skills' / 'viewprinter' / 'SKILL.md').read_text()
-    body = re.sub(r'\A---\n.*?\n---\n', '', canonical, count=1, flags=re.S).lstrip()
+    body = re.sub(r'\A---\n.*?\n---\n', '', canonical, count=1, flags=re.S).lstrip().replace('../account-group-review/', 'account-group-review/')
     return f'{frontmatter}\n\n{body}'
 
 

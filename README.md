@@ -18,8 +18,11 @@ because the skills CLI has no MCP handling. For both together, install the
 plugin in Claude Code or Codex (below).
 
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
-and includes one skill covering posting, media and accounts, which routes to nine
-rules read only when they apply. The skill teaches the workflow; the hosted MCP
+and includes skills for publishing and account-group reviews. The `viewprinter`
+skill covers posting, media, connections and performance. `account-group-review`
+prepares reusable profile handoffs with branding, link options, safe areas and
+dated feature requirements for Instagram, TikTok, Facebook and YouTube. Groups
+can use any subset; account-specific briefs stay in your project. The hosted MCP
 service provides the tools.
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
@@ -80,6 +83,7 @@ do not replace the package already submitted for review.
 - “Schedule these approved posts across next week at 9am Chicago time.”
 - “Which posts failed, and on which destinations?”
 - “How have my accounts grown since last week?”
+- “Review this group of accounts and prepare profile copy, branding and a link-unlock checklist.”
 
 The assistant selects the skill from your request. In Claude Code you can also
 invoke `/viewprinter` directly, and Codex exposes the same namespaced skill in
@@ -91,6 +95,7 @@ its selector.
 | --- | --- |
 | Accounts | List and connect accounts, identify reconnection needs, read account metrics |
 | Groups | Manage named sets of accounts for posting |
+| Account reviews | Compare current/proposed profiles, prepare assets and copy, preserve dated platform research |
 | Media | Upload, list, describe, and delete stored images or videos |
 | Posts | Hold drafts, schedule, amend pending posts, cancel, check each destination |
 | Platforms | Read media requirements, caption limits, and posting options |
