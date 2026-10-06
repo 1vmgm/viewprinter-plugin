@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Publishing"
+  short_description: "Schedule, publish and amend posts; read how they did"
+  default_prompt: "Use $content-publishing to schedule this video to my connected accounts for tomorrow morning, after confirming the label choices."

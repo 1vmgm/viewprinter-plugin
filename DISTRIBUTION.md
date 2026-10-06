@@ -9,7 +9,7 @@ MCP service remains hosted separately.
 | --- | --- | --- |
 | Codex | Portable package, compatibility manifest, repository marketplace | Local installation support; see verification |
 | Claude Code | Claude manifest and shared skills | Existing community marketplace path retained |
-| ClawHub | Generated single-skill bundle | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
+| ClawHub | Generated package: the content-publishing entry, the other five skills as guides | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
 | OpenAI directory | Remote MCP submission with skills | 1.0.0 published; 1.3.1 (skill 1.3.1, widgets in the tool scan) replacing the 1.3.0 review, 2026-09-29 |
 | Cursor Marketplace | `.cursor-plugin/plugin.json`, derived from `plugin.json` by `set_version.py`; remote server inline as a bare URL | Manifest added 2026-09-29; not yet submitted at cursor.com/marketplace/publish (manual review) |
 | LobeHub | No release | Deferred; repository access was declined |
@@ -28,11 +28,14 @@ repository edits and builds do not replace it.
 - `.codex-plugin/plugin.json`: Codex compatibility manifest.
 - `.claude-plugin/plugin.json` and `.mcp.json`: Claude metadata.
 - `.agents/plugins/marketplace.json`: marketplace for the root package.
-- `skills/viewprinter/`: the canonical skill. `SKILL.md` routes; `rules/` holds
-  one file per mistake worth preventing.
-- `clawhub/SKILL.md`: the ClawHub-facing entry point; `build.mjs` copies the
-  rules in as `references/`.
-- `evals/workflows.json`: behavior scenarios; definitions are not test results.
+- `skills/`: the six skills. `content-publishing` is the entry point: its
+  `SKILL.md` routes and `references/rules/` holds one file per mistake worth
+  preventing. `content-production`, `content-review`, `content-learning`,
+  `account-profiles` and `paid-growth` ship beside it and link to each other.
+- `clawhub/frontmatter.md`: the ClawHub listing's frontmatter. `node clawhub/build.mjs`
+  generates `clawhub/entry.md` and `clawhub/dist/` from it and `skills/`.
+- `skills/<name>/evals/evals.json`: each skill's test prompts; definitions are
+  not test results.
 
 The portable OpenAI extension takes precedence over the compatibility overlay.
 The validator checks that identity and presentation agree.
@@ -49,8 +52,9 @@ The validator checks that identity and presentation agree.
 5. Test installation and affected workflows in the intended clients.
 6. Publish the authorized channels and record the version/artifact sent to each.
 
-The build produces a complete plugin ZIP and a single-skill ZIP from the same
-shared source. Generated `dist/` directories are ignored; never edit them.
+The build produces three ZIPs from the same shared source: the complete plugin,
+the ClawHub package, and that package with `SKILL.md` at the archive root, which
+`npx skills add https://viewprinter.tech` fetches. Generated `dist/` directories are ignored; never edit them.
 
 ## Channel updates
 
@@ -70,7 +74,7 @@ npx clawhub skill publish clawhub/dist/viewprinter-social-manager \
 ```
 
 Every release is scanned. Keep descriptions aligned with capabilities, including
-media deletion and workspace-wide listing. Avoid hidden instructions in generated
+media deletion, workspace-wide listing and the review server on `127.0.0.1`. Avoid hidden instructions in generated
 comments. A dry run is not proof of successful publication.
 
 **OpenAI:** wait for the pending review. If feedback or a subsequent release

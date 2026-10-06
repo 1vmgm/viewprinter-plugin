@@ -12,6 +12,7 @@
 #   templates/          the shape of the memory dir, JSON only
 #   assets/             files copied into output
 #   evals/              test prompts for the skill
+#   agents/             openai.yaml: how Codex lists the skill
 #
 # Anything else at a skill root fails. Content placed elsewhere goes stale because nothing
 # links to it, and a second convention is one more thing to remember.
@@ -19,7 +20,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 FAIL=0
 ALLOWED_FILES='SKILL.md|PREREQUISITES.md|README.md'
-ALLOWED_DIRS='references|scripts|templates|assets|evals'
+ALLOWED_DIRS='references|scripts|templates|assets|evals|agents'
 for sk in skills/*/; do
   name=${sk#skills/}; name=${name%/}
   f="$sk/SKILL.md"

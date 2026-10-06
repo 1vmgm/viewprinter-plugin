@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Review"
+  short_description: "Review formats, batches and account groups in one workspace"
+  default_prompt: "Use $content-review to add this batch to our format's review in the workspace and verify every preview before handing off."

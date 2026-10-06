@@ -2,28 +2,36 @@
 
 # ViewPrinter for AI assistants
 
-Upload your media, prepare a week of posts, schedule them to **TikTok, Instagram,
-Facebook, YouTube and X**, and check what actually went out.
+Develop content formats, produce and review batches, schedule them to **TikTok,
+Instagram, Facebook, YouTube and X**, and learn which ones worked.
 
 ### Install
 
 ```bash
-npx skills add https://viewprinter.tech    # the skill, from our domain — any agent
-npx skills add 1vmgm/viewprinter-plugin    # the skill, from this repo
+npx skills add https://viewprinter.tech    # the skills, from our domain — any agent
+npx skills add 1vmgm/viewprinter-plugin    # the skills, from this repo
 ```
 
 The scheme is required on the first one: a bare hostname is treated as a git
-repository. Either installs the skill only — neither installs the MCP server,
+repository. Either installs the skills only — neither installs the MCP server,
 because the skills CLI has no MCP handling. For both together, install the
 plugin in Claude Code or Codex (below).
 
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
-and includes skills for publishing and account-group reviews. The `viewprinter`
-skill covers posting, media, connections and performance. `account-group-review`
-prepares reusable profile handoffs with branding, link options, safe areas and
-dated feature requirements for Instagram, TikTok, Facebook and YouTube. Groups
-can use any subset; account-specific briefs stay in your project. The hosted MCP
-service provides the tools.
+and carries everything for making social content with it, as six skills that
+work together. The hosted MCP service provides the tools.
+
+| Skill | Use it for |
+| --- | --- |
+| `content-publishing` | Connecting accounts, uploading media, scheduling and amending posts, checking delivery and reading performance |
+| `content-production` | Developing formats and your project's own content skill, then producing batches from them |
+| `content-review` | One local review workspace per project and format, up to verified scheduling |
+| `content-learning` | Which posts and formats worked, and what to make next |
+| `account-profiles` | Profile copy, images, links and feature eligibility across a group of accounts |
+| `paid-growth` | Testing and scaling winning posts as TikTok ads — early access, still being refined |
+
+Your brand, formats and account briefs live in a content skill inside your own
+project, which `content-production` helps you set up. This plugin stays general.
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
 accounts you want to use. There is no ViewPrinter API key to copy into a config.
@@ -51,7 +59,7 @@ Start a new Codex session and ask:
 
 > Use ViewPrinter to show my connected accounts and which need reconnecting.
 
-Complete browser sign-in if prompted. The plugin includes the skill and
+Complete browser sign-in if prompted. The plugin includes the skills and
 the MCP connection; you do not need a second standalone MCP configuration.
 
 For updates, removal, and standalone skills, see [Codex setup](docs/codex.md).
@@ -84,25 +92,34 @@ do not replace the package already submitted for review.
 - “Which posts failed, and on which destinations?”
 - “How have my accounts grown since last week?”
 - “Review this group of accounts and prepare profile copy, branding and a link-unlock checklist.”
+- “Help me develop a format for my brand and set up our content skill for it.”
+- “Make this week's batch from that format and open it for review.”
+- “Which formats worked last month, and what should we make next?”
 
 The assistant selects the skill from your request. In Claude Code you can also
-invoke `/viewprinter` directly, and Codex exposes the same namespaced skill in
-its selector.
+invoke one directly, such as `/viewprinter:content-publishing`, and Codex lists
+the same namespaced skills in its selector.
 
 ## What you can do
 
 | Area | Capabilities |
 | --- | --- |
+| Formats | Develop repeatable formats and keep them in your project's own content skill |
+| Production | Produce batches from a format, with project memory and an archive of originals |
+| Review | One local workspace per project and format: versions, native captions, scheduling receipts |
 | Accounts | List and connect accounts, identify reconnection needs, read account metrics |
 | Groups | Manage named sets of accounts for posting |
-| Account reviews | Compare current/proposed profiles, prepare assets and copy, preserve dated platform research |
+| Account profiles | Compare current/proposed profiles, prepare assets and copy, preserve dated platform research |
 | Media | Upload, list, describe, and delete stored images or videos |
 | Posts | Hold drafts, schedule, amend pending posts, cancel, check each destination |
 | Platforms | Read media requirements, caption limits, and posting options |
+| Learning | Tie each post to the format that made it; double down on, vary or retire formats |
+| Paid growth | Choose which posts get ad spend, cut losers and scale winners (early access) |
 
 Uploads require a client that can read the file and send an HTTP PUT. Where that
 is unavailable, use media already uploaded to ViewPrinter or upload through the
-ViewPrinter site. `references/rules/media-upload.md` covers reserve → PUT → confirm.
+ViewPrinter site. The [media upload rule](skills/content-publishing/references/rules/media-upload.md)
+covers reserve → PUT → confirm.
 
 A draft **held in ViewPrinter** stays out of the queue. A platform draft can
 upload content to the social platform for you to finish there. Name the kind you

@@ -1,0 +1,103 @@
+{
+  "skill_name": "content-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A revised product video and a separate furniture poster are ready for review. Local HTML galleries have been generated. Desktop browser tools are available. The user says they cannot see an open browser. Complete the handoff without uploading or publishing anything. Explain what changes if browser access is unavailable.",
+      "expected_output": "Opens the current local gallery with the available browser tools, verifies current previews load, links the same gallery and asks the user to confirm they can see it rather than driving their desktop, and preserves Needs review status. A link alone is insufficient when browser access exists. Applies equally to video and static work; unavailable access is explicitly reported.",
+      "files": [],
+      "expectations": [
+        "Opens and verifies the current local gallery rather than only regenerating HTML or returning a file link",
+        "Keeps current versions under Needs review; does not infer approval from opening",
+        "No autoplay, public hosting, upload or publishing",
+        "Same handoff applies to video and static content without imposing generation or audio steps on a poster",
+        "If browser access is unavailable, reports the specific limit and provides the local gallery link",
+        "Asks the user to confirm they can see the gallery instead of treating automation navigation as proof or taking control of the desktop"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our ongoing creator-hook/product-demo format has eight current videos in review/ugc.html, with earlier versions and approvals. Make one prototype for a new couple-story angle in a new dated production directory; wait for approval before the other eleven. The prototype is now ready. Describe the gallery update and handoff without generating or publishing.",
+      "expected_output": "Adds the prototype to the existing review/ugc.html, leads with its pending decision, preserves all eight prior creatives and exact-version states/history, records canonical gallery/manifest paths, and opens/links that same page. No new destination just because the story, date, production directory or approval checkpoint changed.",
+      "files": [],
+      "expectations": [
+        "Canonical HTML path and recognizable title stay stable",
+        "All nine current creatives remain accessible; original IDs, media and approvals survive",
+        "One-item production gate does not hide earlier items or authorize the remaining eleven",
+        "Round snapshots remain history and do not replace the current handoff link"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A furniture shop has an ongoing static sale-poster sheet at reviews/posters.html and an unrelated cooking-video sheet at reviews/recipes.html. Two new posters are ready, but a draft handoff accidentally created a date-named sheet containing only those two. Correct review continuity and explain the final handoff without generating media or changing approvals.",
+      "expected_output": "Merges the two posters into the existing poster sheet, preserves the stray page as history and retires or redirects its entry point, opens/links posters.html, and leaves the unrelated cooking gallery alone. No video/audio requirements added to static posters.",
+      "files": [],
+      "expectations": [
+        "Uses posters.html for continuing poster work, retaining previous posters and version history",
+        "Repairs the stray destination instead of maintaining two current sheets",
+        "Keeps recipes.html separate because it is a different format",
+        "No new media, inferred approvals or mandatory audio for static work"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Our 12 videos each have three intended destinations. One destination is published and two are scheduled for each video. Move completed work out of the active review view; keep an unscheduled new batch active in the same format. App Store screenshots are also ready. Do not change schedules.",
+      "expected_output": "Scheduling is terminal in review. All 12 old videos are completed handoffs without a Posted stage; the new unscheduled batch keeps the format active. Preserve IDs, approvals, receipts and schedules. App Store stays outside the social workspace.",
+      "files": [],
+      "expectations": [
+        "Scheduled is the final review step; no ongoing publication tracking",
+        "Only unscheduled current content contributes to active review work",
+        "A new batch reactivates the existing format without a new destination",
+        "Archive is optional and preserves assets and schedules; App Store stays separate"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Two agents added batches and a receipt imported yesterday omitted one account. Refresh the review workspace and show native descriptions. One account is shared by two groups. Do not make external changes.",
+      "expected_output": "Preserve dated receipt time and do not remove targets from a partial response; Use locked registry and revision conflicts; merge latest task-owned manifest fields; Shared identity/copy/assets use canonical record; rebuild referencing groups; Expose structured platform copy and scheduled-copy differences",
+      "files": [],
+      "expectations": [
+        "Preserve dated receipt time and do not remove targets from a partial response",
+        "Use locked registry and revision conflicts; merge latest task-owned manifest fields",
+        "Shared identity/copy/assets use canonical record; rebuild referencing groups",
+        "Expose structured platform copy and scheduled-copy differences"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Two agents made separate batches for one project’s product-demo format, one live action and one motion. The user wants one review. Explain registration and how to avoid overwriting concurrent work, without executing a migration.",
+      "expected_output": "Use the same stable project + format identity, independent contributor manifests, named variants and unique batch/item IDs. Read and submit each source revision; the runtime combines accepted sources. Never edit the generated index or silently overwrite conflicts. Preserve old links and exact-version media, copy and receipts during explicit legacy reconciliation.",
+      "files": [],
+      "expectations": [
+        "Both agents contribute to one review using the same project + format ID",
+        "Separate owned sources, observed source revisions, atomic publication and conflict rejection",
+        "Live action and Motion are variants, not new format IDs",
+        "Preserve media, copy, approvals, scheduling receipts and legacy links"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "We manage several influencers. Nova is active but an older review appears in Archive. Keep their existing content and make this work without requiring each influencer to be a format.",
+      "expected_output": "Use a stable project + influencerId and one review per identity; keep identity/voice/account references and guidance separate from optional formats. Preserve current media and place the snapshot in Nova’s own review history. Scheduling does not archive the influencer. No nested-format system or paid generation is implied.",
+      "files": [],
+      "expectations": [
+        "First-class influencer identity; many influencers in one workspace",
+        "Current content and native descriptions remain prominent",
+        "Historical review links to active parent inside its history",
+        "One project skill and no forced format or nested hierarchy"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Improve our review UI. Use dark mode and the existing purple accent, and make sure it feels polished when opening a gallery on a phone.",
+      "expected_output": "Improve the shared workspace and renderer, including iframe backgrounds, cards, controls, text contrast, selected states and guidance. Preserve original media. Verify desktop and 390px/320px layouts, Copy ID, playback speed, batch filters and one-player behavior. Do not fork a review shell per agent.",
+      "files": [],
+      "expectations": [
+        "Shared dark theme across workspace and generated galleries",
+        "Purple accent, clear hierarchy, useful contrast and no narrow overflow",
+        "Checks actual served UI and existing controls",
+        "Preserves media and one managed tab"
+      ]
+    }
+  ]
+}

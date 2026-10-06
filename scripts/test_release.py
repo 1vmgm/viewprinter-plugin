@@ -55,7 +55,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertNotEqual(archive.read(name), marker)
 
     def test_declared_file_symlink_is_rejected(self):
-        path = self.root / 'skills/viewprinter/references/rules/media-upload.md'
+        path = self.root / 'skills/content-publishing/references/rules/media-upload.md'
         outside = self.base / 'external-skill.md'
         outside.write_bytes(path.read_bytes())
         path.unlink()
@@ -69,7 +69,7 @@ class ReleaseTests(unittest.TestCase):
         self.run_script('build.py')
         version = self.versions()[0]
         packages = [
-            (f'viewprinter-{version}.zip', 'viewprinter/skills/viewprinter/'),
+            (f'viewprinter-{version}.zip', 'viewprinter/skills/content-publishing/'),
             (f'viewprinter-social-manager-{version}.zip', 'viewprinter-social-manager/'),
             (f'viewprinter-skill-{version}.zip', ''),
         ]
@@ -78,7 +78,7 @@ class ReleaseTests(unittest.TestCase):
                 with zipfile.ZipFile(self.root / 'dist' / filename) as archive:
                     for rule in ['platforms-first', 'scheduling', 'reading-results']:
                         relative = f'references/rules/{rule}.md'
-                        source = self.root / 'skills/viewprinter' / relative
+                        source = self.root / 'skills/content-publishing' / relative
                         self.assertEqual(archive.read(prefix + relative), source.read_bytes())
                     scheduling = archive.read(prefix + 'references/rules/scheduling.md').decode()
                     self.assertIn('SS_PERFORMANCE', scheduling)

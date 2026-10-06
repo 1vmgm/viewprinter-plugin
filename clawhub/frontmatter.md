@@ -1,22 +1,27 @@
 ---
 name: viewprinter-social-manager
 description: >-
-  Use ONLY for work that goes through a connected ViewPrinter account: scheduling or
-  publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading, describing,
-  listing or PERMANENTLY DELETING media held in ViewPrinter; amending or cancelling a post
-  that has not gone out; managing named groups of accounts; and reading follower and post
-  performance, including linking each post to the video and format that made it and
-  comparing it with the account's own normal. Two capabilities are destructive and irreversible: publishing to a real
-  public account, and media_delete, which erases a stored file and its bytes. Listing media
-  or posts reads everything in the user's ViewPrinter workspaces, not just one item.
-  Requires ViewPrinter to be connected — do NOT use it to draft copy the user has no
-  intention of posting, to schedule anything anywhere else, or for a platform ViewPrinter
-  does not support. A bare "post this" with no ViewPrinter account in play is not this
-  skill.
+  Use for work through a connected ViewPrinter account and the content around it:
+  scheduling or publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading,
+  describing, listing or PERMANENTLY DELETING media held in ViewPrinter; amending or
+  cancelling a post that has not gone out; managing account groups and account profiles;
+  reading follower and post performance and linking each post to the format that made it;
+  and making content before it is posted — developing formats, producing batches and
+  presenting them for review in a local workspace. Two capabilities are destructive and
+  irreversible: publishing to a real public account, and media_delete, which erases a
+  stored file and its bytes. Listing media or posts reads everything in the user's
+  ViewPrinter workspaces. Publishing and account tools require ViewPrinter to be connected
+  — do NOT use them to schedule anything anywhere else, or for a platform ViewPrinter does
+  not support.
 metadata:
   version: "1.4.0"
 license: MIT
-allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts), and
-  scripts/learn.py, a local Python helper that reads saved post lists and writes
-  link and posting-checkpoint records inside the project; it makes no network calls
+allowed-tools: >-
+  ViewPrinter MCP (platforms, accounts, groups, media, posts), and local Python helpers
+  that read and write the project's own files and make no network calls: scripts/learn.py
+  (publication links and posting checkpoints); content-production's memory.py and
+  archive.py (project memory, an archive of originals); content-review's review scripts,
+  which serve review pages on 127.0.0.1 only, open them in the user's browser and check
+  them in a headless Chrome; account-profiles' build_review.py; and paid-growth's arena.py
+  (ad decisions from exported numbers)
 ---

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Learning"
+  short_description: "Learn which formats work and decide what to make next"
+  default_prompt: "Use $content-learning to compare how our recent posts did against each account's normal, by format, and suggest what to double down on, vary or retire."

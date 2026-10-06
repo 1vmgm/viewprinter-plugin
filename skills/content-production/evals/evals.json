@@ -1,0 +1,143 @@
+{
+  "skill_name": "content-production",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Research is done for a budgeting app. We want to explain impulse-purchase tracking to young adults. Show three genuinely different concepts/formats first; do not generate paid footage until I choose. We have real transaction screenshots and permission to use our own UI. Give me the next reviewable deliverable and resume state.",
+      "expected_output": "Different directions with representative plan/previews, no paid generation, clear future format decision, scoped local memory.",
+      "files": [],
+      "expectations": [
+        "Three distinct concepts or presentation directions",
+        "Honors review before paid production",
+        "Separates concept from execution format",
+        "Records unresolved choice outside replaceable skill"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use our approved interview format to plan six more videos for a meal-planning app. Keep the established type treatment, normal-speed face reaction, actual recipe demonstration and short ending; vary question, person and room. Existing music inventory has sound IDs A and B. We want fresh music with intentional loops. I approve the whole production run, no need to pause at each stage. Do not actually call external services for this exercise. Return the batch plan, audio process, gallery plan and handoff.",
+      "expected_output": "Six stable items preserving invariants, purposeful permitted variants, sound-source/loop procedure with a license check and readable timing, no artificial extra approvals or posting.",
+      "files": [],
+      "expectations": [
+        "Six stable item IDs and explicit preserved format invariants",
+        "No redundant approval gate in authorized run",
+        "Audio includes deduplication, source intervals and repeated loop listening",
+        "Confirms a license, or uses the platform's licensed library, before downloading or uploading fresh music",
+        "Gallery uses conversational feedback without notes inputs",
+        "No claimed paid generation or publishing"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We are revising a local image batch for a furniture shop. Current round has chair-01 v2, chair-02 v1, chair-03 v3. My feedback: approve 01 and 03. Make every headline bigger, except 03; replace the photo on 02. The plugin will update tonight and another agent is adding findings. Explain and record the next-round actions and approval state. Do not generate images or publish anything for this exercise.",
+      "expected_output": "Keep 03 v3 approved, preserve approval of 01 v2 but revised 01 v3 needs review, 02 v2 gets the new photo and bigger headline, no video-only assumptions, preserve history/current memory with safe concurrent events.",
+      "files": [],
+      "expectations": [
+        "03 v3 remains approved and unchanged",
+        "01 v2 approval preserved; changed 01 v3 not silently approved",
+        "02 gets new version with both requested changes",
+        "Persistent memory outside plugin and no shared-history overwrite",
+        "No mandatory music, avatars, phone frame or video editor for static assets"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Make three more phone-mounted demos in the approved format. Project memory config names a default phone-mount preset with a saved frame asset, checksum, screen aperture and masking recipe. Another agent offers a fresh custom CSS bezel because the video editor changed. Explain the mount setup and what may vary. Do not render, generate or publish anything for this exercise.",
+      "expected_output": "Uses the saved preset and hardware asset without asking to reapprove it, preserves screen fit and grouped transformations, records identity/checksum, rejects unrequested replacement; missing asset is a dependency rather than a license to invent one.",
+      "files": [],
+      "expectations": [
+        "Uses the saved default preset and exact frame asset across all three demos",
+        "Editor changes do not authorize a CSS/generated/custom replacement bezel",
+        "Screen aperture, mask and layer order remain fixed; composition transforms move the phone and screen together",
+        "Records preset ID/revision and checksum; does not re-request existing approval",
+        "Missing or mismatched asset is reported rather than silently substituted"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "The content batch is ready for review. We created two new reusable music cuts and have not discussed library addition. One character still is approved, one final export is approved, and one edit needs feedback. Show the handoff and gallery plan. Generation receipts include a reported 20-credit image charge and an estimated 4.62 USD video cost. Do not upload or publish anything.",
+      "expected_output": "Asks once about adding the two concrete music cuts, records pending decision without blocking review, makes only the approved final export complete, keeps references secondary, distinguishes platform cost units and estimates.",
+      "files": [],
+      "expectations": [
+        "Asks a single batch-level audio-library question before upload",
+        "Does not treat approved intermediate assets as complete content",
+        "Shows the current edit prominently and sources as secondary details",
+        "Distinguishes 20 reported credits from 4.62 USD estimated and does not fabricate balance"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Research is finished. Plan review checkpoints for one new 60-second home-energy explainer with a narrator, household cutaways and real bill data. We want to review along the way. Also explain how the plan changes for one static furniture-sale poster and for an approved unattended batch. Do not generate or publish.",
+      "expected_output": "Decision-led deliverables and version-specific review boundaries. Stills do not approve motion; a short sample does not approve full narrative. Static work omits unnecessary voice/video rounds. Unattended authorization does not gain new approval gates.",
+      "files": [],
+      "expectations": [
+        "Each checkpoint names a concrete artifact and the decision it supports",
+        "A reusable execution sample tests actual presentation but full-story pacing waits for the complete cut",
+        "Current assets are prominent; future rounds stay in the plan and references remain secondary",
+        "No character, setting, phone mount or scene count carried over from another project's format",
+        "Static and unattended work skip or combine unnecessary reviews; preserves authorization"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Make four more adult fitness-app UGC hook/demo clips in our approved format. Saved direction requires energetic trending audio with replay potential. A generic generated ambient bed is available. Explain sound selection, edit timing and verification without calling paid services, downloading music or publishing. Contrast a static poster for a different brand.",
+      "expected_output": "Uses current dated sound evidence and a small shortlist before editing, preserves authorized licensing/delivery choices, ties exact excerpt to opening/demo/payoff, auditions final encoded seam at 1x for at least three repetitions or explicitly leaves it unverified. Does not substitute generic audio or promise virality; no soundtrack imposed on a static poster.",
+      "files": [],
+      "expectations": [
+        "Current sound ID/source and evidence distinguished from old popularity",
+        "Exact excerpt and opening-to-payoff energy planned before locking picture",
+        "Final hash, listening method, speed and repeated seam result recorded without fake listening",
+        "Unresolved audio access stated honestly; existing authorization retained",
+        "Static different-brand work gets no mandatory audio"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Our eight videos already exist. The invitation CTA distracts from the app proof. Do not remake them; update the shared skills and rebuild review HTML properly. Future creators should match our young-adult audience. The local brand gallery has Copy ID and speed controls but the shared helper does not. Explain and implement only local workflow/review corrections; do not generate, render, upload or publish.",
+      "expected_output": "Protects original video hashes/versions, records clean capture guidance generically and casting only in project memory, reads canonical review guidance and ports/tests shared controls rather than producing another fork. Advances the gallery round, shows accurate review status and exposes captions/covers/provenance in collapsed details.",
+      "files": [],
+      "expectations": [
+        "No remade video or invented approval; unchanged hashes checked",
+        "Real UI used to remove unrelated prompts on future captures; no fabricated screenshot or hidden evidence",
+        "Project-specific age/gender stays out of the generic plugin",
+        "Copy ID and global speed tested, including image-only and late-loaded input cases",
+        "Browser verification and limitations are reported honestly"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Two paid video takes for item 03 of a cafe brand's batch just finished downloading, and take B shows a phantom hand. Continue the batch and keep anything the next batch might reuse.",
+      "expected_output": "Adds both takes to the project's source archive as they arrive, with job IDs, prompts, model and a cost with its basis; marks take A selected and take B rejected with the reason; edits a checked-out copy; and searches the archive before generating anything new. No per-asset JSON files and no uploads.",
+      "files": [],
+      "expectations": [
+        "Runs archive.py add for both takes before any edit, recording requestId, prompt, model and cost basis",
+        "Marks take B rejected with the specific reason instead of deleting it",
+        "Edits a copy from archive.py checkout, never the archived original",
+        "Searches the archive with archive.py find before submitting another paid generation",
+        "Writes no per-asset JSON or receipt files and uploads nothing to the hosted media library"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "A project already has one content skill with shared audience, audio, proof and description guidance plus several format references. Start a new hook/demo format; its recipe is not documented yet. Explain how it becomes reviewable and repeatable without generating paid assets.",
+      "expected_output": "Read and extend the existing project content skill. Create a stable format record and review before its recipe file exists. Adapt the generic starter under references/formats when the project criteria are met, inheriting shared guidance without copying it. Keep one project content skill; no separate skill per format, new ID on documentation, imported brand model or claimed bundled tools.",
+      "files": [],
+      "expectations": [
+        "One project content skill with shared rules and multiple distinct format references",
+        "A new format is reviewable before its recipe is documented",
+        "Shared guidance remains authoritative and unique format decisions stay in its reference",
+        "No competing skill, duplicate review identity, paid generation or assumed provider installation"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "An established format uses a Higgsfield influencer workflow with identity references and motion checks. Another uses real footage. Explain what belongs in ViewPrinter versus their project skills.",
+      "expected_output": "Shared production/review belongs to ViewPrinter; creative recipes and optional specialized workflow references belong to project formats. Discover current provider instructions before execution; no universal influencer requirement, new tab merely for a generator, or inferred paid authorization.",
+      "files": [],
+      "expectations": [
+        "Shared production/review belongs to ViewPrinter; creative recipes and optional specialized workflow references belong to project formats.",
+        "Discover current provider instructions before execution; no universal influencer requirement, new tab merely for a generator, or inferred paid authorization.."
+      ]
+    }
+  ]
+}

@@ -2,13 +2,12 @@
 """Build deterministic release ZIPs and a source/checksum receipt. No publishing."""
 import hashlib
 import json
-import re
 import subprocess
 import zipfile
-from pathlib import Path
 
 from validate import ROOT, validate
-from release_files import PLUGIN_FILES, SINGLE_SKILL_FILES, release_inputs, safe_path
+from release_files import (CLAWHUB_PACKAGE, PLUGIN_FILES, SINGLE_SKILL_FILES,
+                           assemble_clawhub, broken_links, release_inputs, safe_path)
 
 
 def digest(data):
@@ -38,34 +37,20 @@ def build():
     validate()
     version = json.loads((ROOT / 'plugin.json').read_text())['version']
     plugin_zip = safe_path(ROOT, f'dist/viewprinter-{version}.zip')
-    skill_zip = safe_path(ROOT, f'dist/viewprinter-social-manager-{version}.zip')
+    skill_zip = safe_path(ROOT, f'dist/{CLAWHUB_PACKAGE}-{version}.zip')
+    bare_zip = safe_path(ROOT, f'dist/viewprinter-skill-{version}.zip')
     receipt_path = safe_path(ROOT, 'dist/release.json')
-    subprocess.run(['node', str(inputs['clawhub/build.mjs'])], cwd=ROOT, check=True)
+    clawroot = assemble_clawhub(ROOT)
     out.mkdir(exist_ok=True)
     bundle = {f'viewprinter/{name}': path.read_bytes() for name, path in inputs.items()}
-    clawroot = safe_path(ROOT, 'clawhub/dist/viewprinter-social-manager')
     generated = release_inputs(clawroot, SINGLE_SKILL_FILES)
-    claw = {f'viewprinter-social-manager/{name}': path.read_bytes()
-            for name, path in generated.items()}
-    # Every reference must survive the copy unchanged. Read from disk rather than a
-    # hardcoded list: a list stops covering a reference the moment somebody adds one,
-    # and the drift it exists to catch would ship unnoticed.
-    references = sorted(path.stem for path in (ROOT / 'skills' / 'viewprinter' / 'references' / 'rules').glob('*.md'))
-    if not references:
-        raise ValueError('No references found to verify')
-    for name in references:
-        text = (ROOT / 'skills' / 'viewprinter' / 'references' / 'rules' / f'{name}.md').read_text()
-        # Mirror clawhub/build.mjs: strip frontmatter only if there is any.
-        # Rules carry none; SKILL.md does. Splitting unconditionally raises on
-        # a file without it, which is why this is a match rather than a split.
-        source = re.sub(r'\A---\n.*?\n---\n', '', text, count=1, flags=re.S).lstrip()
-        generated = (clawroot / 'references' / 'rules' / f'{name}.md').read_text()
-        if source != generated:
-            raise ValueError(f'Generated reference drift: {name}')
-    result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
-    source_commit = result.stdout.strip() if result.returncode == 0 else None
-    status = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, capture_output=True, text=True)
-    # A third artifact: the skill alone, SKILL.md at the archive ROOT.
+    # The guides link to each other; a link that resolved in the plugin's
+    # layout but not in the package's would be a dead end found mid-task.
+    broken = broken_links(clawroot)
+    if broken:
+        raise ValueError('Broken links in the package: ' + '; '.join(broken))
+    claw = {f'{CLAWHUB_PACKAGE}/{name}': path.read_bytes() for name, path in generated.items()}
+    # The third artifact is the same package with SKILL.md at the archive ROOT.
     #
     # This is what `npx skills add viewprinter.tech` fetches. The well-known
     # discovery provider looks for exactly `SKILL.md` — files.get('SKILL.md') —
@@ -73,14 +58,12 @@ def build():
     # common prefix, so the nested layout the other two zips use would simply
     # not be found. Same deterministic machinery, so the digest published in the
     # index stays stable across rebuilds.
-    skill_root = ROOT / 'skills' / 'viewprinter'
-    skill_files = {
-        str(path.relative_to(skill_root)): path.read_bytes()
-        for path in sorted(skill_root.rglob('*')) if path.is_file()
-    }
+    skill_files = {name: path.read_bytes() for name, path in generated.items()}
     if 'SKILL.md' not in skill_files:
         raise ValueError('Skill archive must carry SKILL.md at its root')
-    bare_zip = safe_path(ROOT, f'dist/viewprinter-skill-{version}.zip')
+    result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
+    source_commit = result.stdout.strip() if result.returncode == 0 else None
+    status = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, capture_output=True, text=True)
 
     receipt = {'version': version, 'sourceCommit': source_commit,
                'dirty': bool(status.stdout.strip()) if status.returncode == 0 else None,

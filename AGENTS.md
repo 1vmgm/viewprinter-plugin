@@ -10,6 +10,24 @@ that keep them working. What real use teaches belongs in the skills as a
 general rule — "a carousel refuses a trial reel" — never as the case that
 taught it.
 
+A project's own voice, formats and accounts belong in that project's content
+skill, which `content-production` helps the customer create. The plugin
+carries the method, never the project.
+
+## Naming a skill
+
+Two lowercase words naming the work, not the product. The content pipeline is
+`content-<stage>` — production, review, publishing, learning — and work outside
+it names its subject: `account-profiles`, `paid-growth`. No `viewprinter-`
+prefix; every client already namespaces a plugin's skills, as in
+`viewprinter:content-review`.
+
+The folder, the `name` in SKILL.md and `skill_name` in `evals/evals.json` are
+the same string, and the validator fails otherwise. A new skill also needs its
+entry in `SKILLS` in `scripts/release_files.py`, a row in content-publishing's
+"The rest of this plugin" table, an executable `scripts/preflight.sh` and
+`agents/openai.yaml`.
+
 ## What never does
 
 Nothing from our own projects or anyone else's: brand or account names,

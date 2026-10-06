@@ -1,6 +1,6 @@
 # Codex setup
 
-The full plugin bundles one skill and the hosted MCP connection. See
+The full plugin bundles six skills and the hosted MCP connection. See
 [compatibility](compatibility.md) for tested versions and workflow coverage.
 
 ## Install this checkout
@@ -12,7 +12,7 @@ codex plugin marketplace add .
 codex plugin add viewprinter@viewprinter
 ```
 
-Open a new Codex session, find ViewPrinter in the skill selector, and ask to list
+Open a new Codex session, find the ViewPrinter skills in the selector, and ask to list
 your accounts. Complete browser OAuth when prompted. This local marketplace
 works independently of the pending OpenAI directory review.
 
@@ -61,13 +61,16 @@ in ViewPrinter.
 ## Standalone skills
 
 For a Codex surface that supports skills but not plugins, ask `$skill-installer`
-to install `skills/viewprinter` — one skill routing to its `rules/` — from
-`1vmgm/viewprinter-plugin` after this release is published. For local development,
+to install the skills you need from `skills/` in `1vmgm/viewprinter-plugin` after
+this release is published — `content-publishing` at minimum. The skills link to
+each other by folder, so install them side by side. For local development,
 Codex discovers skill folders under `~/.agents/skills/` or a project's
 `.agents/skills/`.
 
-The standalone name is `viewprinter`. Check for an existing skill with that
-name. The full plugin namespaces it as `viewprinter:viewprinter`.
+Standalone, each skill keeps its folder name: `content-publishing`,
+`content-production`, `content-review`, `content-learning`, `account-profiles`
+and `paid-growth`. Check for existing skills with those names. The full plugin
+namespaces them, as in `viewprinter:content-publishing`.
 
 Add the separate tool connection for the standalone path:
 

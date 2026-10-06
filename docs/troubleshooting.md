@@ -2,13 +2,15 @@
 
 ## Tools appear, but skills do not
 
-An MCP-only connection does not install skills. Install the full plugin or the
-single `viewprinter` skill at `skills/viewprinter/SKILL.md`. Account connection
-and inventory guidance is in its `references/rules/connecting.md`; grouping
-guidance is in `references/rules/destinations.md`. The former `accounts`,
-`posting`, and `media` skill folders are no longer the canonical paths.
+An MCP-only connection does not install skills. Install the full plugin, or the
+skills themselves from `skills/` — `content-publishing` at minimum. Account
+connection and inventory guidance is in its `references/rules/connecting.md`;
+grouping guidance is in `references/rules/destinations.md`. The skill formerly
+called `viewprinter` is now `content-publishing`, and `account-group-review` is
+now `account-profiles`; the older `accounts`, `posting` and `media` folders are
+gone.
 Start a new session after plugin installation. In Codex, check
-`codex plugin list --marketplace viewprinter` and look for the ViewPrinter skill
+`codex plugin list --marketplace viewprinter` and look for the ViewPrinter skills
 in the selector. Reinstall after updating a cached package.
 
 ## OAuth fails before the sign-in page
