@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Run with: python3 -m unittest discover -s scripts -p 'test_learn.py'."""
 
+import contextlib
+import errno
+import io
 import json
 import os
 from pathlib import Path
+import stat
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -47,15 +53,126 @@ class LearnTests(unittest.TestCase):
         return [target("{}-{}-{}".format(prefix, account, i), account, views, published, captured, **options)
                 for i in range(count)]
 
+    def legacy(self, record):
+        """A per-post file, as versions before the monthly logs wrote each link."""
+        directory = self.memory / "history" / "publications"
+        directory.mkdir(parents=True, exist_ok=True)
+        record = dict(record, id="{}--{}".format(record["postId"], record["accountId"]))
+        record.setdefault("createdAt", "2026-09-15T10:00:00Z")
+        path = directory / (record["id"] + ".json")
+        path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return path
+
     # -- link ---------------------------------------------------------------
 
-    def test_link_writes_one_immutable_event_and_accepts_identical_retry(self):
-        first = learn.link(self.memory, self.record("p1"))
+    def test_link_appends_one_line_per_destination_and_accepts_identical_retry(self):
+        first = learn.link(self.memory, self.record("p1", createdAt="2026-09-30T23:00:00Z"))
         again = learn.link(self.memory, self.record("p1"))
         self.assertEqual(first, again)
-        self.assertEqual(first.name, "p1--acct.json")
+        self.assertEqual(first.name, "2026-09.jsonl")
+        learn.link(self.memory, self.record("p2", createdAt="2026-10-01T00:00:00Z"))
+        directory = self.memory / "history" / "publications"
+        self.assertEqual(sorted(p.name for p in directory.glob("*.jsonl")), ["2026-09.jsonl", "2026-10.jsonl"])
+        self.assertEqual(len(learn.read_log(first)), 1)
         with self.assertRaises(learn.LearnError):
             learn.link(self.memory, self.record("p1", version=2))
+
+    def test_per_post_files_from_older_versions_are_still_read_and_respected(self):
+        self.legacy(self.record("old"))
+        self.assertEqual(learn.link(self.memory, self.record("old")).name, "old--acct.json")
+        with self.assertRaises(learn.LearnError):
+            learn.link(self.memory, self.record("old", version=3))
+        learn.link(self.memory, self.record("new"))
+        self.assertEqual(sorted(learn.load_publications(self.memory)), [("new", "acct"), ("old", "acct")])
+
+    def test_compact_folds_per_post_files_into_logs_and_removes_them_only_when_asked(self):
+        for name in ("a", "b"):
+            self.legacy(self.record(name))
+        learn.link(self.memory, self.record("c"))
+        before = learn.load_publications(self.memory)
+        self.assertEqual(learn.compact(self.memory), {"files": 2, "added": 2, "removed": 0})
+        self.assertEqual(learn.compact(self.memory), {"files": 2, "added": 0, "removed": 0})
+        self.assertEqual(learn.compact(self.memory, remove=True), {"files": 2, "added": 0, "removed": 2})
+        self.assertEqual(list((self.memory / "history" / "publications").glob("*.json")), [])
+        self.assertEqual(learn.load_publications(self.memory), before)
+
+    def test_compact_never_removes_a_conflicting_file(self):
+        learn.link(self.memory, self.record("a"))
+        conflicting = self.legacy(self.record("a", version=9))
+        with self.assertRaises(learn.LearnError):
+            learn.load_publications(self.memory)
+        with self.assertRaises(learn.LearnError):
+            learn.compact(self.memory, remove=True)
+        self.assertTrue(conflicting.exists())
+
+    def test_an_unfinished_last_line_is_skipped_then_moved_aside_before_the_next_append(self):
+        path = learn.link(self.memory, self.record("p1", createdAt="2026-10-01T00:00:00Z"))
+        with path.open("ab") as stream:
+            stream.write(b'{"postId":"p2","acc')
+        warnings = io.StringIO()
+        with contextlib.redirect_stderr(warnings):
+            self.assertEqual(list(learn.load_publications(self.memory)), [("p1", "acct")])
+            learn.link(self.memory, self.record("p3", createdAt="2026-10-02T00:00:00Z"))
+        self.assertIn("unfinished last line", warnings.getvalue())
+        self.assertEqual(sorted(learn.load_publications(self.memory)), [("p1", "acct"), ("p3", "acct")])
+        self.assertTrue(path.read_bytes().endswith(b"\n"))
+        [side] = path.parent.glob(path.name + ".cut-*")
+        self.assertEqual(side.read_bytes(), b'{"postId":"p2","acc')
+
+    def test_a_whole_last_record_missing_its_newline_is_kept_and_still_enforced(self):
+        path = learn.link(self.memory, self.record("p1", createdAt="2026-10-01T00:00:00Z"))
+        path.write_bytes(path.read_bytes().rstrip(b"\n"))  # as a hand-resolved merge can leave it
+        self.assertEqual(list(learn.load_publications(self.memory)), [("p1", "acct")])
+        with self.assertRaises(learn.LearnError):
+            learn.link(self.memory, self.record("p1", version=7))
+        learn.link(self.memory, self.record("p2", createdAt="2026-10-02T00:00:00Z"))
+        self.assertEqual([r["postId"] for r in learn.read_log(path)], ["p1", "p2"])
+        self.assertEqual(list(path.parent.glob("*.cut-*")), [])
+
+    def test_logs_leave_no_lock_file_and_merge_line_by_line_in_git(self):
+        learn.link(self.memory, self.record("p1", createdAt="2026-10-01T00:00:00Z"))
+        directory = self.memory / "history" / "publications"
+        self.assertEqual(sorted(p.name for p in directory.iterdir()), [".gitattributes", "2026-10.jsonl"])
+        self.assertIn("*.jsonl merge=union", (directory / ".gitattributes").read_text())
+
+    def test_a_real_lock_failure_is_reported_instead_of_falling_back(self):
+        def failing(descriptor, operation):
+            raise OSError(errno.EIO, "input/output error")
+        with patch.object(learn.fcntl, "flock", failing):
+            with self.assertRaises(OSError):
+                learn.link(self.memory, self.record("p1"))
+        self.assertFalse((self.memory / "history" / "publications" / ".lock").exists())
+
+    def test_a_null_time_is_replaced_with_now(self):
+        path = learn.link(self.memory, self.record("p1", createdAt=None))
+        self.assertTrue(learn.read_log(path)[0]["createdAt"])
+
+    def test_a_folder_that_cannot_be_locked_uses_a_lock_file_kept_out_of_git(self):
+        flock = learn.fcntl.flock
+
+        def files_only(descriptor, operation):
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                raise OSError(errno.ENOTSUP, "folder locks are not supported here")
+            return flock(descriptor, operation)
+        with patch.object(learn.fcntl, "flock", files_only):
+            learn.link(self.memory, self.record("p1"))
+            learn.link(self.memory, self.record("p2"))
+        self.assertEqual(sorted(learn.load_publications(self.memory)), [("p1", "acct"), ("p2", "acct")])
+        directory = self.memory / "history" / "publications"
+        self.assertTrue((directory / ".lock").is_file())
+        self.assertIn(".lock", (directory / ".gitignore").read_text().splitlines())
+
+    def test_parallel_links_from_separate_processes_are_all_kept(self):
+        script = Path(learn.__file__).resolve()
+        processes = [subprocess.Popen(
+            [sys.executable, str(script), "link", "--memory", str(self.memory), "--post-id", "p{}".format(i),
+             "--account-id", "acct", "--batch", "b", "--item", "clip-{}".format(i), "--version", "1"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE) for i in range(12)]
+        for process in processes:
+            _, errors = process.communicate(timeout=60)
+            self.assertEqual(process.returncode, 0, errors)
+        self.assertEqual(len(learn.load_publications(self.memory)), 12)
+        self.assertEqual(len(list((self.memory / "history" / "publications").glob("*.jsonl"))), 1)
 
     def test_link_requires_the_join_fields_and_safe_ids(self):
         with self.assertRaises(learn.LearnError):
@@ -83,6 +200,98 @@ class LearnTests(unittest.TestCase):
         nested = self.project / "a" / "b"
         nested.mkdir(parents=True)
         self.assertEqual(learn.locate_memory(start=nested), self.memory)
+
+    # -- posting checkpoints ----------------------------------------------------
+
+    def test_checkpoints_share_one_log_per_batch_and_resume_from_the_latest_state(self):
+        base = {"batchId": "batch-1", "itemId": "clip-001", "version": 2, "accountId": "acct", "key": "k-1"}
+        saved = dict(base, status="saved", postId="p1", accepted={"cover": "cover.jpg", "aiLabel": True})
+        path = learn.checkpoint(self.memory, saved)
+        self.assertEqual(path.name, "batch-1.jsonl")
+        learn.checkpoint(self.memory, dict(saved))  # an identical retry adds nothing
+        learn.checkpoint(self.memory, dict(base, status="verified", postId="p1", readback={"caption": "matches"}))
+        learn.checkpoint(self.memory, dict(base, accountId="other", key="k-2", status="failed", note="rate limited"))
+        self.assertEqual(len(learn.read_log(path)), 3)
+        self.assertEqual({(p["accountId"], p["status"]) for p in learn.placements(self.memory, "batch-1")},
+                         {("acct", "verified"), ("other", "failed")})
+        self.assertEqual(list((self.memory / "history" / "posting").glob("*.jsonl")), [path])
+
+    def test_events_without_a_key_join_their_placement_by_post_id(self):
+        base = {"batchId": "b", "itemId": "clip-001", "version": 1, "accountId": "acct"}
+        learn.checkpoint(self.memory, dict(base, status="saved", postId="p1", key="k-1"))
+        learn.checkpoint(self.memory, dict(base, status="verified", postId="p1"))
+        learn.checkpoint(self.memory, dict(base, status="saved", postId="p2", key="k-2"))  # a second placement
+        self.assertEqual([(p["postId"], p["status"], p["events"]) for p in learn.placements(self.memory, "b")],
+                         [("p1", "verified", 2), ("p2", "saved", 1)])
+
+    def test_a_status_that_returns_after_another_is_recorded_again(self):
+        base = {"batchId": "b", "itemId": "clip-001", "version": 1, "accountId": "acct", "key": "k-1",
+                "postId": "p1"}
+        for status in ("saved", "verified", "amended", "verified"):
+            learn.checkpoint(self.memory, dict(base, status=status))
+        for status in ("held", "saved", "held"):
+            learn.checkpoint(self.memory, dict(base, key="k-2", postId="p2", status=status))
+        learn.checkpoint(self.memory, dict(base, key="k-2", postId="p2", status="held"))  # a retry
+        self.assertEqual([(p["postId"], p["status"], p["events"]) for p in learn.placements(self.memory, "b")],
+                         [("p1", "verified", 4), ("p2", "held", 3)])
+
+    def test_a_failed_save_needs_its_key_and_joins_the_retry_that_succeeds(self):
+        base = {"batchId": "b", "itemId": "clip-001", "version": 1, "accountId": "acct"}
+        with self.assertRaises(learn.LearnError):
+            learn.checkpoint(self.memory, dict(base, status="failed"))
+        learn.checkpoint(self.memory, dict(base, status="failed", key="k-9", note="rate limited"))
+        learn.checkpoint(self.memory, dict(base, status="saved", key="k-9", postId="p9"))
+        self.assertEqual([(p["status"], p["events"]) for p in learn.placements(self.memory, "b")], [("saved", 2)])
+
+    def test_an_amend_recorded_by_post_id_alone_joins_its_batch_placement(self):
+        base = {"batchId": "b", "accountId": "acct", "postId": "p1"}
+        learn.checkpoint(self.memory, dict(base, itemId="clip-001", version=1, key="k-1", status="saved"))
+        learn.checkpoint(self.memory, dict(base, status="canceled"))
+        self.assertEqual([(p["itemId"], p["status"], p["events"]) for p in learn.placements(self.memory, "b")],
+                         [("clip-001", "canceled", 2)])
+
+    def test_events_merged_out_of_order_are_read_in_time_order(self):
+        path = self.memory / "history" / "posting" / "b.jsonl"
+        path.parent.mkdir(parents=True)
+        base = {"batchId": "b", "itemId": "clip-001", "version": 1, "accountId": "acct", "key": "k-1",
+                "postId": "p1"}
+        path.write_bytes(learn.log_line(dict(base, status="verified", createdAt="2026-10-02T10:05:00Z"))
+                         + learn.log_line(dict(base, status="saved", createdAt="2026-10-02T10:00:00Z")))
+        self.assertEqual(learn.placements(self.memory, "b")[0]["status"], "verified")
+
+    def test_a_cancel_by_post_id_reaches_every_item_the_post_carried(self):
+        base = {"batchId": "b", "accountId": "acct", "postId": "p1", "version": 1}
+        learn.checkpoint(self.memory, dict(base, itemId="slide-a", key="k-a", status="saved"))
+        learn.checkpoint(self.memory, dict(base, itemId="slide-b", key="k-b", status="saved"))
+        learn.checkpoint(self.memory, {"batchId": "b", "accountId": "acct", "postId": "p1", "status": "canceled"})
+        self.assertEqual([(p["itemId"], p["version"], p["status"]) for p in learn.placements(self.memory, "b")],
+                         [("slide-a", 1, "canceled"), ("slide-b", 1, "canceled")])
+
+    def test_an_item_without_a_version_and_a_null_time_still_join_in_order(self):
+        base = {"batchId": "b", "accountId": "acct", "postId": "p1", "itemId": "clip-001"}
+        learn.checkpoint(self.memory, dict(base, version=2, key="k-1", status="saved"))
+        learn.checkpoint(self.memory, dict(base, status="amended", createdAt=None))
+        self.assertEqual([(p["version"], p["status"], p["events"]) for p in learn.placements(self.memory, "b")],
+                         [(2, "amended", 2)])
+
+    def test_a_campaign_post_is_checkpointed_under_its_campaign_without_an_item(self):
+        learn.checkpoint(self.memory, {"batchId": "campaign-7", "accountId": "removed", "postId": "p1",
+                                       "status": "canceled"})
+        learn.checkpoint(self.memory, {"batchId": "campaign-7", "accountId": "kept", "postId": "p1",
+                                       "status": "amended", "accepted": {"accounts": ["kept"]}})
+        self.assertEqual({(p["accountId"], p["status"]) for p in learn.placements(self.memory, "campaign-7")},
+                         {("removed", "canceled"), ("kept", "amended")})
+        self.assertEqual(learn.main(["checkpoints", "--memory", str(self.memory), "--batch", "campaign-7"]), 0)
+
+    def test_a_checkpoint_needs_a_known_status_and_a_post_id_unless_it_failed(self):
+        base = {"batchId": "batch-1", "itemId": "clip-001", "version": 1, "accountId": "acct", "key": "k-1"}
+        for bad in (dict(base, status="posted", postId="p1"), dict(base, status="saved"),
+                    dict(base, batchId="../escape", status="failed"),
+                    dict(base, status="saved", postId="p1", accepted="cover.jpg")):
+            with self.assertRaises(learn.LearnError):
+                learn.checkpoint(self.memory, bad)
+        learn.checkpoint(self.memory, dict(base, status="failed"))
+        self.assertEqual(learn.placements(self.memory, "never-posted"), [])
 
     # -- reading responses -----------------------------------------------------
 
@@ -173,6 +382,21 @@ class LearnTests(unittest.TestCase):
         summary = self.format_report([2000, 1800, 900])["format-a"]
         self.assertEqual(summary["suggestion"], "double down")
 
+    def test_an_old_format_name_counts_under_the_current_id(self):
+        (self.memory / "formats" / "format-a").mkdir(parents=True)
+        (self.memory / "formats" / "format-a" / "v1.json").write_text(
+            json.dumps({"id": "format-a", "revision": 1, "aliases": ["format-a-old"]}), encoding="utf-8")
+        summary = self.format_report([2000, 1800, 900], fmt="format-a-old")
+        self.assertEqual(list(summary), ["format-a"])
+        self.assertEqual(summary["format-a"]["publications"], 3)
+        posts = self.peers("acct", 6, 1000) + [
+            target("format-a-old-{}".format(i), "acct", views, "2026-09-01T12:00:00Z", "2026-09-08T12:00:00Z")
+            for i, views in enumerate([2000, 1800, 900])]
+        report = learn.build_report(self.memory, [{"posts": posts}])
+        self.assertEqual({e["publication"]["formatId"] for e in report["publications"]}, {"format-a"})
+        self.assertEqual({e["publication"]["formerFormatId"] for e in report["publications"]}, {"format-a-old"})
+        self.assertNotIn("| format-a-old |", learn.render_markdown(report))
+
     def test_one_viral_outlier_is_vary_not_double_down(self):
         summary = self.format_report([50000, 700, 800])["format-a"]
         self.assertEqual(summary["suggestion"], "vary")
@@ -203,8 +427,17 @@ class LearnTests(unittest.TestCase):
         self.assertEqual(learn.main(["link", "--memory", str(self.memory), "--post-id", "hit",
                                      "--account-id", "acct", "--batch", "b", "--item", "clip-1",
                                      "--version", "2", "--format", "format-a"]), 0)
-        stored = json.loads((self.memory / "history/publications/hit--acct.json").read_text())
+        stored = learn.load_publications(self.memory)[("hit", "acct")]
         self.assertEqual(stored["version"], 2)
+        with patch("sys.stdin", io.StringIO('{"accepted": {"cover": "cover.jpg"}}')):
+            self.assertEqual(learn.main(["checkpoint", "--memory", str(self.memory), "--batch", "b",
+                                         "--item", "clip-1", "--version", "2", "--account-id", "acct",
+                                         "--post-id", "hit", "--key", "k-1", "--status", "saved",
+                                         "--details", "-"]), 0)
+        placement = learn.placements(self.memory, "b")[0]
+        self.assertEqual((placement["status"], placement["version"]), ("saved", 2))
+        self.assertEqual(learn.main(["checkpoints", "--memory", str(self.memory), "--batch", "b", "--json"]), 0)
+        self.assertEqual(learn.main(["compact", "--memory", str(self.memory)]), 0)
         markdown = self.project / "report.md"
         self.assertEqual(learn.main(["report", "--memory", str(self.memory), "--posts", str(saved),
                                      "--markdown", str(markdown)]), 0)

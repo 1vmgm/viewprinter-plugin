@@ -18,5 +18,5 @@ metadata:
 license: MIT
 allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts), and
   scripts/learn.py, a local Python helper that reads saved post lists and writes
-  link records inside the project; it makes no network calls
+  link and posting-checkpoint records inside the project; it makes no network calls
 ---

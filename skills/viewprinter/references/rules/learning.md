@@ -18,13 +18,23 @@ Run this once for each destination `posts_save` returns, while the details are a
     python3 scripts/learn.py link --post-id <post> --account-id <account> \
       --batch <batch> --item <item> --version <n> --format <format> [--paid-support]
 
-- The post id plus the account id is the key. Each destination gets its own record under
-  the project's `.viewprinter/content-memory/history/publications/`; the first link
-  creates that folder, so run it from the project root or pass `--memory`.
+- The post id plus the account id is the key. Each destination becomes one line in a
+  monthly log, `history/publications/<YYYY-MM>.jsonl` in the project's
+  `.viewprinter/content-memory`; the first link creates it, so run it from the project
+  root or pass `--memory`. Agents working in parallel can link at the same time.
 - Records are never rewritten: repeating the same link is fine, a different one is
   refused.
-- Use the format names the user already uses. `--paid-support` marks a post that will
-  run as an ad.
+- Versions up to 1.4.0 wrote one file per destination and cannot read the logs. Those
+  files are still read here; `learn.py compact` folds them into the logs, and
+  `--remove-originals` then deletes each file whose identical record is logged. Run it
+  only once every install that reads this memory is updated.
+- Whether the logs are committed is the project's own git policy. The folder carries a
+  `.gitattributes` so git merges them line by line: two branches that both link do not
+  conflict.
+- Use the format's ID from the project's format records (`formats/<id>/` in content
+  memory), or the name the user already uses when there are none. A record's `aliases`
+  fold old names into its ID in the report. `--paid-support` marks a post that will run
+  as an ad.
 - To backfill, use only receipts that name the post id. Never match posts to videos by
   caption or by how they look.
 
