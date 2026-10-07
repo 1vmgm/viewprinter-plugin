@@ -1,8 +1,8 @@
 {
   "name": "viewprinter",
   "displayName": "ViewPrinter",
-  "description": "Schedule and publish social posts to TikTok, Instagram, Facebook, YouTube and X, and track account performance",
-  "version": "1.4.0",
+  "description": "Make, review and publish social content: develop formats and your project's own content skill, produce batches, review them in one local workspace, publish to TikTok, Instagram, Facebook, YouTube and X, set up account profiles, learn which formats work, and test winners as TikTok ads",
+  "version": "2.0.0",
   "author": {
     "name": "VMGM Software",
     "email": "hello@vmgmsoftware.com"
@@ -13,6 +13,9 @@
   "keywords": [
     "social-media",
     "scheduling",
+    "content",
+    "formats",
+    "review",
     "tiktok",
     "instagram"
   ],

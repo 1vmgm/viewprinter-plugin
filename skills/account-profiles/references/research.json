@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "coveredPlatforms": [
+    "instagram",
+    "tiktok",
+    "facebook",
+    "youtube"
+  ],
+  "reviewTimezone": "America/Chicago",
+  "facts": [
+    {
+      "id": "ig-copy",
+      "platform": "instagram",
+      "topic": "copy",
+      "claim": "ViewPrinter reports bio 150, username 30 and API post-caption 2200 limits.",
+      "status": "tool-observation",
+      "sources": [
+        {
+          "title": "ViewPrinter platforms_list live observation",
+          "url": "https://viewprinter.tech/mcp",
+          "publisher": "viewprinter.tech",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Connector limits; refresh live before composing.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "live MCP platforms_list",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "ig-links",
+      "platform": "instagram",
+      "topic": "links",
+      "claim": "Profile website links need native confirmation. The reported five-link allowance was not verified from the official page in this pass.",
+      "status": "needs-confirmation",
+      "sources": [
+        {
+          "title": "Add a website to your Instagram profile",
+          "url": "https://help.instagram.com/362497417173378",
+          "publisher": "help.instagram.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Profile website links; region/account state unknown.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official retrieval attempted; unavailable",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Official page returned HTTP 429 or login/block screen. Do not date the five-link claim as verified."
+    },
+    {
+      "id": "ig-professional",
+      "platform": "instagram",
+      "topic": "eligibility",
+      "claim": "Record personal/creator/business subtype from settings; contact/action buttons and Story-link availability remain account checks.",
+      "status": "needs-confirmation",
+      "sources": [
+        {
+          "title": "About professional accounts",
+          "url": "https://www.facebook.com/help/instagram/138925576505882",
+          "publisher": "www.facebook.com",
+          "sourceUpdatedAt": null
+        },
+        {
+          "title": "Sharing links in Stories",
+          "url": "https://about.instagram.com/blog/announcements/expanding-sharing-links-in-stories-to-everyone",
+          "publisher": "about.instagram.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Native Instagram features; do not infer from connector.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official retrieval attempted; unavailable",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Official pages unavailable. No follower unlock claim accepted."
+    },
+    {
+      "id": "ig-story-guide",
+      "platform": "instagram",
+      "topic": "assets",
+      "claim": "ViewPrinter recommends 1080x1920 Stories and leaving 250px clear at top and bottom; its Reel spec is also 1080x1920.",
+      "status": "tool-observation",
+      "sources": [
+        {
+          "title": "ViewPrinter platforms_list live observation",
+          "url": "https://viewprinter.tech/mcp",
+          "publisher": "viewprinter.tech",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Story layout note; not an official organic Reel safe zone.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "live MCP platforms_list",
+      "recheckAfter": "2027-01-03",
+      "limitations": ""
+    },
+    {
+      "id": "tt-copy",
+      "platform": "tiktok",
+      "topic": "copy",
+      "claim": "ViewPrinter reports bio 80, username 24, API captions 2200; captions count UTF-16 units.",
+      "status": "tool-observation",
+      "sources": [
+        {
+          "title": "ViewPrinter platforms_list live observation",
+          "url": "https://viewprinter.tech/mcp",
+          "publisher": "viewprinter.tech",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Connector guidance; native app limits can differ.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "live MCP platforms_list",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "tt-links",
+      "platform": "tiktok",
+      "topic": "links",
+      "claim": "Official consumer help lists website links at 1,000 followers or with a Registered Business Account. Its Account types article explicitly states Personal Accounts with at least 1,000 followers can post a website link. Social-account links are a separate feature.",
+      "status": "conflicting",
+      "sources": [
+        {
+          "title": "Link a website or social media account",
+          "url": "https://support.tiktok.com/en/getting-started/setting-up-your-profile/linking-another-social-media-account?lang=hi",
+          "publisher": "support.tiktok.com",
+          "sourceUpdatedAt": null
+        },
+        {
+          "title": "Account types on TikTok",
+          "url": "https://support.tiktok.com/en/using-tiktok/growing-your-audience/switching-to-a-creator-or-business-account?lang=et",
+          "publisher": "support.tiktok.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Consumer website field, not all organic conversion tools.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "Official indexed English consumer help and Account types text; direct canonical consumer fetch blocked/redirected. Native account not inspected.",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Account types and business-entitlement pages use different scopes/terminology. Do not infer a universal unlock from connector type. Inspect Website availability and saved public display.",
+      "conflictsWith": [
+        "tt-entitlements"
+      ]
+    },
+    {
+      "id": "tt-entitlements",
+      "platform": "tiktok",
+      "topic": "eligibility",
+      "claim": "Business tiers are General, Advanced Access and Verified Business (formerly Registered). Linking to TikTok for Business or an unverified Business Center grants Advanced Access. Public business-profile decoration and organic conversion anchors are reserved for Verified Business in the table.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "About TikTok account entitlements",
+          "url": "https://ads.tiktok.com/resources/help/article/about-tiktok-account-entitlements",
+          "publisher": "ads.tiktok.com",
+          "sourceUpdatedAt": "2026-05"
+        }
+      ],
+      "scope": "Business entitlements, not OAuth variants.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "Direct official Business Help table read; source updated May 2026.",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Business table covers business-profile decoration and conversion anchors; interpret separately from explicit consumer guidance for Personal Accounts at 1,000 followers. Edit access does not prove public display."
+    },
+    {
+      "id": "tt-verification",
+      "platform": "tiktok",
+      "topic": "eligibility",
+      "claim": "Business verification requires age 18+, regional business documents and matching legal details. It differs from the blue badge. Documented path: Settings and privacy > Account > Business verification; review typically 1-5 business days.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "How to verify a TikTok account",
+          "url": "https://ads.tiktok.com/resources/help/article/how-to-register-a-business-account",
+          "publisher": "ads.tiktok.com",
+          "sourceUpdatedAt": "2026-05"
+        }
+      ],
+      "scope": "Native business verification, separate from advertiser spend verification.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Keep document contents and verification codes out of project memory."
+    },
+    {
+      "id": "fb-copy",
+      "platform": "facebook",
+      "topic": "copy",
+      "claim": "ViewPrinter reports Page bio 255 and API post text 63206.",
+      "status": "tool-observation",
+      "sources": [
+        {
+          "title": "ViewPrinter platforms_list live observation",
+          "url": "https://viewprinter.tech/mcp",
+          "publisher": "viewprinter.tech",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Page bio as named by tool, not every Intro/About field.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "live MCP platforms_list",
+      "recheckAfter": "2026-11-04",
+      "limitations": "Inspect native editor counter."
+    },
+    {
+      "id": "fb-access",
+      "platform": "facebook",
+      "topic": "eligibility",
+      "claim": "Facebook access differs from task access. Full control includes settings and access management; API publishing permission does not establish the operator's profile-edit access.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "About Facebook Page access",
+          "url": "https://www.facebook.com/help/289207354498410/r.php/",
+          "publisher": "www.facebook.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Facebook Page access.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "fb-button",
+      "platform": "facebook",
+      "topic": "links",
+      "claim": "Editing a Page action button requires Facebook access. Switch into the Page, choose Edit action button / Change button and an available action.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Edit a Page action button",
+          "url": "https://www.facebook.com/help/messenger-app/1638565256396310?locale=en_GB",
+          "publisher": "www.facebook.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Page editor; choices vary.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": "No universal follower threshold established."
+    },
+    {
+      "id": "fb-cover",
+      "platform": "facebook",
+      "topic": "assets",
+      "claim": "Official Page cover specifications could not be reverified. Supply a master and labeled crop simulations, then inspect native desktop/mobile crops.",
+      "status": "needs-confirmation",
+      "sources": [
+        {
+          "title": "Page picture and cover dimensions",
+          "url": "https://www.facebook.com/help/125379114252045",
+          "publisher": "www.facebook.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Page cover, not feed link-preview.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official retrieval attempted; unavailable",
+      "recheckAfter": "2027-01-03",
+      "limitations": "Official page redirected to a login/block screen."
+    },
+    {
+      "id": "yt-links",
+      "platform": "youtube",
+      "topic": "links",
+      "claim": "Channel profiles support up to 14 links. Shorts description/comment URLs are non-clickable. Clickable external links in long-form descriptions/comments require advanced features.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Sharing links with audiences",
+          "url": "https://support.google.com/youtube/answer/13748639?hl=en-GB",
+          "publisher": "support.google.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Named channel/video placements; no Shorts URL unlock.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "yt-link-order",
+      "platform": "youtube",
+      "topic": "links",
+      "claim": "First profile link is prominent; set titles/URLs in Studio > Customization > Profile > Links.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Manage channel profile",
+          "url": "https://support.google.com/youtube/answer/2657964",
+          "publisher": "support.google.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Channel profile.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "yt-short-related",
+      "platform": "youtube",
+      "topic": "links",
+      "claim": "A Short can link to a public/unlisted video on the same channel using Related Video in Studio, with advanced features.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Related video in Shorts",
+          "url": "https://support.google.com/youtube/answer/14075157?hl=en",
+          "publisher": "support.google.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Internal video link, not external website.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "yt-unlocks",
+      "platform": "youtube",
+      "topic": "eligibility",
+      "claim": "Phone verification grants intermediate features. Advanced access adds sufficient channel history or ID/video verification where offered. Only primary owners verify identity. Inspect Studio > Settings > Channel > Feature eligibility.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Intermediate and advanced features",
+          "url": "https://support.google.com/youtube/answer/9891124?hl=en",
+          "publisher": "support.google.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Native eligibility, separate from monetization.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    },
+    {
+      "id": "yt-branding",
+      "platform": "youtube",
+      "topic": "assets",
+      "claim": "Banner recommended 2560x1440, minimum 2048x1152, <=6MB. Official text/logo safe area 1235x338 at minimum size. Avatar renders 98x98; JPG/GIF/BMP/PNG <=15MB, no animated GIF.",
+      "status": "verified-source",
+      "sources": [
+        {
+          "title": "Manage channel branding",
+          "url": "https://support.google.com/youtube/answer/10456525?hl=en-EN-0",
+          "publisher": "support.google.com",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Channel art/profile image.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "official page or indexed official result read",
+      "recheckAfter": "2027-01-03",
+      "limitations": "Centered 1543x422 at 2560x1440 is a conservative scaled calculation, not another official spec. Verify saved device previews."
+    },
+    {
+      "id": "yt-copy",
+      "platform": "youtube",
+      "topic": "copy",
+      "claim": "ViewPrinter API video description limit 5000; video title limit 100.",
+      "status": "tool-observation",
+      "sources": [
+        {
+          "title": "ViewPrinter platforms_list live observation",
+          "url": "https://viewprinter.tech/mcp",
+          "publisher": "viewprinter.tech",
+          "sourceUpdatedAt": null
+        }
+      ],
+      "scope": "Video fields, not channel description.",
+      "checkedAt": "2026-10-05",
+      "checkMethod": "live MCP platforms_list",
+      "recheckAfter": "2026-11-04",
+      "limitations": ""
+    }
+  ],
+  "history": [
+    {
+      "at": "2026-10-05",
+      "change": "Initial research. Meta source gaps remain needs-confirmation; TikTok consumer and May 2026 business rules retained separately."
+    },
+    {
+      "at": "2026-10-06T04:21:49.883629+00:00",
+      "facts": [
+        "tt-links",
+        "tt-entitlements"
+      ],
+      "change": "Rechecked native Personal Account website route and distinguished it from Business Suite entitlements. Added no-link conversion CTA and conditional website presentation guidance."
+    }
+  ]
+}

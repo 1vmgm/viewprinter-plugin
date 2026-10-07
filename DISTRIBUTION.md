@@ -3,19 +3,20 @@
 `skills/` is the shared source. Generate client packages from it. ViewPrinter's
 MCP service remains hosted separately.
 
-## Status — September 17, 2026
+## Status — October 6, 2026
 
 | Channel | Package / source | Status |
 | --- | --- | --- |
-| Codex | Portable package, compatibility manifest, repository marketplace | Local installation support; see verification |
-| Claude Code | Claude manifest and shared skills | Existing community marketplace path retained |
-| ClawHub | Generated single-skill bundle | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
+| Codex | Portable package, compatibility manifest, repository marketplace | `codex plugin marketplace add 1vmgm/viewprinter-plugin`; see verification |
+| Claude Code | Claude manifest, and `.claude-plugin/marketplace.json` making this repository a marketplace | `/plugin marketplace add 1vmgm/viewprinter-plugin`. Not listed in Claude's plugin directory |
+| Claude directory | Connector: the hosted MCP server, tools only | Live since August 2026 at claude.ai/directory/viewprinter, tagged Community; carries no skills |
+| ClawHub | Generated package: the content-publishing entry, the other five skills as guides | `@1vmgm/viewprinter-social-manager` 1.3.1 submitted 2026-09-29, pending security scan; new builds are not automatically published |
 | OpenAI directory | Remote MCP submission with skills | 1.0.0 published; 1.3.1 (skill 1.3.1, widgets in the tool scan) replacing the 1.3.0 review, 2026-09-29 |
 | Cursor Marketplace | `.cursor-plugin/plugin.json`, derived from `plugin.json` by `set_version.py`; remote server inline as a bare URL | Manifest added 2026-09-29; not yet submitted at cursor.com/marketplace/publish (manual review) |
 | LobeHub | No release | Deferred; repository access was declined |
 
-Version 1.2.0 is the local package version for this work, not a claim that it is
-published. See [compatibility](docs/compatibility.md).
+A version here is what the repository holds; a channel has it only once published
+there. See [compatibility](docs/compatibility.md).
 
 The old September 15 note described a previous submission artifact. It does not
 establish the current pending submission's contents. Preserve the pending review;
@@ -27,12 +28,16 @@ repository edits and builds do not replace it.
 - `mcp.json`: portable Streamable HTTP connection.
 - `.codex-plugin/plugin.json`: Codex compatibility manifest.
 - `.claude-plugin/plugin.json` and `.mcp.json`: Claude metadata.
+- `.claude-plugin/marketplace.json`: makes this repository a Claude Code marketplace.
 - `.agents/plugins/marketplace.json`: marketplace for the root package.
-- `skills/viewprinter/`: the canonical skill. `SKILL.md` routes; `rules/` holds
-  one file per mistake worth preventing.
-- `clawhub/SKILL.md`: the ClawHub-facing entry point; `build.mjs` copies the
-  rules in as `references/`.
-- `evals/workflows.json`: behavior scenarios; definitions are not test results.
+- `skills/`: the six skills. `content-publishing` is the entry point: its
+  `SKILL.md` routes and `references/rules/` holds one file per mistake worth
+  preventing. `content-production`, `content-review`, `content-learning`,
+  `account-profiles` and `paid-growth` ship beside it and link to each other.
+- `clawhub/frontmatter.md`: the ClawHub listing's frontmatter. `node clawhub/build.mjs`
+  generates `clawhub/entry.md` and `clawhub/dist/` from it and `skills/`.
+- `skills/<name>/evals/evals.json`: each skill's test prompts; definitions are
+  not test results.
 
 The portable OpenAI extension takes precedence over the compatibility overlay.
 The validator checks that identity and presentation agree.
@@ -48,9 +53,16 @@ The validator checks that identity and presentation agree.
    and hashes of every packaged file.
 5. Test installation and affected workflows in the intended clients.
 6. Publish the authorized channels and record the version/artifact sent to each.
+7. Cut a GitHub release `v<version>` carrying the three ZIPs from `dist/`. The
+   ViewPrinter site's `/.well-known/agent-skills/index.json`, which
+   `npx skills add https://viewprinter.tech` reads, points at that release's
+   `viewprinter-skill-<version>.zip`: update its version, `sha256` digest (from
+   `dist/release.json`), skill name (`viewprinter-social-manager`, the name in the
+   archive's SKILL.md) and description together, then deploy the site.
 
-The build produces a complete plugin ZIP and a single-skill ZIP from the same
-shared source. Generated `dist/` directories are ignored; never edit them.
+The build produces three ZIPs from the same shared source: the complete plugin,
+the ClawHub package, and that package with `SKILL.md` at the archive root, which
+`npx skills add https://viewprinter.tech` fetches. Generated `dist/` directories are ignored; never edit them.
 
 ## Channel updates
 
@@ -70,7 +82,7 @@ npx clawhub skill publish clawhub/dist/viewprinter-social-manager \
 ```
 
 Every release is scanned. Keep descriptions aligned with capabilities, including
-media deletion and workspace-wide listing. Avoid hidden instructions in generated
+media deletion, workspace-wide listing and the review server on `127.0.0.1`. Avoid hidden instructions in generated
 comments. A dry run is not proof of successful publication.
 
 **OpenAI:** wait for the pending review. If feedback or a subsequent release

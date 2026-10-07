@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "example-group",
+  "title": "Example account group",
+  "revision": 1,
+  "checkedAt": "2026-10-05",
+  "timezone": "UTC",
+  "status": "Proposed; no public edits applied",
+  "focus": "Review the identity and first profile link.",
+  "remoteGroup": null,
+  "accounts": [
+    {
+      "ref": "AC-01",
+      "accountId": "example-id",
+      "organizationId": "example-workspace",
+      "platform": "instagram",
+      "handle": "example",
+      "url": "https://www.instagram.com/example/",
+      "role": "Dedicated account",
+      "nativeType": "unknown",
+      "sharedWith": [],
+      "current": {
+        "name": "Example",
+        "bio": null,
+        "website": null,
+        "evidence": "Example only"
+      },
+      "proposed": {
+        "name": "Example",
+        "bio": "A concise account promise.",
+        "bioLimit": 150,
+        "countUnit": "characters",
+        "website": "https://example.com/",
+        "linkTitle": "Visit our site"
+      },
+      "features": [
+        {
+          "label": "Profile website",
+          "state": "unknown",
+          "requirement": "Inspect native Links editor",
+          "action": "Confirm saved public clickability",
+          "evidence": "Not observed",
+          "checkedAt": "2026-10-05"
+        }
+      ],
+      "actions": [
+        "Review proposed profile copy"
+      ],
+      "assetIds": []
+    }
+  ],
+  "assets": [],
+  "sources": [],
+  "history": [],
+  "reviewHub": {
+    "kind": "account-group",
+    "groupId": "example-group"
+  }
+}

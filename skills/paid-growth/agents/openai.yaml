@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paid Growth"
+  short_description: "Test and scale TikTok Spark Ads on net revenue (early access)"
+  default_prompt: "Use $paid-growth to check my TikTok ad connections, then read this week's ads and propose what to cut, graduate and scale."

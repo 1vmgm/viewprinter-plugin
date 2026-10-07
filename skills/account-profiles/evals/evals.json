@@ -1,0 +1,42 @@
+{
+  "skill_name": "account-profiles",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Set up the profiles for our brand's TikTok, Instagram and YouTube accounts in ViewPrinter. Our Facebook Page is shared with a sister brand, and we have no X account. Prepare the brief; change nothing yet.",
+      "expected_output": "Resolves each account by workspace and account ID through accounts_list, groups_list and platforms_list after reading the publishing destinations and reading-results rules; keeps exact handles and profile URLs; omits X rather than creating an account; flags the shared Facebook Page before proposing a separate identity and uses one identityRef for its shared copy; writes group.json and review.html in the shape brief.md describes.",
+      "files": [],
+      "expectations": [
+        "Accounts are matched by workspace + account ID, not by similar names",
+        "No missing account is created to complete a platform checklist",
+        "The shared Page is called out as shared, with one canonical identityRef",
+        "Biographies or links absent from accounts_list are recorded as unknown, not empty",
+        "Nothing is applied to the remote accounts or groups"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Which profile features can our group use right now — link in bio, Instagram link stickers, YouTube banner links? Answer from the research and the accounts themselves.",
+      "expected_output": "Separates possible eligibility from enabled state: a dated, sourced platform rule establishes what an account type can do, and only account evidence establishes what is on. Reads only the relevant platform modules, records unknowns with dates, and does not treat an OAuth connection variant as proof of an entitlement.",
+      "files": [],
+      "expectations": [
+        "Each claim carries a source and the date it was checked",
+        "Possible eligibility and confirmed enabled state are reported separately",
+        "Unknown feature state stays unknown rather than being reported as unavailable",
+        "Platforms outside the group are not researched"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The proposed bios, avatars and banners are ready. Show them to me for review.",
+      "expected_output": "Builds the review with scripts/build_review.py from group.json, presents it through the content-review workspace registered as an account-group entry with a stable group ID, and verifies the served page, every asset and download path, copy buttons and the narrow layout before handing off. Approval stays in conversation, and nothing is applied to the remote accounts or ViewPrinter groups.",
+      "files": [],
+      "expectations": [
+        "The review is registered in the shared workspace as account-group, not opened in a new tab",
+        "Avatar and cover previews state their crop assumptions",
+        "Every local download and supporting link is checked over HTTP",
+        "No approval form or notes box is added to the page"
+      ]
+    }
+  ]
+}

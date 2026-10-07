@@ -10,7 +10,7 @@
 #
 # What survives the trim is what leaks in any repo:
 #
-#   absolute home paths   /Users/someone/ — true of a machine, not of the skill
+#   absolute home paths   /Users/someone/ — true of a machine, not of the skill  (privacy-lint: allow)
 #   long numeric ids      6+ digits: account, workspace and platform ids
 #   stray root copies     a file duplicated between a skill root and a subfolder
 #
@@ -24,7 +24,7 @@ FAIL=0
 # patterns it bans, and a linter that fails on itself teaches people to skip it.
 SCAN=$(find skills clawhub -type f \( -name '*.md' -o -name '*.sh' \) ! -path '*/dist/*' | sort)
 
-BANNED='(/Users/[a-z]+/|[0-9]{6,})'
+BANNED='(/Users/[a-z]+/|[0-9]{6,})'  # privacy-lint: allow
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   hits=$(grep -nE "$BANNED" "$f" 2>/dev/null | grep -vE 'example\.(com|org)|<your|<this' || true)

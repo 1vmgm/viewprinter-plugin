@@ -1,0 +1,55 @@
+{
+  "skill_name": "content-learning",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Which of our video formats is working? Tell me what to make more of.",
+      "context": "ViewPrinter is connected. Project content memory has three formats and publication links for 14 posts across two Instagram accounts; most posts are 4–10 days old; two were promoted.",
+      "expected_output": "Collects a complete posts_list census for the linked accounts and window, runs the report, compares each post only with its own account's posts of similar age and mode, excludes the promoted posts, and presents per-format suggestions with evidence for the user to decide.",
+      "files": [],
+      "expectations": [
+        "Uses complete posts_list pages with cursors rather than a ranked sample",
+        "Compares within account, platform, age bucket and trial/regular mode",
+        "Excludes promoted posts from organic comparisons and says so",
+        "Presents double down, vary, retire or keep testing as suggestions with the evidence behind each",
+        "Does not claim installs or revenue from views or engagement"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This one video got 300k views. Should we make everything like it?",
+      "context": "The format has four other posts, all near their accounts' normal.",
+      "expected_output": "Explains that one outlier does not prove a format, reads the format's median and share above baseline, and recommends varying around the outlier as a controlled test.",
+      "files": [],
+      "expectations": [
+        "Does not call the format a winner from one post",
+        "Uses the median and share above baseline",
+        "Proposes changing one dimension at a time"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Schedule these three approved videos for tomorrow and make sure we can learn from them later.",
+      "context": "Batch memory exists with item IDs and versions. Posting is authorized.",
+      "expected_output": "After scheduling through the content-publishing skill, records one publication link per destination with post ID, account ID, batch, item, version and format.",
+      "files": [],
+      "expectations": [
+        "Links each destination at scheduling time, not later",
+        "Uses the post ID and account ID as the join key",
+        "Does not match posts to items by caption"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Last week's posts all show zero views. Is the format dead?",
+      "context": "Several destinations are published with no measurement yet; others are still scheduled.",
+      "expected_output": "Separates unmeasured and pending destinations from measured zeros, makes no format decision, and sets a re-read date.",
+      "files": [],
+      "expectations": [
+        "Treats missing metrics as unmeasured, not zero",
+        "Makes no retire decision on unmeasured or young posts",
+        "Records the next read in carry-forward"
+      ]
+    }
+  ]
+}

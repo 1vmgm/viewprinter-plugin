@@ -1,7 +1,10 @@
 # OpenClaw
 
-The existing ClawHub listing is `@1vmgm/viewprinter-social-manager`. It packages
-one entry skill with references generated from this repository's shared skills.
+The ClawHub listing is `@1vmgm/viewprinter-social-manager`. From 2.0.0 it packages
+the content-publishing skill as its entry point, with the plugin's other five
+skills alongside as guides, all generated from this repository's `skills/`; earlier
+versions carried the publishing skill alone. A release reaches ClawHub when it is
+published there.
 Install it through your supported ClawHub client, then connect the MCP service.
 
 The previously documented command is below. OpenClaw is not installed in the

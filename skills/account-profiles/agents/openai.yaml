@@ -1,0 +1,4 @@
+interface:
+  display_name: "Account Profiles"
+  short_description: "Set up and review profiles across a group of accounts"
+  default_prompt: "Use $account-profiles to audit our brand's accounts and prepare proposed bios, images and links for review, changing nothing yet."

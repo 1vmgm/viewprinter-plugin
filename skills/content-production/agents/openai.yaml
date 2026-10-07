@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Production"
+  short_description: "Develop formats and your content skill; produce batches"
+  default_prompt: "Use $content-production to turn this brief into a format prototype, then an approved batch ready for review."

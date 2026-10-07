@@ -1,27 +1,33 @@
 ---
 name: viewprinter-social-manager
 description: >-
-  Use ONLY for work that goes through a connected ViewPrinter account: scheduling or
-  publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading, describing,
-  listing or PERMANENTLY DELETING media held in ViewPrinter; amending or cancelling a post
-  that has not gone out; managing named groups of accounts; and reading follower and post
-  performance, including linking each post to the video and format that made it and
-  comparing it with the account's own normal. Two capabilities are destructive and irreversible: publishing to a real
-  public account, and media_delete, which erases a stored file and its bytes. Listing media
-  or posts reads everything in the user's ViewPrinter workspaces, not just one item.
-  Requires ViewPrinter to be connected — do NOT use it to draft copy the user has no
-  intention of posting, to schedule anything anywhere else, or for a platform ViewPrinter
-  does not support. A bare "post this" with no ViewPrinter account in play is not this
-  skill.
+  Use for work through a connected ViewPrinter account and the content around it:
+  scheduling or publishing a post to TikTok, Instagram, Facebook, YouTube or X; uploading,
+  describing, listing or PERMANENTLY DELETING media held in ViewPrinter; amending or
+  cancelling a post that has not gone out; managing account groups and account profiles;
+  reading follower and post performance and linking each post to the format that made it;
+  and making content before it is posted — developing formats, producing batches and
+  presenting them for review in a local workspace. Two capabilities are destructive and
+  irreversible: publishing to a real public account, and media_delete, which erases a
+  stored file and its bytes. Listing media or posts reads everything in the user's
+  ViewPrinter workspaces. Publishing and account tools require ViewPrinter to be connected
+  — do NOT use them to schedule anything anywhere else, or for a platform ViewPrinter does
+  not support.
 metadata:
-  version: "1.4.0"
+  version: "2.0.0"
 license: MIT
-allowed-tools: ViewPrinter MCP (platforms, accounts, groups, media, posts), and
-  scripts/learn.py, a local Python helper that reads saved post lists and writes
-  link records inside the project; it makes no network calls
+allowed-tools: >-
+  ViewPrinter MCP (platforms, accounts, groups, media, posts), and local Python helpers
+  that read and write the project's files and a ~/ViewPrinter folder (the review registry
+  and the source archive) and call no outside service: scripts/learn.py (publication links
+  and posting checkpoints); content-production's memory.py and archive.py (project memory,
+  an archive of originals); content-review's review scripts, which serve review pages on
+  127.0.0.1 only, open them in the user's browser and check them in a headless Chrome with
+  its background networking off; account-profiles' build_review.py; and paid-growth's
+  arena.py (ad decisions from exported numbers)
 ---
 
-# ViewPrinter
+# Content publishing
 
 ViewPrinter is a hosted MCP server that publishes to social platforms on the
 user's behalf. You drive it by calling its tools; the user drives you by asking
@@ -32,14 +38,34 @@ They are not a list to reason from — `platforms_list` is the only source of
 truth for what can publish and what each one accepts. See
 `references/rules/platforms-first.md`.
 
-## If the tools are not there yet
+## The rest of this plugin
+
+This skill publishes. The plugin's other skills cover the work around it, and
+ship with it:
+
+| Skill | Use it for |
+|---|---|
+| [content-production](content-production/GUIDE.md) | Developing formats and the project's own content skill, making batches, recurring influencers, the source archive |
+| [content-review](content-review/GUIDE.md) | The local review workspace: one review per project and format, up to verified scheduling |
+| [content-learning](content-learning/GUIDE.md) | Which posts and formats worked, and what to make next |
+| [account-profiles](account-profiles/GUIDE.md) | Profile copy, images, links and feature eligibility across a group of accounts, including partial groups and shared accounts |
+| [paid-growth](paid-growth/GUIDE.md) | Testing and scaling winning posts as TikTok ads (early access) |
+
+A project keeps one content skill of its own — shared guidance plus one
+reference per format — and content-production helps build and extend it rather
+than creating a skill per format. Local review of content or account groups
+never changes remote groups or scheduled posts; those go through the rules
+below. The hosted connection is needed for remote posting and account tools,
+not for local production, review or planning.
+
+## If the remote tools are not there yet
 
 The eleven rules below all assume `platforms_list`, `media_upload` and the rest are
 callable. Installed as a plugin they are — the manifest brings the server. But a
 skill can be installed on its own, and then none of them exist.
 
-**Check before working.** If the ViewPrinter tools are not available, the server
-is not connected, and nothing below applies. Say so and hand it back:
+**Check before remote work.** If the ViewPrinter tools are not available, the hosted server
+is not connected and remote operations cannot proceed. Explain the setup below; local production and review can continue through content-production and content-review:
 
 - It is a remote MCP server at `https://viewprinter.tech/api/mcp` — streamable
   HTTP, OAuth only. There is no API key to paste anywhere, and any instruction
@@ -57,7 +83,7 @@ is not connected, and nothing below applies. Say so and hand it back:
 - Grouping accounts so a post can name the set instead of listing ids
 - Uploading an image or video to attach to a post
 - Asking how a post did, or how an account is growing
-- Asking which posts or formats worked, and what to make more of
+- Linking each post to the format that made it, when it is scheduled
 
 ## The shape of the work
 
@@ -81,7 +107,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | Rule | Priority | Covers |
 |---|---|---|
 | `platforms-first` | CRITICAL | Live platform rules and connection-specific schema mismatches |
-| `media-upload` | CRITICAL | Uploading is two steps, and the second is yours |
+| `media-upload` | CRITICAL | Uploading is two steps, and the second is yours; deleting is permanent |
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |
