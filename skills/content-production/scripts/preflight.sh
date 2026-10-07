@@ -16,7 +16,7 @@ for candidate in python3 python "py -3"; do
   fi
 done
 [ -n "$PYTHON" ] && ok "$PYTHON is 3.9 or newer" || bad "Python 3.9 or newer is required (python3, python or py -3)"
-for script in memory.py archive.py; do
+for script in memory.py archive.py tools.py; do
   [ -n "$PYTHON" ] && $PYTHON "$HERE/$script" --help >/dev/null 2>&1 && ok "$script starts" || bad "$script does not start"
 done
 

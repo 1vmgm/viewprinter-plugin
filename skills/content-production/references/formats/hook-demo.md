@@ -16,11 +16,11 @@ Vary short and longer hooks according to readable copy and action, rather than p
 
 ## Capability and skill map
 
-These are possible routes, not dependencies automatically included with ViewPrinter. Discover the installed skills/tools and read their current instructions before use.
+These are possible routes, not dependencies automatically included with ViewPrinter. Discover the installed skills/tools and read their current instructions before use; [tools](../tools.md) says how to install each one.
 
 | Need | Available route to inspect | Keep as evidence |
 | --- | --- | --- |
-| Reference research and hooks | Supplied research; connected Light Reel when available and useful | Reference, date, observed structure and hook-to-proof reasoning |
+| Reference research and hooks | Supplied research; Scrape Creators when available and useful | Reference, date, observed structure and hook-to-proof reasoning |
 | Creator footage / identity | Existing source archive, supplied footage, or an authorized connected generator such as Higgsfield | Original, identity/source references, actual model/workflow, request/job ID, settings and known cost basis |
 | Real product proof | Installed app/browser interaction and recording guidance; Argent where available/configured; genuine product exports | Fixture scenario, route, capture, dates/totals and export source |
 | Edit and motion | User/project-selected editor; installed Tesseract video/motion skills when chosen | Editable project, source timings, annotation/audio timing and final export |

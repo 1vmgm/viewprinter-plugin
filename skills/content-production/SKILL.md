@@ -1,6 +1,6 @@
 ---
 name: content-production
-description: Turn a completed research brief or established creative direction into content through concept and format development, representative previews, batch production, conversational feedback and revision — and help a project build its own content skill and format references. Use for creating a content batch, developing a format, setting up or extending a project's content skill, making more of an approved example, iterating on videos, images, carousels and product demonstrations, managing recurring influencers, or keeping and finding generated originals for reuse. Review, publishing and learning are their own skills in this plugin.
+description: Turn a completed research brief or established creative direction into content through concept and format development, representative previews, batch production, conversational feedback and revision — and help a project build its own content skill and format references. Use for creating a content batch, developing a format, setting up or extending a project's content skill, making more of an approved example, iterating on videos, images, carousels and product demonstrations, managing recurring influencers, keeping and finding generated originals for reuse, or telling the user which tool a task needs and how to install it. Review, publishing and learning are their own skills in this plugin.
 ---
 
 # Content production
@@ -33,7 +33,7 @@ Make the first prototype before writing a skill: a format is reviewable before i
 
 Write down the user's decisions, not guesses. A format's recipe grows from approved examples.
 
-Use existing authorization and decisions from the conversation. These phases are production stages, not automatic permission gates. Paid generation is the exception: it needs a provider the user connected or named and a spend scope, a count or a budget, from the user or project memory. Ask once per batch when either is missing. A request for concepts only stops before paid generation; a request for an entire unattended run permits reasonable local decisions within that scope. Stop at a review checkpoint the user actually requested. Do not invent approval because time elapsed.
+Use existing authorization and decisions from the conversation. These phases are production stages, not automatic permission gates. Paid generation is the exception: it needs a provider the user connected or named and a spend scope, a count or a budget, from the user or project memory. Ask once per batch when either is missing. Keep the user informed while spending: what each paid step should cost before it runs, what it cost and the running total after, and the batch total at handoff; see [spending](references/tools.md#keep-the-user-informed-on-spending). A request for concepts only stops before paid generation; a request for an entire unattended run permits reasonable local decisions within that scope. Stop at a review checkpoint the user actually requested. Do not invent approval because time elapsed.
 
 ## Choose the mode
 
@@ -65,7 +65,7 @@ For staged review, define the decision and exact deliverable at each checkpoint 
 
 ## 2. Make the representative example
 
-Inspect available tools and assets. Use the user's selected tools. For video, use the editor the user or project memory names, with its installed guidance for supported commands, version and native project structure; an editor cuts footage, it does not generate avatars. Load the corresponding capture or generation guidance only when needed. If a required tool is unavailable, report the capability gap and prepare the unaffected work; don't pretend a substitute meets the same deliverable.
+Inspect available tools and assets: `scripts/tools.py check --json` reports what this machine has, and [tools](references/tools.md) names the tool each task needs, how to install it and when to recommend it, including a one-time setup summary on a machine's first production session. Use the user's selected tools. For video, use the editor the user or project memory names, with its installed guidance for supported commands, version and native project structure; an editor cuts footage, it does not generate avatars. Load the corresponding capture or generation guidance only when needed. If a required tool is unavailable, recommend it as the tools page describes: once, with what it unlocks and its install step (for video editing, Tesseract, unless the user or project memory names another editor), remembering the answer. Prepare the unaffected work meanwhile; don't pretend a substitute meets the same deliverable.
 
 Choose the smallest prototype that answers the open question: a layout for typography, a short motion test for physical plausibility, or a complete video for hook-to-proof timing. Check the actual result at the intended viewing size. A good still does not establish that motion or audio works.
 
