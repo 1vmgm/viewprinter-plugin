@@ -46,7 +46,8 @@ accounts you want to use. There is no ViewPrinter API key to copy into a config.
 - **Local helpers.** The skills' Python scripts run on your machine and call no outside
   service. They read and write your project's files, including
   `.viewprinter/content-memory`, and a `ViewPrinter` folder in your home folder: the
-  review registry and the source archive.
+  review registry, the source archive and your answers about tools. content-production's
+  `tools.py` finds the tools you have by running each one's `--version` (never a browser).
 - **The review page.** content-review serves review pages on `127.0.0.1:8765`
   (`VIEWPRINTER_REVIEW_PORT` changes the port), opens one tab in your browser, and checks
   pages in a headless Chrome, Chromium or Edge that, for a local review, resolves no
@@ -156,6 +157,29 @@ want. A post's caption and destinations can change only while every destination 
 pending, though its time can still move; cancellation cannot recall a delivery
 already in progress. Account metrics include their
 measurement time and are not live counters.
+
+## Tools for making content
+
+Publishing needs only this plugin. Making the media needs a tool for each task. The
+production skill recommends one when your work needs it, tells you how to install it, and
+remembers when you say "not now":
+
+| Task | Tool |
+| --- | --- |
+| Video editing, motion graphics, sound design | [Tesseract](https://github.com/mirage-hq/Tesseract) by Mirage (`npx skills add mirage-hq/Tesseract`) |
+| Media conversion, covers, frames | ffmpeg |
+| App demos and screen recordings | [Argent](https://github.com/software-mansion/argent) (`npx @swmansion/argent@latest init -y`) |
+| Video and image generation | Higgsfield or fal, with your own account |
+| Voiceover and captions from speech | ElevenLabs |
+| Breaking down a video | Gemini API |
+| Research: creators, posts, transcripts | Scrape Creators; ViewPrinter's own research is coming soon |
+| Meme templates | Memelord |
+| App and UI design references | Mobbin |
+
+It also keeps you informed on spending: the expected cost before each paid step, what it
+cost and the running total after, and a batch total at handoff. Ask your assistant which
+of these tools you have; [tools](skills/content-production/references/tools.md) has every
+setup step.
 
 ## MCP-only setup
 

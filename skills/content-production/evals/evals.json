@@ -152,6 +152,44 @@
         "Records the skill's relative path as contentSkill in content-memory config.json",
         "No paid generation or publishing without explicit authorization and a spend scope"
       ]
+    },
+    {
+      "id": 13,
+      "prompt": "Here are four clips from our launch shoot. Cut them into a 30-second vertical ad with captions and music. I don't think I have a video editor set up.",
+      "expected_output": "Checks the tools first. On a new machine it gives one short setup summary led by Tesseract, which is also its recommendation: what it unlocks and its install step, given once. It records the answer and prepares the edit plan meanwhile, without switching editors or claiming a render.",
+      "files": [],
+      "expectations": [
+        "Runs scripts/tools.py check or reads references/tools.md before editing",
+        "Says the edit needs Tesseract, what it unlocks, and npx skills add mirage-hq/Tesseract, whose guide installs the matching tsrct CLI",
+        "Mentions Tesseract once: when the one-time setup summary is given, it leads with Tesseract instead of repeating it, then runs tools.py introduced",
+        "Runs tools.py remember tesseract not-now right after recommending, so no answer counts as not now",
+        "Does not install the OCR program named tesseract (brew install tesseract), and installs nothing without the user's OK",
+        "Prepares the work that needs no editor, such as the edit plan, and claims no render it did not make"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "Not now on the editor, just give me the plan. [Two days later, in a new session:] Make me three more cuts from the same clips.",
+      "expected_output": "The not-now was recorded when Tesseract was recommended. In the later session check reports mention: quiet, so the agent neither re-asks nor nags; it gives plans for the three cuts and says in one clause that they are plans, not renders.",
+      "files": [],
+      "expectations": [
+        "tools.json holds a not-now answer for tesseract from the first session",
+        "In the later session, check reports mention: quiet, and the agent does not recommend Tesseract again",
+        "Names the gap in one clause rather than presenting plans as finished videos",
+        "Does not repeat the one-time setup summary"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Generate eight 5-second b-roll clips with Higgsfield for this batch. Keep it under $40.",
+      "expected_output": "Treats $40 as the spend limit, gives the expected cost before generating, reports each clip's cost and the running total against $40, stops before exceeding it, and gives the batch total at handoff.",
+      "files": [],
+      "expectations": [
+        "States the expected cost before the first paid generation",
+        "Reports what each generation cost (or that the provider didn't report it) and the running total against $40",
+        "Stops and asks before any step that would exceed the limit",
+        "Gives the batch total at handoff and never guesses credits"
+      ]
     }
   ]
 }

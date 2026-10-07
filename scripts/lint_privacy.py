@@ -15,6 +15,10 @@ go one per line in private/denylist.txt, which git ignores and CI never sees.
 Findings are masked: on a public repository the CI log is public too.
 """
 
+# Annotations such as `str | None` are 3.10 syntax; deferring them lets the commit hook run
+# on macOS's built-in Python 3.9.
+from __future__ import annotations
+
 import argparse
 import re
 import subprocess
