@@ -1,6 +1,6 @@
 # Codex setup
 
-The full plugin bundles six skills and the hosted MCP connection. See
+The full plugin bundles five skills and the hosted MCP connection. See
 [compatibility](compatibility.md) for tested versions and workflow coverage.
 
 ## Install
@@ -66,8 +66,8 @@ Codex discovers skill folders under `~/.agents/skills/` or a project's
 `.agents/skills/`.
 
 Standalone, each skill keeps its folder name: `content-publishing`,
-`content-production`, `content-review`, `content-learning`, `account-profiles`
-and `paid-growth`. Check for existing skills with those names. The full plugin
+`content-production`, `content-review`, `content-learning` and
+`account-profiles`. Check for existing skills with those names. The full plugin
 namespaces them, as in `viewprinter:content-publishing`.
 
 Add the separate tool connection for the standalone path:

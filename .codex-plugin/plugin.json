@@ -1,6 +1,6 @@
 {
   "name": "viewprinter",
-  "description": "Make, review and publish social content: develop formats and your project's own content skill, produce batches, review them in one local workspace, publish to TikTok, Instagram, Facebook, YouTube and X, set up account profiles, learn which formats work, and test winners as TikTok ads",
+  "description": "Make, review and publish social content: develop formats and your project's own content skill, produce batches, review them in one local workspace, publish to TikTok, Instagram, Facebook, YouTube and X, set up account profiles, learn which formats work",
   "version": "2.0.0",
   "author": {
     "name": "VMGM Software",
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "ViewPrinter",
     "shortDescription": "Make, review and publish social content.",
-    "longDescription": "Develop formats and your project's own content skill, produce batches and review them in one local workspace, then connect accounts, schedule posts and read how they did through ViewPrinter. Set up profiles across a group of accounts, learn which formats work, and test winning posts as TikTok ads.",
+    "longDescription": "Develop formats and your project's own content skill, produce batches and review them in one local workspace, then connect accounts, schedule posts and read how they did through ViewPrinter. Set up profiles across a group of accounts, learn which formats work.",
     "developerName": "VMGM Software",
     "category": "Productivity",
     "capabilities": [

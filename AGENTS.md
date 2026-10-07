@@ -18,7 +18,7 @@ carries the method, never the project.
 
 Two lowercase words naming the work, not the product. The content pipeline is
 `content-<stage>` — production, review, publishing, learning — and work outside
-it names its subject: `account-profiles`, `paid-growth`. No `viewprinter-`
+it names its subject: `account-profiles`. No `viewprinter-`
 prefix; every client already namespaces a plugin's skills, as in
 `viewprinter:content-review`.
 

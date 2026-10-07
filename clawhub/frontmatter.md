@@ -24,6 +24,5 @@ allowed-tools: >-
   memory.py and archive.py (project memory, an archive of originals) and tools.py (finds
   local tools by running each one's --version, never a browser); content-review's review scripts, which serve review pages on
   127.0.0.1 only, open them in the user's browser and check them in a headless Chrome with
-  its background networking off; account-profiles' build_review.py; and paid-growth's
-  arena.py (ad decisions from exported numbers)
+  its background networking off; and account-profiles' build_review.py
 ---

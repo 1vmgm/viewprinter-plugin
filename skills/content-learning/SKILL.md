@@ -12,7 +12,7 @@ of just more of it.
 
 It judges organic creative performance: reach, retention and engagement relative to
 what the same account normally gets. It does not judge installs, sales or ad returns;
-those need attribution and belong to the paid-growth skill or the user's own analytics.
+those need attribution and belong to a paid-ads skill or the user's own analytics.
 Reading and reporting never authorize posting, editing posts or changing campaigns.
 
 ## 1. Link every publication when it goes out

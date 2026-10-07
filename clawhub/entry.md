@@ -24,8 +24,7 @@ allowed-tools: >-
   memory.py and archive.py (project memory, an archive of originals) and tools.py (finds
   local tools by running each one's --version, never a browser); content-review's review scripts, which serve review pages on
   127.0.0.1 only, open them in the user's browser and check them in a headless Chrome with
-  its background networking off; account-profiles' build_review.py; and paid-growth's
-  arena.py (ad decisions from exported numbers)
+  its background networking off; and account-profiles' build_review.py
 ---
 
 # Content publishing
@@ -50,7 +49,6 @@ ship with it:
 | [content-review](content-review/GUIDE.md) | The local review workspace: one review per project and format, up to verified scheduling |
 | [content-learning](content-learning/GUIDE.md) | Which posts and formats worked, and what to make next |
 | [account-profiles](account-profiles/GUIDE.md) | Profile copy, images, links and feature eligibility across a group of accounts, including partial groups and shared accounts |
-| [paid-growth](paid-growth/GUIDE.md) | Testing and scaling winning posts as TikTok ads (early access) |
 
 A project keeps one content skill of its own — shared guidance plus one
 reference per format — and content-production helps build and extend it rather
