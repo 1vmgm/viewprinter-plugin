@@ -54,6 +54,12 @@ Keep source-time and timeline-time distinct. Work in versioned native projects, 
 
 Inspect the final encoded file's meaningful frames and motion. Verify dimensions, duration, audio streams, decode errors and matching content. Listen when capable; report when only automated measurements were possible. Filmstrips don't prove temporal continuity or audio quality. Use external audiovisual review only when authorized to send those specific assets.
 
+### Export quality check
+
+Compare matching moments in the final encoded video with the original source at the intended viewing size; inspect fine detail at native resolution too. Check faces, hair and product text for added blur, smearing or compression blocks, and motion for unintended freezes or uneven movement. Check normal-speed playback when available; metadata, a resolution label and filmstrips alone do not establish visual quality. Intentional stills and readable proof holds are not defects.
+
+If the export looks worse than the source, check scaling, crop, compression and frame-rate conversion, correct the edit/export settings and recheck the finished file. Use the original footage rather than a compressed preview as the editing source. If the defect already exists in the source, record that separately before choosing a repair or regeneration. State any unverified playback checks; do not claim a clean export from encoding success alone.
+
 ## Delivery and scope
 
 Deliver immutable versioned outputs and a current gallery; keep prior rounds available for comparison. Distinguish rendered, reviewed, approved, uploaded, scheduled and published. Use the content-publishing skill for external actions already authorized, and report exact blockers for anything refused. Don't add account strategies, AI-label ratios or automatic trial behavior as defaults for every project.
