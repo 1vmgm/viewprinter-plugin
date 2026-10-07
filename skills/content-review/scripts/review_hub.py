@@ -322,8 +322,23 @@ class Hub:
 
     def watch(self):
         last = json.dumps(self.snapshot, sort_keys=True)
+        try:
+            from review_formats import upgrade
+        except ImportError:  # copied without its siblings
+            upgrade = None
+        failed = {}
         while True:
             time.sleep(1.0)
+            # Reviews that older code generated are rebuilt here rather than at startup, so a
+            # large rebuild never delays the hub answering ensure.
+            if upgrade:
+                try:
+                    _, errors = upgrade(failed)
+                    for (entry, _), error in errors.items():
+                        print(f"review_hub: could not rebuild {entry}: {error}", file=sys.stderr, flush=True)
+                    failed.update(errors)
+                except Exception as exc:
+                    print(f"review_hub: rebuild failed: {exc}", file=sys.stderr, flush=True)
             try:
                 snapshot, own_roots, project_roots = scan()
             except Exception as exc:  # keep serving the last good view

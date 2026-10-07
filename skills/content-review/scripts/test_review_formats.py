@@ -2,11 +2,13 @@ import copy
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import unquote
 import review_workspace as ws
 import review_formats as formats
 from review_gallery import build_gallery
@@ -33,7 +35,7 @@ class FormatTests(unittest.TestCase):
         r=ws.get(first);self.assertEqual(ws.get('project--second')['id'],first)
         self.assertEqual(len(r['sources']),2);self.assertIn('project--second',r['aliasSources'])
         d=self.data(first);self.assertEqual({i['id'] for i in d['items']},{'A','B'})
-        self.assertEqual({Path(i['src']).parent for i in d['items']},{a,b})
+        self.assertEqual({Path(i['src']).read_bytes() for i in d['items']},{b'picture a',b'picture b'})
         self.assertEqual({i['variant'] for i in d['items']},{'a','b'})
     def test_retry_does_not_duplicate_and_different_batch_race_is_safe(self):
         sources=[self.source(str(i),str(i)) for i in range(5)]
@@ -115,6 +117,8 @@ class FormatTests(unittest.TestCase):
         dry=formats.reconcile(plan);self.assertTrue(dry['dryRun']);self.assertEqual(ws.records(),before)
         result=formats.reconcile(plan,True);self.assertEqual(len(ws.scan()[0]['entries']),1)
         self.assertEqual(ws.get(e1)['id'],'project--same');self.assertEqual(len(self.data(e2)['items']),2)
+        sources=[s['id'] for s in ws.get(e1)['sources']]  # one batch per source, newest first
+        self.assertEqual([x['id'] for x in self.data(e1)['batches']],sources[::-1])
         formats.rollback(result['receipt']);self.assertEqual(ws.records(),before)
         result=formats.reconcile(plan,True);ws.register(a)
         with self.assertRaisesRegex(ValueError,'changed after'):formats.rollback(result['receipt'])
@@ -155,5 +159,77 @@ class FormatTests(unittest.TestCase):
         a=self.source('a','A');eid=ws.register(a);ws.atomic(self.base/'private.json',{'name':'Private'})
         with self.assertRaises(ValueError):formats.manage_influencer(eid,'creator','../private.json')
         self.assertEqual(ws.get(eid)['kind'],'social-content')
+
+    def shown(self,eid):
+        """The bytes the format's review shows for each item: preview, cover and inputs."""
+        return {i['id']:[Path(m[k]).read_bytes() for m in (i,*i.get('inputs',[])) for k in ('src','poster') if m.get(k)] for i in self.data(eid)['items']}
+    def pictures(self,eid):
+        gallery=Path(ws.get(eid)['gallery']);page=gallery.read_text(encoding='utf-8')
+        return {(gallery.parent/unquote(u)).resolve().read_bytes() for u in re.findall(r'<img src="([^"]+)"',page)}
+    def test_replacing_a_source_file_keeps_the_accepted_preview(self):
+        a=self.source('a','A');d=ws.read(a/'review.json')
+        (a/'cover.png').write_bytes(b'cover');(a/'still.png').write_bytes(b'still')
+        d['items'][0].update(poster='cover.png',inputs=[{'label':'Still','kind':'image','src':'still.png'}]);ws.atomic(a/'review.json',d)
+        eid=ws.register(a);accepted=self.shown(eid)['A']
+        self.assertEqual(accepted,[b'picture a',b'cover',b'still'])
+        for name in ('image.png','cover.png','still.png'):(a/name).write_bytes(b'replaced')
+        self.assertEqual(self.shown(eid)['A'],accepted)
+        ws.register(self.source('b','B'))  # another contributor's registration rebuilds the format
+        self.assertEqual(self.shown(eid)['A'],accepted)
+        self.assertEqual(self.pictures(eid),{b'picture a',b'still',b'picture b'})
+        with self.assertRaisesRegex(ValueError,'new version'):ws.register(a,source_revision=1)
+        (a/'image.png').write_bytes(b'picture a')  # the preview is back; the cover is still replaced
+        with self.assertRaisesRegex(ValueError,'Cover changed.*new version'):ws.register(a,source_revision=1)
+        self.assertEqual(self.shown(eid)['A'],accepted)
+        d['items'][0]['version']=2;ws.atomic(a/'review.json',d);ws.register(a,source_revision=1)
+        self.assertEqual(self.shown(eid)['A'],[b'picture a',b'replaced',b'replaced'])
+        store=self.project/'.viewprinter/content-memory/reviews/.media';item=self.data(eid)['items'][0]
+        for path in (item['src'],item['poster'],item['inputs'][0]['src']):self.assertTrue(Path(path).is_relative_to(store),path)
+        self.assertEqual((store/'.gitignore').read_text(encoding='utf-8'),'*\n')
+    def legacy(self,eid):
+        """Make a record look like one registered by code that did not keep accepted media."""
+        r=ws.get(eid);r.pop('generation',None);r.pop('batchesSeen',None)
+        for s in r['sources']:
+            for key in ('frozenMedia','replacedMedia','coverHashes'):s.pop(key,None)
+        ws.atomic(ws.registry()/(eid+'.json'),r)
+    def test_upgrade_rebuilds_older_reviews_and_flags_media_replaced_before_it(self):
+        a=self.source('a','A');d=ws.read(a/'review.json')
+        d['items'][0].update(status='approved',stage='final',captionStatus='approved',captions={'instagram':{'caption':'Hi'}},
+                             distribution={'targets':[{'organizationId':'o','accountId':'x','platform':'instagram'}]})
+        ws.atomic(a/'review.json',d);eid=ws.register(a);ws.register(self.source('b','B'))
+        counts=lambda:{k:v for k,v in ws.describe(ws.get(eid))['readiness']['counts'].items() if v}
+        self.assertEqual(counts(),{'ready':1,'needs-review':1})
+        self.legacy(eid);(a/'image.png').write_bytes(b'replaced')
+        rebuilt,failed=formats.upgrade();self.assertEqual((rebuilt,failed),([eid],{}))
+        items={i['id']:i for i in self.data(eid)['items']}
+        self.assertTrue(items['A'].get('_mediaReplaced'));self.assertFalse(items['B'].get('_mediaReplaced'))
+        self.assertIn('Changed after acceptance',Path(ws.get(eid)['gallery']).read_text(encoding='utf-8'))
+        self.assertEqual(counts(),{'needs-review':2})
+        (a/'image.png').write_bytes(b'again');self.assertEqual(self.shown(eid)['A'],[b'replaced'])
+        self.assertEqual(formats.upgrade(),([],{}))
+        self.legacy(eid);r=ws.get(eid);Path(r['sources'][1]['snapshot']).unlink();(self.project/'b/review.json').unlink()
+        rebuilt,failed=formats.upgrade();self.assertEqual((rebuilt,list(failed)),([],[(eid,r['revision'])]))
+        self.assertEqual(formats.upgrade(skip=failed),([],{}))
+    def test_new_batches_lead_even_when_older_batches_are_dated(self):
+        def batch(path,identity,item=None,**fields):
+            """Declare a batch newest first; it holds the source's first item, or a new one."""
+            d=ws.read(path/'review.json');d.setdefault('batches',[]).insert(0,{'id':identity,'label':identity,**fields})
+            if item:d['items'].append(dict(d['items'][0],id=item,batch=identity))
+            else:d['items'][0]['batch']=identity
+            ws.atomic(path/'review.json',d)
+        a=self.source('a','A');batch(a,'september',createdAt='2026-09-01T10:00:00Z');eid=ws.register(a)
+        b=self.source('b','B');batch(b,'newer');ws.register(b)
+        order=lambda:[x['id'] for x in self.data(eid)['batches']]
+        self.assertEqual(order(),['newer','september'])
+        batch(a,'latest','A2');ws.register(a,source_revision=1)  # the first contributor's new batch
+        self.assertEqual(order(),['latest','newer','september'])
+        batch(a,'east','A3',createdAt='2026-09-01T12:00:00+05:00');ws.register(a,source_revision=2)  # 07:00 UTC
+        self.assertEqual(order(),['latest','newer','september','east'])
+        gallery=Path(ws.get(eid)['gallery']).read_text(encoding='utf-8')
+        self.assertIn('data-batch-view="latest" aria-pressed="true"',gallery)
+        # Older records kept no arrival times: their batches date from each contributor's first
+        # registration, and a declared time still wins.
+        self.legacy(eid);formats.upgrade();self.assertEqual(order(),['newer','latest','september','east'])
+        batch(b,'today','B2');ws.register(b,source_revision=1);self.assertEqual(order()[0],'today')
 
 if __name__=='__main__':unittest.main()
