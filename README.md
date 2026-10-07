@@ -135,12 +135,12 @@ the same namespaced skills in its selector.
 | Area | Capabilities |
 | --- | --- |
 | Formats | Develop repeatable formats and keep them in your project's own content skill |
-| Production | Produce batches from a format, with project memory and an archive of originals |
+| Production | Produce batches from a format, with project memory and an archive of originals that ViewPrinter can keep too |
 | Review | One review per project and format in one local workspace: versions, native captions, scheduling receipts |
 | Accounts | List and connect accounts, identify reconnection needs, read account metrics |
 | Groups | Manage named sets of accounts for posting |
 | Account profiles | Compare current/proposed profiles, prepare assets and copy, preserve dated platform research |
-| Media | Upload, list, describe, and delete stored images or videos |
+| Media | Upload, list, describe and delete stored images, videos and audio; keep raw material to reuse, never posted as it is |
 | Posts | Hold drafts, schedule, amend pending posts, cancel, check each destination |
 | Platforms | Read media requirements, caption limits, and posting options |
 | Learning | Tie each post to the format that made it; double down on, vary or retire formats |

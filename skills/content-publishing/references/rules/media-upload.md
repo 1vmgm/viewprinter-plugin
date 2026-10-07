@@ -23,16 +23,43 @@ the chat, in picking order, when they are in. Where no box appears, give them
 
 A terminal agent or a server that can make HTTP requests:
 
-1. **`media_upload`** — pass `kind` and the exact `mime_type` the PUT will send.
-   Returns an `id`, a short-lived `url`, and `expires_in_seconds`.
-2. **PUT the bytes to that `url`** yourself, with a `Content-Type` matching the
-   `mime_type` you declared, and no other headers. A mismatch fails the upload.
+1. **`media_upload`** — pass `kind` and the exact `mime_type` the PUT will send, and
+   the file's `sha256` (hex) whenever you can: if the workspace already holds the
+   file, the answer is its `id` with `existing: true`, and there is nothing to upload.
+   Otherwise it returns an `id`, a `url`, the `headers` to send and
+   `expires_in_seconds` (fifteen minutes). Several files: pass `items`, up to 50;
+   the answers come back in the same order.
+2. **PUT the bytes to that `url`** yourself, with exactly the `headers` the answer
+   gives and no others: the signature covers them, and with `sha256` storage refuses
+   bytes that don't match it.
+
+   ```sh
+   curl --fail -X PUT --upload-file "<file>" -H "<header>: <value>" ... "<url>"
+   ```
+
+   On Windows use `curl.exe`: in Windows PowerShell, `curl` is another command.
+3. **Describe it** once it has landed: `media_save` with its `id` (or `items`, up to
+   50) and `description`, `tags` and `metadata`. An upload you PUT can't carry them.
+   A file that came back `existing: true` already has its own description and tags:
+   `media_save` replaces them, so leave it alone unless the user asks.
 
 Apps that show widgets never get `url` — the box is the way there.
 
 Either way the file is recorded on its own once it arrives: pass the `id` to
 `posts_save`, `media_save` or anything else that takes a media id. It shows in
 `media_list` within a few minutes.
+
+**Source material.** `purpose: source` keeps raw material to find and reuse —
+generated takes, recordings, sound effects, saved memes. It is listed only by
+`media_list` with `purpose: source`, never posted or used by a campaign as it is,
+and `media_delete` can't remove it. The default, `library`, is a file to post. The
+content-production archive prepares these uploads; see its
+[guide](../../../content-production/references/archive.md#keep-originals-in-viewprinter-too).
+
+**A file already on the web**, such as a model's output link: pass `from_url`, with
+`description`, `tags`, `metadata` and `purpose`, instead of uploading. ViewPrinter
+fetches it, answering `fetching: true`, and records it within minutes; check with
+`media_list` and `media_id`.
 
 If a flow is interrupted after a successful PUT, use the id you already have —
 do not start a new upload.
@@ -49,7 +76,7 @@ and use an already uploaded file, or ask the user to upload through ViewPrinter.
 ## Deleting media
 
 `media_delete` erases the stored file and its bytes. Nothing restores it, and a pending
-post that uses the file loses its media.
+post that uses the file loses its media. Source material can't be deleted this way.
 
 - Delete only files the user named in this conversation, or confirmed by name after you
   listed them. Never delete to tidy up, to free space, or because a file looks unused.
@@ -63,5 +90,7 @@ post that uses the file loses its media.
   claimed.
 - If a post reports the media as unknown, the PUT did not land. Retry the PUT
   while the URL is still valid, or start a new upload once it has expired.
-- Call `media_list` before uploading anything — it takes `search` and `kind` —
-  so you do not re-upload a file the user already has.
+- Pass `sha256` so a file the workspace already holds is never uploaded twice.
+  `media_list` finds files by what they are — `search`, `tags`, `kind`, `purpose` —
+  and each comes with a `url` to download it from. Ask for that link when you need
+  the file; don't keep it.

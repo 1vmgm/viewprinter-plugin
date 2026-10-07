@@ -190,6 +190,34 @@
         "Stops and asks before any step that would exceed the limit",
         "Gives the batch total at handoff and never guesses credits"
       ]
+    },
+    {
+      "id": 16,
+      "prompt": "We just finished generating the takes for this batch. Yes, keep our originals in ViewPrinter from now on.",
+      "expected_output": "Records archive.keepInViewPrinter: true, then stores the batch's originals as source material: upload-list, one media_upload with its items, upload-steps to pair the answers, a PUT with the exact headers for each new file, media_save with the save items, and archive.py stored with ViewPrinter's own answers.",
+      "files": [],
+      "expectations": [
+        "Records the answer as archive.keepInViewPrinter in the project memory's config.json",
+        "Passes upload-list's upload entries unchanged and in order as media_upload items, with purpose source and sha256",
+        "Runs archive.py upload-steps with the list and the answer, then PUTs each put entry with exactly its headers",
+        "Records upload-steps' landed with archive.py stored, and never describes a file that came back existing: true",
+        "Calls media_save with the save items, then records its answer with archive.py stored; a not_found file is checked and saved again before it is recorded",
+        "Repeats until upload-list offers nothing it can upload, giving a failed or expired PUT a fresh media_upload, and never posts or schedules anything"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "My disk is almost full. Can you clear out originals we already have in ViewPrinter?",
+      "expected_output": "Lists ViewPrinter's source material with media_list (every page), runs release with --listed and --dry-run, explains that space returns only where no other copy shares the data, and releases only after the user agrees, passing their words as --approval.",
+      "files": [],
+      "expectations": [
+        "Lists media_list purpose source to the last page (following nextCursor) and passes the pages together as --listed",
+        "Runs archive.py release --dry-run first and reports the files, bytes and anything that stays and why",
+        "Says a batch folder's working copy or a review's copy keeps the space until it goes too",
+        "Waits for the user's agreement and passes it, in their words, as --approval",
+        "Never uses media_delete or deletes files outside the archive to free space",
+        "Explains how to bring one back: its media_list url, a download, then archive.py restore --id <id> --file <download>"
+      ]
     }
   ]
 }
