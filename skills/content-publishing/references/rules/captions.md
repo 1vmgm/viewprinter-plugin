@@ -16,7 +16,9 @@
   rules. Those are the user's choices, not this skill's.
 - **Give the caption one job**: deepen the story, explain a benefit, answer an
   objection, invite discussion, or drive one action. Do not stack a question, a save
-  prompt, a link and a keyword request.
+  prompt, a link and a keyword request. When the description asks for a comment
+  keyword to receive a link, omit a direct URL and a competing link-in-bio CTA.
+  Deliver the requested link through the agreed reply or DM workflow.
 - **Open with something specific** (an incident, a contradiction, a question, a
   payoff) that makes sense before the reader expands it. Add what the video does not
   already say, then keep the promise the opening made.
@@ -47,6 +49,9 @@ describe the expected effect as a hypothesis until results support it.
 ## Editing a queued post
 
 Read the post's destinations first: `content` may be shared by all of them.
+Check the full revised description for competing CTAs, including URLs in separate
+paragraphs. When removing a link, also fix phrases such as "start below" or "take a
+look below" so they do not point to a missing destination.
 
 - When every affected destination is in scope, call `posts_save` with only `post_id`
   and `content`. Never pass `scheduled_at` just to change words.

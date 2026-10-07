@@ -51,6 +51,7 @@ SKILL_FILES = (
     'skills/content-learning/agents/openai.yaml',
     'skills/content-learning/evals/evals.json',
     'skills/content-learning/references/method.md',
+    'skills/content-learning/references/creative-anatomy.md',
     'skills/content-learning/scripts/learn.py',
     'skills/content-learning/scripts/preflight.sh',
     'skills/content-learning/scripts/test_learn.py',

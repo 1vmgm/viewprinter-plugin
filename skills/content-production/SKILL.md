@@ -46,6 +46,12 @@ Use existing authorization and decisions from the conversation. These phases are
 
 For new formats or reusable project recipes, read [develop project formats](references/formats.md). This general skill helps build and improve the project’s one content-creation skill: shared rules plus many unique format references. Extend that existing structure; a new format can be reviewed before its recipe is documented. Use the [generic creator hook/demo starter](references/formats/hook-demo.md) when appropriate, adapting its structure and capability map to the project. Keep shared review behavior in content review and brand-specific creative decisions in the project.
 
+When making more of a published success, read its project finding and exact creative
+anatomy before defining the new item. If missing, use content-learning's
+[creative inspection](../content-learning/references/creative-anatomy.md). Preserve the
+hook-to-proof mechanism, not merely the feature or format name. State what carries
+forward and what is a new test; a transfer to another format needs a fresh proof mapping.
+
 Use the supplied research, reference content, brand facts and audience. Ask only for missing decisions that materially affect production; continue independent preparation while waiting. Tactical lookups for music, tools or a missing factual claim are allowed. Don't rerun the whole audience/competitor study by default.
 
 Write a short format specification with:

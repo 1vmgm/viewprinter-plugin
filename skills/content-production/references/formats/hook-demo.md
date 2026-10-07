@@ -14,6 +14,12 @@ Use this as a starting recipe when a creator-led opening and product evidence fi
 
 Vary short and longer hooks according to readable copy and action, rather than padding every clip to one duration. Keep annotations near their evidence and synchronize emphasis with the words it supports. Use the project's typography, safe areas and mounting preset. Test full-frame versus mounted proof as an intentional variant, preserving legibility and honest product context.
 
+When developing from published examples, retain the evidence from
+[creative anatomy](../../../content-learning/references/creative-anatomy.md): exact
+hook, screen/section order, first relevant proof, narration and native versus editorial
+emphasis. Choose the route for the story's question; do not standardize one winning
+screen sequence across unrelated promises.
+
 ## Capability and skill map
 
 These are possible routes, not dependencies automatically included with ViewPrinter. Discover the installed skills/tools and read their current instructions before use; [tools](../tools.md) says how to install each one.
