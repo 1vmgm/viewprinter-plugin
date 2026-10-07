@@ -86,7 +86,8 @@ def rebase_media(item, base):
     result = copy.deepcopy(item)
     for media in (result, result.get('previous', {}), *result.get('inputs', [])):
         for key in ('src', 'poster'):
-            if media.get(key): media[key] = str((base / media[key]).resolve())
+            # Forward slashes: the gallery reads manifest paths the same way on every system.
+            if media.get(key): media[key] = (base / media[key]).resolve().as_posix()
     return result
 
 

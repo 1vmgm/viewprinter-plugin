@@ -13,6 +13,11 @@ import unittest
 from unittest.mock import patch
 
 import archive
+
+
+def listing(folder):
+    """A folder's entries. Windows can't lock a folder, so archive.py keeps a .lock file in it."""
+    return sorted(p.name for p in folder.iterdir() if not (archive.fcntl is None and p.name == ".lock"))
 import memory
 
 
@@ -62,7 +67,7 @@ class ArchiveTests(unittest.TestCase):
         self.assertTrue(again["duplicate"])
         self.assertEqual(again["id"], added["id"])
         self.assertEqual(len(archive.read_log(self.root / "brand" / "catalog.jsonl")), 1)
-        self.assertEqual(sorted(p.name for p in (self.root / "brand").iterdir()), ["catalog.jsonl", "street-interview"])
+        self.assertEqual(listing((self.root / "brand")), ["catalog.jsonl", "street-interview"])
 
     def test_an_id_names_one_content_and_ids_stay_inside_the_archive(self):
         archive.add(self.root, "brand", self.original(), identifier="kitchen-01")
@@ -101,7 +106,7 @@ class ArchiveTests(unittest.TestCase):
         duplicate = self.original("copy.mp4")
         self.assertTrue(archive.add(self.root, "brand", duplicate, move=True)["duplicate"])
         self.assertTrue(duplicate.exists())
-        self.assertEqual(sorted(p.name for p in (self.root / "brand").iterdir()), ["catalog.jsonl", "unfiled"])
+        self.assertEqual(listing((self.root / "brand")), ["catalog.jsonl", "unfiled"])
 
     def test_cataloguing_an_original_already_in_place_never_deletes_it(self):
         archive.add(self.root, "brand", self.original(), format_id="f")
@@ -123,7 +128,7 @@ class ArchiveTests(unittest.TestCase):
             with self.assertRaises(KeyboardInterrupt):
                 archive.add(self.root, "brand", source)
         self.assertEqual(source.read_bytes(), b"take one")
-        self.assertEqual(sorted(p.name for p in (self.root / "brand").iterdir()), [])
+        self.assertEqual(listing((self.root / "brand")), [])
         leftover = self.root / "brand" / (archive.INCOMING + "deadbeef-take.mp4")
         leftover.write_bytes(b"half")  # as a power cut would leave it
         self.assertEqual(self.problems(), ["unfinished copy"])
@@ -196,7 +201,7 @@ class ArchiveTests(unittest.TestCase):
                 archive.add(self.root, "brand", source, move=True)
         self.assertEqual(stored.read_bytes(), b"wrong size")
         self.assertEqual(source.read_bytes(), b"take one and more")
-        self.assertEqual(sorted(p.name for p in stored.parent.iterdir()), [stored.name])
+        self.assertEqual(listing(stored.parent), [stored.name])
 
     def test_ids_and_formats_that_differ_only_in_case_are_refused(self):
         archive.add(self.root, "brand", self.original(), identifier="kitchen-01", format_id="street-interview")

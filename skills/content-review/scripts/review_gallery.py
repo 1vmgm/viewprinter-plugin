@@ -371,7 +371,8 @@ def asset_path(raw, base, context, kind):
     if any(ord(char) < 32 for char in raw) or "\\" in raw:
         raise ValueError(f"{context} contains invalid path characters; use forward slashes")
     # Require filesystem paths, not URLs (including file:, data:, and protocol-relative URLs).
-    if urlsplit(raw).scheme or raw.startswith("//"):
+    # A Windows drive path (C:/...) is a path, though urlsplit reads its drive as a scheme.
+    if (urlsplit(raw).scheme and not re.match(r"[A-Za-z]:/", raw)) or raw.startswith("//"):
         raise ValueError(f"{context} must be local; asset URLs are not allowed")
     path = (base / raw).resolve()
     if not path.is_file():
