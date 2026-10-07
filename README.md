@@ -1,5 +1,3 @@
-<img src="assets/logo.png" alt="" width="76" align="left" hspace="14" vspace="4">
-
 # ViewPrinter for AI assistants
 
 Develop content formats, produce and review batches, schedule them to **TikTok,
@@ -39,6 +37,23 @@ The skills' local helpers need **Python 3.9 or newer** (`python3`; on Windows of
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
 accounts you want to use. There is no ViewPrinter API key to copy into a config.
+
+### What runs where
+
+- **The hosted server.** The ViewPrinter tools run at `https://viewprinter.tech/api/mcp`.
+  Your posts, media and account details go there, because publishing them is what the
+  service does. You sign in with OAuth.
+- **Local helpers.** The skills' Python scripts run on your machine and call no outside
+  service. They read and write your project's files, including
+  `.viewprinter/content-memory`, and a `ViewPrinter` folder in your home folder: the
+  review registry and the source archive.
+- **The review page.** content-review serves review pages on `127.0.0.1:8765`
+  (`VIEWPRINTER_REVIEW_PORT` changes the port), opens one tab in your browser, and checks
+  pages in a headless Chrome, Chromium or Edge that, for a local review, resolves no
+  other host.
+- **Preflight checks.** Each skill's `scripts/preflight.sh` checks Python and that its
+  helpers start. content-publishing's also asks the ViewPrinter server for its tool list
+  and sign-in metadata, without credentials.
 
 ## Install
 
@@ -89,8 +104,8 @@ ViewPrinter is in the [Claude directory](https://claude.ai/directory/viewprinter
 as a connector: one click adds the tools in Claude on the web and desktop, and in
 Claude Code when you sign in with the same Claude account. A connector carries the
 tools, not these skills; for the skills in Claude Code, install the plugin above.
-The plugin brings its own connection, so with both you may see each tool twice:
-keep one.
+The plugin's connection uses the connector's address, so with both you see one set
+of tools.
 
 ### ChatGPT
 

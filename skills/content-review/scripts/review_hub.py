@@ -420,7 +420,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/events" and not head:
             return self.events()
         if path == "/workspace/viewprinter-mark.svg":
-            return self.reply(200, (ASSETS/"viewprinter-mark.svg").read_bytes(), "image/svg+xml", head)
+            from review_mark import MARK_SVG
+            return self.reply(200, MARK_SVG.encode("utf-8"), "image/svg+xml", head)
         if path.startswith("/guidance/"):
             parts = path.split("/")
             if len(parts) != 4: return self.reply(404, b"Not found", "text/plain", head)

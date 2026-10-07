@@ -70,6 +70,13 @@ the ClawHub package, and that package with `SKILL.md` at the archive root, which
 package. Installed caches do not necessarily track source edits immediately.
 The marketplace listing and installed package are separate distribution pieces.
 
+**Claude directory:** submit the plugin as a *Plugin bundle* at
+claude.ai/directory/manage, from the Claude organization that owns the connector
+listing, so the two can be paired; the plugin points at the connector's URL, so people
+with both see one set of tools. Validate there first. Once listed, the directory
+follows `main`: each merge is a new version, scanned and then published, so raise the
+version with every release.
+
 **ClawHub:** after validating the generated package, publish an explicitly
 versioned release with the supported CLI. The existing workflow is:
 

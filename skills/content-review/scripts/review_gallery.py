@@ -752,7 +752,7 @@ def build_gallery(manifest_path, output_path):
         delivery_controls = '<div class="status-tools"><label>Review status<select id="delivery-filter">' + ''.join(
             f'<option value="{key}" data-label="{label}">{label}</option>' for key, label in choices) + '</select></label></div>'
     policy = f"default-src 'none'; img-src 'self' file:; media-src 'self' file:; style-src 'unsafe-inline'; script-src 'sha256-{script_hash}'; base-uri 'none'; form-action 'none'"
-    mark = (Path(__file__).resolve().parent.parent / 'assets/viewprinter-mark.svg').read_text(encoding="utf-8")
+    from review_mark import MARK_SVG as mark
     footer_note = 'Scheduled is the final review step · Delivery is managed in ViewPrinter' if is_social else 'Complete means creative approved, not published'
     document = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
