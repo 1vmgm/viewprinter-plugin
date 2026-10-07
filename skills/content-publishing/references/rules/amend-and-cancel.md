@@ -89,7 +89,7 @@ in flight separately. Published posts stay in place. Record each change with
 `learning`), so a later resume does not recreate or resend it:
 `--status canceled` on every account removed from a post and `--status amended` on
 every account that keeps it, with the post id and the before/after account ids in
-`--details`. Pass the post's batch id as `--batch`, or for a campaign-sourced post the
+`--details <file.json>` (or `--details -` with the JSON object on stdin). Pass the post's batch id as `--batch`, or for a campaign-sourced post the
 campaign id. `--item` and `--version` may be left out: the event joins the post's
 placement by post id.
 
