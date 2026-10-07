@@ -35,3 +35,5 @@ The [account profiles](../account-profiles/SKILL.md) skill registers a group's r
 ## After review
 
 Feedback arrives in conversation, and the skill that made the work acts on it: [content production](../content-production/SKILL.md) for content, [account profiles](../account-profiles/SKILL.md) for accounts. Approval belongs to an exact version. Scheduling goes through [content publishing](../content-publishing/SKILL.md).
+
+Once work is scheduled or archived in a project that keeps its originals in ViewPrinter, offer to keep its review media there too, following [media kept in ViewPrinter](references/workspace.md#media-kept-in-viewprinter).

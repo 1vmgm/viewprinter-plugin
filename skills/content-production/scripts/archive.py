@@ -418,7 +418,7 @@ def assets(project_dir):
         elif kind == "note":
             apply_note(state[identifier], event)
         elif kind in ("stored", "released") and isinstance(event.get("mediaId"), str):
-            fields = ("mediaId", "purpose", "existing", "storedAt") if kind == "stored" else (
+            fields = ("mediaId", "purpose", "url", "existing", "storedAt") if kind == "stored" else (
                 "mediaId", "approval", "releasedAt")
             state[identifier]["viewprinterMedia" if kind == "stored" else "releasedLocally"] = {
                 k: event[k] for k in fields if k in event}
@@ -997,6 +997,13 @@ def server_rows(answer):
     return rows
 
 
+def media_link(value):
+    """ViewPrinter's link to a file, or None for anything that isn't a plain web address."""
+    if isinstance(value, str) and len(value) <= 2000 and re.match(r"https?://[^\s/]+/\S*\Z", value):
+        return value
+    return None
+
+
 def stored(root, project, answer):
     """Record the originals ViewPrinter's answers show it holds. A row's sha256 is the
     digest ViewPrinter read from the bytes it holds, so it names the original itself:
@@ -1026,13 +1033,19 @@ def stored(root, project, answer):
         for identifier, row in chosen.items():
             purpose = row.get("purpose") if row.get("purpose") in ("library", "source") else None
             known = state[identifier].get("viewprinterMedia") or {}
-            if known.get("mediaId") == row["id"] and (purpose is None or known.get("purpose") == purpose):
+            same = known.get("mediaId") == row["id"]
+            # Where to download it: ViewPrinter's own link, kept when a later answer has none.
+            url = media_link(row.get("url")) or (known.get("url") if same else None)
+            if same and (purpose is None or known.get("purpose") == purpose) and url == known.get("url"):
                 continue
             event = {"event": "stored", "id": identifier, "storedAt": now, "mediaId": row["id"]}
             if purpose:
                 event["purpose"] = purpose
+            if url:
+                event["url"] = url
             lines.append(log_line(event))
-            recorded.append({"id": identifier, "mediaId": row["id"], "purpose": purpose})
+            recorded.append(dict({"id": identifier, "mediaId": row["id"], "purpose": purpose},
+                                 **({"url": url} if url else {})))
         if lines:
             append_line(catalog(project_dir), b"".join(lines))
     return {"recorded": recorded, "otherFiles": other}

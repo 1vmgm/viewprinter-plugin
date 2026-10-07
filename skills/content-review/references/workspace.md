@@ -32,7 +32,7 @@ Declare this in each contributor-owned social review manifest; use unique batch 
 
 For an update, first read the source revision from the registry or `/api/queue`, reread the source manifest, and change only owned work. Pass that observed value with `--source-revision N` to `review_gallery.py` or `review_hub.py add`. Alternatively set `reviewHub.sourceRevision` to N+1 in the edited source. New sources need no revision. A stale update fails without replacing the accepted review; refresh and reconcile rather than blindly incrementing. Repeating an unchanged source adds no duplicate items. A changed preview or cover for the same item/version is rejected: make a new version. Conflicting item or batch IDs from different sources require resolution.
 
-A registered review shows the files it accepted. Registration keeps a copy of every preview, cover, previous version and input under the project's `.viewprinter/content-memory/reviews/.media` (git-ignored; a copy-on-write clone where the file system supports it, otherwise a full copy, so budget the disk on such systems). Replacing or deleting a source file afterwards does not change an accepted version. Don't edit or clear `.media`: it holds the only copy of anything replaced since.
+A registered review shows the files it accepted. Registration keeps a copy of every preview, cover, previous version and input under the project's `.viewprinter/content-memory/reviews/.media` (git-ignored; a copy-on-write clone where the file system supports it, otherwise a full copy, so budget the disk on such systems). Replacing or deleting a source file afterwards does not change an accepted version. Don't edit or delete files in `.media` by hand: it holds the only copy of anything replaced since. Finished work can let its copies go to ViewPrinter instead; see [media kept in ViewPrinter](#media-kept-in-viewprinter).
 
 The newest batch leads the review, whichever contributor registered it: a batch is dated from when the review first accepted it, unless it declares `createdAt` (an ISO 8601 time; a date alone counts as midnight UTC). Declare `createdAt` when importing older work, or it will lead as new. Within one source and one registration, declared order breaks ties.
 
@@ -82,6 +82,26 @@ A missing target may be marked removed only when that post is present in a compl
 ```
 
 The empty example does not remove anything: the matching post must actually be present. Partial pages and filtered account reads cannot remove targets. Retain removal evidence and a separately reasoned change to intended placement if a destination is moved.
+
+## Media kept in ViewPrinter
+
+A project that keeps its originals in ViewPrinter (`archive.keepInViewPrinter: true`; see the content production [archive](../../content-production/references/archive.md#keep-originals-in-viewprinter-too)) can keep its finished reviews' media there too. Finished means scheduled, excluded, or in an archived format or batch. Work still in review keeps its local copies. `review_media.py` makes no ViewPrinter calls; you make them through your ViewPrinter connector.
+
+```sh
+python3 <skill-directory>/scripts/review_media.py status --project <project-root> [--listed listed.json]
+python3 <skill-directory>/scripts/review_media.py save --project <project-root> [--dry-run]
+python3 <skill-directory>/scripts/review_media.py release --project <project-root> --listed listed.json --dry-run
+python3 <skill-directory>/scripts/review_media.py release --project <project-root> --listed listed.json --approval "<the user's words>"
+python3 <skill-directory>/scripts/review_media.py restore --project <project-root> --item <ID> --version <N>
+```
+
+1. `status` shows what the reviews keep, what is finished, what ViewPrinter already keeps as source material, and what releasing would free now and once the batch files are gone.
+2. `save` hands finished files ViewPrinter doesn't keep yet to the project's archive, recording the review, item, version and role (final, cover, previous version, input) with each. Upload them through the archive's flow (`upload-list --tag review-media`, `media_upload`, `upload-steps`, `media_save`, `stored`) and describe each file as that flow says.
+3. `release` lets the local copies go, only with the user's agreement in their words and only on ViewPrinter's fresh word: a `media_list` answer (`purpose: source`, every page) showing the same sha256. A file kept to post never counts, since `media_delete` can remove it. Each file is hashed first; a `kept.json` with ViewPrinter's link stays in its place, and the reviews that show it are rebuilt.
+4. The workspace streams a released file from ViewPrinter when a review plays it, so pages, links and archived snapshots stay as they are. The review labels it **Kept in ViewPrinter** (**Cover kept in ViewPrinter** when only its cover went). Those files need an internet connection.
+5. To get a file back, for editing or for reviewing offline, ask the agent: `restore` downloads it and checks it byte for byte.
+
+Space comes back only where nothing else shares the bytes. A review's copy is usually a clone of a batch folder's file, so releasing frees space once those batch files are cleaned up too. Offer this when work is scheduled or archived, or when the user asks to free space. Report the counts, the gigabytes and any cost of describing the files, and never release without the user's words.
 
 ## Archive, restore and migration
 

@@ -135,6 +135,10 @@ or a review's copy keeps it.
 for byte. A review keeps its own copies of what it shows, so releasing an original never
 changes one.
 
+Finished reviews can keep their copies in ViewPrinter too. The content review skill's
+`review_media.py save` adds a finished review's files to this archive, tagged `review-media`,
+for this same upload flow; see its [workspace](../../content-review/references/workspace.md#media-kept-in-viewprinter).
+
 ## Source and terms
 
 Record where everything came from, and any license or usage terms the user gives, as

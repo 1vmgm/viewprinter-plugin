@@ -186,6 +186,34 @@ class FormatTests(unittest.TestCase):
         store=self.project/'.viewprinter/content-memory/reviews/.media';item=self.data(eid)['items'][0]
         for path in (item['src'],item['poster'],item['inputs'][0]['src']):self.assertTrue(Path(path).is_relative_to(store),path)
         self.assertEqual((store/'.gitignore').read_text(encoding='utf-8'),'*\n')
+    def let_go(self,path):
+        """What releasing a kept copy leaves: kept.json in its folder, and no local file."""
+        path=Path(path);ws.atomic(path.parent/'kept.json',{'mediaId':'m-1','url':'https://media.example/media/m-1','name':path.name,'bytes':path.stat().st_size})
+        path.unlink()
+    def test_a_copy_let_go_to_viewprinter_stays_let_go_and_reviews_build_without_originals(self):
+        a=self.source('a','A');d=ws.read(a/'review.json')
+        (a/'cover.png').write_bytes(b'cover');(a/'still.png').write_bytes(b'still')
+        d['items'][0].update(poster='cover.png',inputs=[{'label':'Still','kind':'image','src':'still.png'}]);ws.atomic(a/'review.json',d)
+        eid=ws.register(a);item=self.data(eid)['items'][0]
+        self.let_go(item['src'])
+        ws.register(self.source('b','B'))  # another contributor's registration rebuilds the format
+        item=self.data(eid)['items'][0]
+        self.assertTrue(item.get('keptInViewPrinter'));self.assertNotIn('keptInViewPrinter',item['inputs'][0])
+        self.assertIn('Kept in ViewPrinter',Path(ws.get(eid)['gallery']).read_text(encoding='utf-8'))
+        # Registering the source again doesn't bring the copy back from the batch file.
+        d['items'][0]['title']='Renamed';ws.atomic(a/'review.json',d);ws.register(a,source_revision=1)
+        self.assertFalse(Path(item['src']).exists());self.assertTrue(self.data(eid)['items'][0].get('keptInViewPrinter'))
+        # The batch files are cleaned up: the review still builds from what it accepted.
+        for name in ('image.png','cover.png','still.png'):(a/name).unlink()
+        d['items'][0]['title']='After cleanup';ws.atomic(a/'review.json',d);ws.register(a,source_revision=2)
+        item=self.data(eid)['items'][0]
+        self.assertEqual(item['title'],'After cleanup')
+        self.assertEqual([Path(item[k]).read_bytes() for k in ('poster',)]+[Path(item['inputs'][0]['src']).read_bytes()],[b'cover',b'still'])
+        self.assertTrue(item.get('keptInViewPrinter'))
+        # A file that was never accepted is still a missing preview.
+        d['items'].append(dict(d['items'][0],id='A2',src='never.png',poster=None,inputs=[]));d['items'][1].pop('poster')
+        ws.atomic(a/'review.json',d)
+        with self.assertRaisesRegex(ValueError,'Missing preview'):ws.register(a,source_revision=3)
     def legacy(self,eid):
         """Make a record look like one registered by code that did not keep accepted media."""
         r=ws.get(eid);r.pop('generation',None);r.pop('batchesSeen',None)

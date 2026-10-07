@@ -177,6 +177,34 @@ class GalleryTests(unittest.TestCase):
             self.build()
         self.assertFalse(self.output.exists())
 
+    def kept(self, name, content, released):
+        """A file in a project's .media store, as a review keeps it; released, only its kept.json."""
+        sha = hashlib.sha256(content).hexdigest()
+        folder = self.root / ".viewprinter/content-memory/reviews/.media" / sha
+        folder.mkdir(parents=True)
+        if released:
+            (folder / "kept.json").write_text(json.dumps({"mediaId": "m-" + name, "name": name, "bytes": len(content),
+                                                          "url": "https://media.example/media/m-" + name}), encoding="utf-8")
+        else:
+            (folder / name).write_bytes(content)
+        return str((folder / name).relative_to(self.root))
+
+    def test_a_copy_let_go_to_viewprinter_builds_with_a_text_label(self):
+        self.item.update(kind="video", src=self.kept("clip.mp4", b"final", released=True),
+                         poster=self.kept("cover.png", b"cover", released=False),
+                         inputs=[{"label": "Still", "kind": "image", "src": self.kept("still.png", b"still", released=True)}])
+        self.build()
+        self.assertEqual(self.text.count('<span class="kept"'), 2)
+        self.assertIn(">Kept in ViewPrinter</span>", self.text)
+        # Only its cover let go: the label says so.
+        self.item.update(src="assets/clip.mp4", poster=self.kept("other.png", b"other cover", released=True), inputs=[])
+        self.build()
+        self.assertIn(">Cover kept in ViewPrinter</span>", self.text)
+        # A missing file without ViewPrinter's note, or a note for another name, is still missing.
+        self.item.update(poster=self.kept("gone.png", b"gone", released=False).replace("gone.png", "elsewhere.png"))
+        with self.assertRaisesRegex(ValueError, "asset does not exist"):
+            self.build()
+
     def test_duplicate_id_and_version_rejected_even_across_number_string(self):
         other = copy.deepcopy(self.item)
         other["version"] = "1"
