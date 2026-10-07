@@ -132,9 +132,14 @@ class LearnTests(unittest.TestCase):
     def test_logs_leave_no_lock_file_and_merge_line_by_line_in_git(self):
         learn.link(self.memory, self.record("p1", createdAt="2026-10-01T00:00:00Z"))
         directory = self.memory / "history" / "publications"
-        self.assertEqual(sorted(p.name for p in directory.iterdir()), [".gitattributes", "2026-10.jsonl"])
+        expected = [".gitattributes", "2026-10.jsonl"]
+        if learn.fcntl is None:  # Windows can't lock a folder: it keeps a lock file, out of git
+            expected = [".gitattributes", ".gitignore", ".lock", "2026-10.jsonl"]
+            self.assertIn(".lock", (directory / ".gitignore").read_text(encoding="utf-8").splitlines())
+        self.assertEqual(sorted(p.name for p in directory.iterdir()), expected)
         self.assertIn("*.jsonl merge=union", (directory / ".gitattributes").read_text(encoding="utf-8"))
 
+    @unittest.skipIf(learn.fcntl is None, "Windows locks a file, never the folder")
     def test_a_real_lock_failure_is_reported_instead_of_falling_back(self):
         def failing(descriptor, operation):
             raise OSError(errno.EIO, "input/output error")
@@ -147,6 +152,7 @@ class LearnTests(unittest.TestCase):
         path = learn.link(self.memory, self.record("p1", createdAt=None))
         self.assertTrue(learn.read_log(path)[0]["createdAt"])
 
+    @unittest.skipIf(learn.fcntl is None, "Windows always uses the lock file; the test above checks it")
     def test_a_folder_that_cannot_be_locked_uses_a_lock_file_kept_out_of_git(self):
         flock = learn.fcntl.flock
 

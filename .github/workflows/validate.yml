@@ -49,8 +49,10 @@ jobs:
       - name: Every skill's own helpers
         shell: bash
         run: |
+          failed=0
           for scripts in skills/*/scripts; do
             echo "::group::$scripts"
-            python -m unittest discover -s "$scripts" -p 'test_*.py' -v || exit 1
+            python -m unittest discover -s "$scripts" -p 'test_*.py' -v || failed=1
             echo "::endgroup::"
           done
+          exit $failed
