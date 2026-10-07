@@ -43,13 +43,20 @@ not a new required batch-manifest schema:
 Identify screens by visible UI, not by their topic. An embedded summary is not the
 dedicated analytics page. A cut between two screens does not show a tap between them.
 Keep native markers, recorded state changes and editorial emphasis separate. Never
-infer what a marker means from its shape alone. Separate on-screen text, speech,
+infer what a marker means from its shape alone. Record the visible state as well as
+the screen: a preview with an Apply/Create control is not evidence of a saved result;
+a planned record is not a completed or confirmed event. Separate on-screen text, speech,
 subtitles and platform descriptions; preserve exact wording rather than paraphrasing
 it into an apparently stronger hook.
 
 If a source timeline disagrees with the export, the export wins. Keep uncertain times
 as ranges or estimates. Do not make a visual sampling interval look frame accurate.
 Record historical creative choices even when today's project recipe differs.
+
+For queued content, compare date-relative promises such as “next weekend” or
+“upcoming” with the intended publication date and visible record dates. A capture
+can be a valid historical example while its caption incorrectly presents it as current.
+Preserve that distinction when proposing a copy, media or scheduling correction.
 
 ## Compare the mechanism
 

@@ -880,7 +880,7 @@ def main(argv=None):
     for flag in ("batch", "item", "version", "account-id", "platform", "post-id", "key", "note"):
         checkpoint_parser.add_argument("--" + flag)
     checkpoint_parser.add_argument("--status", choices=STATUSES)
-    checkpoint_parser.add_argument("--details", help="JSON object added to the record, such as accepted "
+    checkpoint_parser.add_argument("--details", help="Path to a JSON object file added to the record, such as accepted "
                                    "settings or read-back fields (- reads stdin)")
 
     placements_parser = commands.add_parser("checkpoints", help="Latest state of each placement in a batch")
