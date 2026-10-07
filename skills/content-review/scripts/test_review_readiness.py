@@ -85,4 +85,23 @@ class ReviewReadinessTests(unittest.TestCase):
             self.assertNotIn('value="posted"',html)
             self.assertNotIn('Published ',html)
 
+    def test_account_specific_descriptions_marked_ready_are_shown(self):
+        targets=[{'organizationId':'org','accountId':a,'platform':'instagram','accountName':'@'+a} for a in ['one','two']]
+        cases={'only account copy':({},{'one':'Written for one','two':{'title':'Two title','caption':'Written for two'}}),
+               'one account override':({'instagram':{'caption':'Native description'}},{'two':'Written for two'})}
+        for name,(captions,by_account) in cases.items():
+            with self.subTest(name),tempfile.TemporaryDirectory() as tmp:
+                item={**self.item,'format':'UGC','title':'A','kind':'image','src':'p.png','captions':captions,
+                      'captionsByAccount':by_account,'distribution':{'targets':targets}}
+                self.assertEqual(item_state(item,[])['state'],'ready')
+                root=Path(tmp);(root/'p.png').write_bytes(b'image')
+                manifest={'title':'Review','round':1,'reviewHub':{'kind':'social-content','formatId':'ugc'},'items':[item]}
+                (root/'review.json').write_text(json.dumps(manifest), encoding='utf-8');build_gallery(root/'review.json',root/'review.html')
+                html=(root/'review.html').read_text(encoding='utf-8')
+                for account,native in by_account.items():
+                    native={'caption':native} if isinstance(native,str) else native
+                    self.assertIn('Instagram · @'+account,html)
+                    for text in native.values():self.assertIn(text,html)
+                for native in captions.values():self.assertIn(native['caption'],html)
+
 if __name__=='__main__':unittest.main()

@@ -109,6 +109,7 @@ summary .hint { float:right; color:var(--muted); font-size:11px; font-weight:400
 .detail-body { padding:0 0 12px; font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
 .detail-body p { margin:0 0 8px; } .detail-body p:last-child { margin-bottom:0; }
 .caption,.prompt { white-space:pre-wrap; } .prompt { font-size:12px; line-height:1.65; }
+.copy-scope { margin-left:6px; color:var(--muted); font-weight:400; }
 .changes { padding-left:17px; margin:0; } .changes li+li { margin-top:4px; }
 .input-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .input-grid .media img,.input-grid .media video { height:150px; min-height:0; }
@@ -432,6 +433,12 @@ def prepare_manifest(manifest, base):
         item['_progress'] = raw.get('_progress', {})
         item['_readiness'] = raw.get('_readiness', {})
         item['captions'] = raw.get('captions', {})
+        item['captionsByAccount'] = raw.get('captionsByAccount') or {}
+        if not isinstance(item['captionsByAccount'], dict) or not all(isinstance(v, (str, dict)) for v in item['captionsByAccount'].values()):
+            raise ValueError(f"{context}.captionsByAccount must map account IDs to a description or an object")
+        plan = raw.get('distribution') if isinstance(raw.get('distribution'), dict) else {}
+        item['accounts'] = {t['accountId']: t for t in plan.get('targets') or [] if isinstance(t, dict) and t.get('accountId')}
+        item['_mediaReplaced'] = bool(raw.get('_mediaReplaced'))
         for field in ('variant','sourceId','contributor','sourceLabel'): item[field] = raw.get(field, '')
         item['_deliveryTimezone'] = raw.get('_deliveryTimezone', 'UTC')
         identity = (item["id"], item["version"])
@@ -602,17 +609,29 @@ def render_card(item, output):
             rows.append(f'<div class="generation"><div class="generation-head"><strong>{escaped(g["asset"])}</strong><span class="cost">{escaped(cost_label(g["cost"]))}</span></div><small>{escaped(g["platform"])} · {escaped(g["model"])}</small>{job}{note}{prompt}</div>')
         platforms = str(len(item['generation'])) + ' assets'
         details.append(disclosure("Tools & credits", ''.join(rows), platforms))
-    if item["captions"]:
+    # Every description a destination will receive: each platform's, then any written for one
+    # account, which that account receives instead.
+    copies = [(platform.title(), native, '') for platform, native in item["captions"].items()]
+    for account, native in item["captionsByAccount"].items():
+        if native:  # an empty one falls back to the platform's, as readiness does
+            target = item["accounts"].get(account, {})
+            copies.append((' · '.join(filter(None, [str(target.get('platform') or '').title(), str(target.get('accountName') or account)])), native, 'Account-specific'))
+    if copies:
         blocks = []
-        for platform, native in item["captions"].items():
+        for name, native, scope in copies:
             native = {'caption': native} if isinstance(native, str) else native
             title = f'<p><b>Title</b> {escaped(native["title"])}</p>' if native.get('title') else ''
             copy = native.get('caption', '')
-            blocks.append(f'<section><h4>{escaped(platform.title())}</h4>{title}<p class="caption">{escaped(copy)}</p><button type="button" class="copy-reference" data-copy-text="{escaped(copy)}">Copy {escaped(platform.title())} description</button></section>')
-        details.append(disclosure("Copy", ''.join(blocks), 'Platform native'))
+            note = f'<span class="copy-scope">{escaped(scope)}</span>' if scope else ''
+            blocks.append(f'<section><h4>{escaped(name)}{note}</h4>{title}<p class="caption">{escaped(copy)}</p><button type="button" class="copy-reference" data-copy-text="{escaped(copy)}">Copy {escaped(name)} description</button></section>')
+        accounts = sum(bool(scope) for _, _, scope in copies)
+        details.append(disclosure("Copy", ''.join(blocks), 'Platform native' + (f' · {accounts} account-specific' if accounts else '')))
     elif item["caption"]:
         details.append(disclosure("Copy", f'<p class="caption">{escaped(item["caption"])}</p>'))
     focus = f'<p class="focus"><b>Review:</b> {escaped(item["reviewFocus"])}</p>' if item["reviewFocus"] else ""
+    if item["_mediaReplaced"]:
+        focus = (f'<p class="focus"><b>Changed after acceptance:</b> this file was replaced after v{escaped(item["version"])} '
+                 'was registered, so it may not be what was reviewed. Register the new file as a new version.</p>') + focus
     status = item['status'].replace('-', ' ').capitalize()
     placements = item.get('_placements', [])
     delivery = ' '.join(delivery_lanes(placements))
@@ -730,7 +749,7 @@ def build_gallery(manifest_path, output_path):
     balance_html = '<div class="balances">'+disclosure('Platform balance snapshots','<ul>'+''.join(balance_rows)+'</ul>')+'</div>' if balances else ''
     available = {
         "tools": any(item["generation"] for item in items),
-        "copy": any(item["caption"] or item["captions"] for item in items),
+        "copy": any(item["caption"] or item["captions"] or item["captionsByAccount"] for item in items),
         "inputs": any(item["inputs"] for item in items),
         "changes": any(item["changes"] for item in items),
         "previous": any(item.get("previous") for item in items),

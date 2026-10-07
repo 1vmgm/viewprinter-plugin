@@ -57,6 +57,8 @@ def item_state(item, rows):
             target_issues.update(issues)
         if valid:accepted+=1
         else:mismatch.update(target_issues)
+    # A file replaced after its version was accepted is no longer what was reviewed.
+    if item.get('_mediaReplaced'):mismatch.add('media')
     # Stale creative/copy flags do not reopen a completed exact-version handoff.
     if known and accepted==len(targets):phase='scheduled'
     elif status in PENDING or (status=='approved' and item.get('stage') in {'concept','source','demo','edit'}):phase='production'

@@ -5,6 +5,7 @@ contributors; derived reviews are replaced as a generation, then published throu
 one atomic registry record. No remote services are involved.
 """
 import copy
+from datetime import timezone
 import hashlib
 import json
 import os
@@ -13,7 +14,11 @@ from pathlib import Path
 import shutil
 import uuid
 
+from review_delivery import iso
 import review_workspace as ws
+
+# Bump when generated reviews change, so the hub rebuilds the ones older code made.
+GENERATION = 2
 
 
 def digest(value):
@@ -36,18 +41,85 @@ def data_for(source):
     return data
 
 
-def asset_hashes(data, base):
+def references(item):
+    """The media an item shows: its preview and cover, its previous version and its inputs."""
+    for media in (item, item.get('previous'), *(item.get('inputs') or [])):
+        if isinstance(media, dict):
+            for key in ('src', 'poster'):
+                if media.get(key): yield media, key
+
+
+def file_hash(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''): h.update(chunk)
+    return h.hexdigest()
+
+
+def media_hashes(data, base):
+    """The sha256 of each media file a contribution shows, by resolved path. A missing preview is
+    an error here; the gallery reports any other missing file."""
     result = {}
     for item in data.get('items', []):
-        if item.get('src'):
-            p = (base / item['src']).resolve()
-            if not p.is_file():
-                raise ValueError('Missing preview: ' + str(p))
-            with p.open('rb') as f:
-                h = hashlib.sha256()
-                for chunk in iter(lambda: f.read(1024 * 1024), b''): h.update(chunk)
-            result[item['id'] + '\x00' + str(item['version'])] = h.hexdigest()
+        for media, key in references(item):
+            p = (base / media[key]).resolve()
+            if p.as_posix() in result: continue
+            if p.is_file(): result[p.as_posix()] = file_hash(p)
+            elif media is item and key == 'src': raise ValueError('Missing preview: ' + str(p))
     return result
+
+
+def version_hashes(data, base, files, key):
+    """The hash of each item/version's preview (src) or cover (poster)."""
+    result = {}
+    for item in data.get('items', []):
+        path = item.get(key) and (base / item[key]).resolve().as_posix()
+        if path in files: result[item['id'] + '\x00' + str(item['version'])] = files[path]
+    return result
+
+
+def media_store(project):
+    """Where a project's reviews keep the media they accepted. Inside the project, so the hub
+    serves it as project media and a clone stays on the same volume; git ignores it."""
+    store = Path(project) / '.viewprinter/content-memory/reviews/.media'
+    store.mkdir(parents=True, exist_ok=True)
+    if not (store / '.gitignore').exists():
+        (store / '.gitignore').write_text('*\n', encoding='utf-8')
+    return store
+
+
+def keep(path, store, sha=None):
+    """The store's copy of path, as <sha256>/<file name> within the store. A clone where the file
+    system supports one, else a copy; never a hard link, which would change with its source."""
+    sha = sha or file_hash(path)
+    name = sha + '/' + path.name
+    dest = store / name
+    if not dest.is_file():
+        temp = dest.parent / ('.' + uuid.uuid4().hex + path.suffix)
+        try:
+            ws.clone(path, temp)
+            if file_hash(temp) != sha:
+                raise ValueError('Media changed while it was being registered; register it again: ' + str(path))
+            os.replace(temp, dest)
+        finally:
+            if temp.exists(): temp.unlink()
+    return name
+
+
+def keep_source(source, data, base, store):
+    """Keep every file a contribution shows, so a source file replaced later cannot change what
+    its accepted versions show. A registration hashed its files moments ago; a source accepted
+    by older code is checked against the preview hashes it was accepted with."""
+    files = source.pop('_files', None) or {}
+    kept = {}
+    for item in data.get('items', []):
+        for media, key in references(item):
+            p = (base / media[key]).resolve()
+            if p.as_posix() not in kept and p.is_file():
+                kept[p.as_posix()] = keep(p, store, files.get(p.as_posix()))
+    now = version_hashes(data, base, {path: name.split('/')[0] for path, name in kept.items()}, 'src')
+    source['frozenMedia'] = kept
+    source['replacedMedia'] = sorted(k for k, sha in now.items() if source.get('mediaHashes', {}).get(k, sha) != sha)
 
 
 def contribution(manifest, gallery, owner=None, previous=None, expected=None):
@@ -59,16 +131,22 @@ def contribution(manifest, gallery, owner=None, previous=None, expected=None):
     comparable = copy.deepcopy(data)
     comparable.get('reviewHub', {}).pop('sourceRevision', None)
     signature = digest(comparable)
-    hashes = asset_hashes(data, manifest.parent)
+    files = media_hashes(data, manifest.parent)
+    hashes = version_hashes(data, manifest.parent, files, 'src')
+    covers = version_hashes(data, manifest.parent, files, 'poster')
+    changed = True
     if previous:
-        changed = signature != previous.get('digest') or hashes != previous.get('mediaHashes')
+        kept = previous.get('frozenMedia')
+        changed = (signature != previous.get('digest') or hashes != previous.get('mediaHashes')
+                   or (kept is not None and {path: name.split('/')[0] for path, name in kept.items()} != files))
         if changed:
             if expected != previous['revision'] and metadata.get('sourceRevision') != previous['revision'] + 1:
                 raise ValueError('Contribution changed; refresh its source revision before updating ' + str(manifest))
-            for key, sha in hashes.items():
-                old = previous.get('mediaHashes', {}).get(key)
-                if old and old != sha:
-                    raise ValueError('Media changed for an existing item/version; create a new version: ' + key.replace('\x00', ' / v'))
+            for label, current, accepted in (('Media', hashes, previous.get('mediaHashes')), ('Cover', covers, previous.get('coverHashes'))):
+                for key, sha in current.items():
+                    old = (accepted or {}).get(key)
+                    if old and old != sha:
+                        raise ValueError(label + ' changed for an existing item/version; create a new version: ' + key.replace('\x00', ' / v'))
         revision = previous['revision'] + int(changed)
     else:
         if expected not in (None, 0): raise ValueError('New contribution expects source revision 0')
@@ -76,19 +154,34 @@ def contribution(manifest, gallery, owner=None, previous=None, expected=None):
     source_id = (previous or {}).get('id') or 'source-' + hashlib.sha256(str(manifest).encode()).hexdigest()[:12]
     result = {**(previous or {}), 'id': source_id, 'manifest': str(manifest), 'gallery': str(gallery),
               'owner': owner or metadata.get('owner') or (previous or {}).get('owner') or 'unassigned',
-              'revision': revision, 'digest': signature, 'mediaHashes': hashes,
+              'revision': revision, 'digest': signature, 'mediaHashes': hashes, 'coverHashes': covers,
               'addedAt': (previous or {}).get('addedAt') or ws.now()}
+    if changed:
+        result.pop('frozenMedia', None)  # publishing keeps this revision's files
+    if 'frozenMedia' not in result:
+        result['_files'] = files
     result['_data'] = data
     return result
 
 
-def rebase_media(item, base):
+def rebase_media(item, base, kept=None, store=None):
     result = copy.deepcopy(item)
-    for media in (result, result.get('previous', {}), *result.get('inputs', [])):
-        for key in ('src', 'poster'):
-            # Forward slashes: the gallery reads manifest paths the same way on every system.
-            if media.get(key): media[key] = (base / media[key]).resolve().as_posix()
+    for media, key in references(result):
+        # Forward slashes: the gallery reads manifest paths the same way on every system.
+        path = (base / media[key]).resolve().as_posix()
+        media[key] = (store / kept[path]).as_posix() if kept and path in kept else path
     return result
+
+
+def batch_time(batch, seen):
+    """When a batch arrived: the time it declares, else when this review first accepted it."""
+    for value in (batch.get('createdAt'), seen.get(batch['id'])):
+        try:
+            moment = iso(value)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        return (moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)).timestamp()
+    return 0.0
 
 
 def collect(record, folder):
@@ -105,6 +198,8 @@ def collect(record, folder):
     items, batches, rows, public_downloads = {}, set(), [], []
     row_keys = set()
     receipt_signatures = {}
+    store = media_store(record['projectRoot'])
+    seen = record.setdefault('batchesSeen', {})
     for source in sources:
         data = source.get('_data') or data_for(source)
         base = Path(source['manifest']).parent
@@ -112,22 +207,31 @@ def collect(record, folder):
         ws.atomic(snapshot, data)
         source['snapshot'] = str(snapshot)
         source.pop('_data', None)
+        if source.get('frozenMedia') is None:
+            keep_source(source, data, base, store)
         declared = data.get('reviewHub', {})
         source_batches = copy.deepcopy(data.get('batches') or [{'id': source['id'], 'label': declared.get('batchLabel') or declared.get('label') or data.get('title') or source['id']}])
+        before = set(source.get('batchIds', []))
         source['batchIds'] = [b['id'] for b in source_batches]
         for batch in source_batches:
             if batch['id'] in batches: raise ValueError('Batch ID belongs to another contribution: ' + batch['id'])
             batches.add(batch['id'])
             batch['sourceId'] = source['id']
             if batch['id'] in record.get('batchStates', {}): batch['lifecycle'] = record['batchStates'][batch['id']]
+            # When this review first accepted the batch. Batches of a source that is new here, or
+            # that was accepted before these times were kept, date from its first registration.
+            if batch['id'] not in seen:
+                seen[batch['id']] = ws.now() if before and batch['id'] not in before else source.get('addedAt') or ws.now()
         # Registered contributions newest first; each source retains its own batch order.
         manifest['batches'] = source_batches + manifest['batches']
         for raw in data.get('items', []):
-            item = rebase_media(raw, base)
+            item = rebase_media(raw, base, source['frozenMedia'], store)
             key = item['id']
             if key in items and items[key] != source['id']:
                 raise ValueError('Item ID belongs to another contribution: ' + key)
             items[key] = source['id']
+            if key + '\x00' + str(item.get('version')) in source.get('replacedMedia', []):
+                item['_mediaReplaced'] = True
             item.setdefault('batch', source_batches[0]['id'])
             item['sourceId'] = source['id']
             item['contributor'] = source['owner']
@@ -149,7 +253,8 @@ def collect(record, folder):
             p = (base / download.get('path', '')).resolve()
             if p.is_file() and p.is_relative_to(base) and p.suffix.lower() in {'.json','.csv','.zip','.md','.pdf'}:
                 public_downloads.append({**download, 'id': (source['id'] + '-' if len(sources)>1 else '') + ws.slug(download['id']), 'path': str(p), 'base': str(base)})
-    manifest['batches'].sort(key=lambda b: b.get('createdAt', ''), reverse=True)
+    # Newest first. The sort is stable, so batches that arrived together keep the order above.
+    manifest['batches'].sort(key=lambda b: batch_time(b, seen), reverse=True)
     record['publicDownloads'] = public_downloads
     record['receiptSignatures'] = receipt_signatures
     ws.atomic(folder / 'delivery.json', {'placements': rows})
@@ -169,8 +274,36 @@ def publish(record):
     except Exception:
         shutil.rmtree(folder)
         raise
-    candidate.update(manifest=str(folder / 'review.json'), gallery=str(folder / 'review.html'), target=str(folder), updatedAt=ws.now())
+    candidate.update(manifest=str(folder / 'review.json'), gallery=str(folder / 'review.html'), target=str(folder),
+                     updatedAt=ws.now(), generation=GENERATION)
     return candidate
+
+
+def stale(record):
+    """An active review that older code generated."""
+    return (record.get('lifecycle') == 'active' and bool(record.get('sources')) and not record.get('batchId')
+            and record.get('generation', 1) < GENERATION)
+
+
+def upgrade(skip=()):
+    """Rebuild reviews that older code generated from their accepted sources. Returns the
+    rebuilt entry IDs and the errors for any that failed, keyed by (entry, revision); pass
+    those back as skip so a review that cannot be rebuilt is not retried until it changes."""
+    rebuilt, failed = [], {}
+    for record in ws.records():
+        if not stale(record) or (record['id'], record['revision']) in skip: continue
+        try:
+            with ws.lock():
+                fresh = ws.read(ws.registry() / (record['id'] + '.json'))
+                if not isinstance(fresh, dict) or not stale(fresh): continue
+                candidate = copy.deepcopy(fresh); candidate['revision'] += 1
+                candidate = publish(candidate)
+                ws.atomic(ws.registry() / (candidate['id'] + '.json'), candidate)
+                shortcut(candidate)
+                rebuilt.append(candidate['id'])
+        except Exception as exc:  # one review that cannot be rebuilt must not stop the others
+            failed[(record['id'], record['revision'])] = str(exc) or type(exc).__name__
+    return rebuilt, failed
 
 
 def refresh_receipts(record):
@@ -280,9 +413,13 @@ def reconcile(plan, apply=False):
                 projectKey=project_identity(project) if apply else ws.read(project/'.viewprinter/content-memory/config.json',{}).get('reviewProjectId'), sources=[], aliases=[], aliasSources={}, revision=max(r['revision'] for r in originals)+1)
             record['formatAliases'] = sorted({r['formatId'] for r in originals if r['formatId'] != identity})
             record['accountGroups'] = sorted({g for r in originals for g in r.get('accountGroups', [])})
+            record['batchesSeen'] = {k: v for r in originals for k, v in (r.get('batchesSeen') or {}).items()}
             record.update({k:mapping[k] for k in ('recipeRef','brief') if k in mapping})
             for original in originals:
-                sources = copy.deepcopy(original.get('sources')) or [contribution(original['manifest'], original['gallery'], original.get('owner'))]
+                sources = copy.deepcopy(original.get('sources'))
+                if not sources:  # registered by path: its work dates from that registration
+                    sources = [contribution(original['manifest'], original['gallery'], original.get('owner'))]
+                    sources[0]['addedAt'] = original.get('createdAt') or sources[0]['addedAt']
                 for source in sources:
                     if mapping.get('variants', {}).get(original['id']):
                         source['variant'] = mapping['variants'][original['id']]
