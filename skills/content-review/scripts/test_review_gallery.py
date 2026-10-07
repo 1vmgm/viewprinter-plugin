@@ -187,7 +187,7 @@ class GalleryTests(unittest.TestCase):
                                                           "url": "https://media.example/media/m-" + name}), encoding="utf-8")
         else:
             (folder / name).write_bytes(content)
-        return str((folder / name).relative_to(self.root))
+        return (folder / name).relative_to(self.root).as_posix()  # manifests use forward slashes
 
     def test_a_copy_let_go_to_viewprinter_builds_with_a_text_label(self):
         self.item.update(kind="video", src=self.kept("clip.mp4", b"final", released=True),
