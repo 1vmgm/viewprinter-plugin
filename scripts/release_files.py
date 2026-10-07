@@ -19,7 +19,7 @@ CLAWHUB_PACKAGE = 'viewprinter-social-manager'
 
 REPO_FILES = (
     'plugin.json', 'mcp.json', '.codex-plugin/plugin.json', '.cursor-plugin/plugin.json',
-    '.claude-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json',
+    '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.mcp.json', '.agents/plugins/marketplace.json',
     'README.md', 'DISTRIBUTION.md', 'LICENSE', 'assets/logo.png',
     'clawhub/build.mjs', 'clawhub/frontmatter.md', 'clawhub/entry.md',
     'docs/codex.md', 'docs/compatibility.md', 'docs/openclaw.md',

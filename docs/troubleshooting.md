@@ -13,6 +13,14 @@ Start a new session after plugin installation. In Codex, check
 `codex plugin list --marketplace viewprinter` and look for the ViewPrinter skills
 in the selector. Reinstall after updating a cached package.
 
+## A helper does not start
+
+The skills' helpers need Python 3.9 or newer. Each skill's `scripts/preflight.sh`
+tries `python3`, then `python`, which is often the only name on Windows. Checking a
+review page uses Chrome, Chromium or Edge; if none is found, set `VIEWPRINTER_CHROME` to
+its executable. Review pages are served on `127.0.0.1:8765`; set
+`VIEWPRINTER_REVIEW_PORT` when another program uses that port.
+
 ## OAuth fails before the sign-in page
 
 One possible error is:

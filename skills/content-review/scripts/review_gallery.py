@@ -11,14 +11,15 @@ import base64
 import hashlib
 import html
 import json
+import re
 import math
 import os
 from pathlib import Path
 import sys
 import tempfile
 from urllib.parse import quote, urlsplit
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from review_delivery import attach as attach_delivery, lanes as delivery_lanes
 from review_readiness import attach as attach_readiness, LABELS as REVIEW_LABELS
 
@@ -328,6 +329,25 @@ revealLinkedCard();
 """
 
 
+def iso(text):
+    """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
+    accepts only from Python 3.11."""
+    text = text.replace('Z', '+00:00')
+    text = re.sub(r'\.(\d+)', lambda match: '.' + (match.group(1) + '000000')[:6], text, count=1)
+    return datetime.fromisoformat(text)
+
+
+def zone(name):
+    """The named time zone. UTC needs no time zone database; Windows has none unless the tzdata
+    package is installed, so a zone that can't be loaded falls back to UTC, which the output names."""
+    if name in (None, '', 'UTC', 'Etc/UTC'):
+        return timezone.utc
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return timezone.utc
+
+
 def escaped(value):
     return html.escape(str(value), quote=True)
 
@@ -609,10 +629,10 @@ def render_card(item, output):
                 value = placement.get(field)
                 if not value:
                     return ''
-                parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                parsed = iso(value)
                 if parsed.tzinfo is None:
                     raise ValueError('Delivery timestamps require a timezone')
-                return parsed.astimezone(ZoneInfo(item['_deliveryTimezone'])).strftime('%b %d, %Y %I:%M %p %Z')
+                return parsed.astimezone(zone(item['_deliveryTimezone'])).strftime('%b %d, %Y %I:%M %p %Z')
             url = placement.get('url') or ''
             link = f' · <a href="{escaped(url)}" target="_blank" rel="noopener noreferrer">View post</a>' if urlsplit(url).scheme in ('https', 'http') else ''
             when = ('Published ' + stamp('publishedAt')) if placement.get('publishedAt') else ('Scheduled ' + stamp('scheduledAt')) if placement.get('scheduledAt') else 'Time unverified'
@@ -726,7 +746,7 @@ def build_gallery(manifest_path, output_path):
         delivery_controls = '<div class="status-tools"><label>Review status<select id="delivery-filter">' + ''.join(
             f'<option value="{key}" data-label="{label}">{label}</option>' for key, label in choices) + '</select></label></div>'
     policy = f"default-src 'none'; img-src 'self' file:; media-src 'self' file:; style-src 'unsafe-inline'; script-src 'sha256-{script_hash}'; base-uri 'none'; form-action 'none'"
-    mark = (Path(__file__).resolve().parent.parent / 'assets/viewprinter-mark.svg').read_text()
+    mark = (Path(__file__).resolve().parent.parent / 'assets/viewprinter-mark.svg').read_text(encoding="utf-8")
     footer_note = 'Scheduled is the final review step · Delivery is managed in ViewPrinter' if is_social else 'Complete means creative approved, not published'
     document = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -775,13 +795,14 @@ def announce_to_review_hub(output, manifest=None, source_revision=None):
     try:
         import review_hub
         if manifest:
-            data = json.loads(Path(manifest).read_text())
+            data = json.loads(Path(manifest).read_text(encoding="utf-8"))
             metadata = data.get('reviewHub', {})
             if metadata.get('excluded') or metadata.get('kind') not in {'social-content','influencer'}:
                 return None
         entry = review_hub.register(output, require_project=True, manifest=manifest, source_revision=source_revision)
         if entry is None:
-            return None
+            return ("review hub: not added, because this folder is not inside a ViewPrinter project. Run "
+                    "content-production's scripts/memory.py init --project <project folder> once, then build again.")
         if os.environ.get("VIEWPRINTER_REVIEW_AUTOSTART") != "0":
             review_hub.ensure_server()
         return f"review hub: {entry} is a tab at {review_hub.hub_url(entry)}. {review_hub.HUB_NOTE}"
@@ -809,4 +830,8 @@ def main():
 
 
 if __name__ == "__main__":
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     sys.exit(main())

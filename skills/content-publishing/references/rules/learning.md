@@ -15,13 +15,15 @@
 
 Run this once for each destination `posts_save` returns, while the details are at hand:
 
-    python3 scripts/learn.py link --post-id <post> --account-id <account> \
+    python3 <skill-directory>/scripts/learn.py link --post-id <post> --account-id <account> \
       --batch <batch> --item <item> --version <n> --format <format> [--paid-support]
 
 - The post id plus the account id is the key. Each destination becomes one line in a
   monthly log, `history/publications/<YYYY-MM>.jsonl` in the project's
-  `.viewprinter/content-memory`; the first link creates it, so run it from the project
-  root or pass `--memory`. Agents working in parallel can link at the same time.
+  `.viewprinter/content-memory`, which the first link creates. Run it with the project
+  folder as the working directory, or pass `--memory <project>/.viewprinter/content-memory`;
+  it refuses to start memory inside the installed skills, where an update would erase it.
+  Agents working in parallel can link at the same time.
 - Records are never rewritten: repeating the same link is fine, a different one is
   refused.
 - Versions up to 1.4.0 wrote one file per destination and cannot read the logs. Those
@@ -57,37 +59,14 @@ The local review finishes at scheduling. Refresh it after the accepted handoff o
 
 New creative versions, changed copy/media or added required destinations need their own matching handoff. A new unscheduled batch makes its existing format active again. Archive is an optional local organization action, independent of scheduling; it preserves source files and remote posts. This bookkeeping does not authorize additional publication, remote group changes or deployment.
 
-## Compare fairly
+## Compare and decide in content-learning
 
-1. **Collect everything**: `posts_list` for the accounts involved, every source and
-   every page, starting well before the oldest linked post so each age has peers. Save
-   each page as JSON. A ranked list (`rank_by`) is a sample, not a census.
-2. **List the promoted posts**: every post that ran as an ad, from the ad platform's own
-   record, linked or not, as a JSON list of post ids.
-3. **Run the report**:
-
-       python3 scripts/learn.py report --posts <page1.json> --posts <page2.json> \
-         --promoted <promoted.json> --markdown <report.md>
-
-The report compares each linked post only with the same account's other measured posts
-on the same platform, at the same age (under 1 day, 1–3 days, 3–7 days, 7–30 days,
-older) and in the same mode (trial or ordinary), against their median: views, engagement
-per view, and watch time per view. Promoted posts leave both the comparison and the
-baselines. Posts not yet measured are listed separately, never counted as zero.
-
-## Decide per format
-
-The report suggests; the user decides.
-
-| Suggestion | When | Next batch |
-|---|---|---|
-| Double down | Median at least 1.5x the accounts' normal, two thirds of posts above it | More of it, varying only what the format allows |
-| Vary | Mixed, carried by one outlier, or strong on engagement but not reach | Change one thing at a time: hook, length, proof, cover |
-| Retire | Five or more posts at half the normal views and weak engagement | Stop making it; keep the record so nobody rebuilds it |
-| Keep testing | Fewer than three posts at 72 hours or older, or no fair baseline | Keep posting; read again at the next age |
-
-One viral post is a reason to vary around it, not proof of a format. Say which job a
-format does when it wins reach but not engagement, or the reverse.
+Reading which posts and formats worked belongs to the
+[content-learning](../../../content-learning/SKILL.md) skill. It runs `learn.py report`
+over saved `posts_list` pages, compares each linked post only with the same account's
+posts of the same platform, age and mode, leaves promoted posts out, and suggests per
+format whether to double down, vary or retire it. The report suggests; the user decides.
+One viral post is a reason to vary around it, not proof of a format.
 
 ## Context
 

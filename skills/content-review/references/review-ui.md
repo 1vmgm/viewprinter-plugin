@@ -10,7 +10,7 @@ Inside a review, prioritize the actual output. Keep latest/all batches, the batc
 
 When the user requests design research with Mobbin, inspect returned screen images before borrowing any patterns and cite their canonical Mobbin URLs when presenting them. Apply the information architecture to ViewPrinter's actual workflow instead of copying a generic dashboard. If the tool fails, state the failure; never claim the design was informed by references you could not retrieve.
 
-Use the shared renderer and workspace assets. Fix a reusable design issue there so later agent contributions inherit the correction; do not make a custom review shell for each batch or influencer. Keep one managed browser tab and stable project + format/influencer destinations.
+Use the shared renderer and workspace assets; do not make a custom review shell for each batch or influencer. The review helpers ship with the plugin: don't edit an installed copy, which an update replaces. When a reusable control is missing, use what exists and tell the user the gap; changes to the helpers belong in the plugin's own repository. Keep one managed browser tab and stable project + format/influencer destinations.
 
 Before handoff, inspect the real served review at desktop and narrow widths, including 390px and 320px. Check both the workspace and its iframe for overflow. Verify text contrast, visible keyboard focus, labels, useful empty/error states, long titles, filters, expandable identity/history details and archive scope. Check Copy ID, global playback speed, one playing video, and latest/all-batch navigation. Preserve exact content versions and native descriptions when changing presentation.
 

@@ -274,7 +274,7 @@ class ArchiveTests(unittest.TestCase):
                         self.provenance(tags=["kitchen"], identity="cast-a"), format_id="street-interview")
         b = archive.add(self.root, "brand", self.original("b.png", b"b"),
                         {"rights": {"source": "made here", "allowedUses": ["organic", "paid"]}},
-                        format_id="ugc-hook-demo")
+                        format_id="product-demo")
         c = archive.add(self.root, "shared", self.original("c.wav", b"c"),
                         {"rights": {"source": "a scraped sound", "allowedUses": ["organic"]}})
         archive.note(self.root, "brand", a["id"], {"status": "selected"})
@@ -282,7 +282,7 @@ class ArchiveTests(unittest.TestCase):
         def ids(found):
             return sorted(asset["id"] for asset in found)
         self.assertEqual(ids(archive.find(self.root, ["brand"], kind="video")), [a["id"]])
-        self.assertEqual(ids(archive.find(self.root, ["brand"], format_id="ugc-hook-demo")), [b["id"]])
+        self.assertEqual(ids(archive.find(self.root, ["brand"], format_id="product-demo")), [b["id"]])
         self.assertEqual(ids(archive.find(self.root, ["brand"], status="selected")), [a["id"]])
         self.assertEqual(ids(archive.find(self.root, ["brand"], tags=["kitchen"], identity="cast-a")), [a["id"]])
         self.assertEqual(ids(archive.find(self.root, ["brand"], text="RIGHT HAND")), [a["id"]])
@@ -373,9 +373,9 @@ class ArchiveTests(unittest.TestCase):
         home = self.work / "home"
         with patch.object(Path, "home", return_value=home):
             self.assertEqual(archive.resolve(start=project), (home / "ViewPrinter" / "archive", "example-studio"))
-            config = json.loads((location / "config.json").read_text())
+            config = json.loads((location / "config.json").read_text(encoding="utf-8"))
             config["archive"] = {"project": "studio", "root": "../../archive-from-config"}
-            (location / "config.json").write_text(json.dumps(config))
+            (location / "config.json").write_text(json.dumps(config), encoding="utf-8")
             self.assertEqual(archive.resolve(start=project), (project / "archive-from-config", "studio"))
             os.environ[archive.ROOT_ENVIRONMENT] = str(self.work / "environment-root")
             self.assertEqual(archive.resolve(start=project)[0], self.work / "environment-root")
@@ -402,7 +402,7 @@ class ArchiveTests(unittest.TestCase):
         self.assertIn("not one of this project's formats", unknown.stderr)
         self.assertEqual(archive.canonical_format("another-project", "streetquiz", start=project), "streetquiz")
         (location / "formats" / "street-quiz-old").mkdir()  # the superseded folder is still there
-        (location / "formats" / "street-quiz-old" / "v1.json").write_text(json.dumps({"id": "street-quiz-old"}))
+        (location / "formats" / "street-quiz-old" / "v1.json").write_text(json.dumps({"id": "street-quiz-old"}), encoding="utf-8")
         self.assertEqual(archive.canonical_format("example-studio", "street-quiz-old", start=project), "street-quiz")
 
     def test_the_root_may_be_a_link_to_another_disk_but_nothing_inside_may_be(self):

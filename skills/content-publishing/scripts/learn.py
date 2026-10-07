@@ -15,7 +15,7 @@ Commands:
                destination with its own account's other posts of a similar age and
                mode, and summarize each format with a suggested decision.
 
-Standard library only. Python 3.11+.
+Standard library only. Python 3.9+.
 """
 
 import argparse
@@ -37,6 +37,8 @@ except ImportError:  # Windows
     import msvcrt
 
 MEMORY_DIRECTORY = Path(".viewprinter") / "content-memory"
+# The folder the installed skills live in. Memory started under it is lost when they update.
+SKILLS_HOME = Path(__file__).resolve().parents[2]
 MEMORY_ENVIRONMENT = "VIEWPRINTER_CONTENT_MEMORY"
 SAFE_PART = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 
@@ -70,6 +72,13 @@ class LearnError(Exception):
 # Memory
 
 
+def refuse_installed(path):
+    if path == SKILLS_HOME or SKILLS_HOME in path.parents:
+        raise LearnError("Run learn.py from the project's folder, or pass --memory "
+                         "<project>/.viewprinter/content-memory: memory started inside the "
+                         "installed skills would be lost when they update")
+
+
 def locate_memory(explicit=None, start=None, create=False):
     """The nearest .viewprinter/content-memory at or above `start`. With `create`,
     a project that has none gets one in `start` (the first link starts it)."""
@@ -81,6 +90,7 @@ def locate_memory(explicit=None, start=None, create=False):
         if not path.is_dir():
             if not create:
                 raise LearnError("No memory directory at {}".format(path))
+            refuse_installed(path)
             path.mkdir(parents=True)
         return path
     override = os.environ.get(MEMORY_ENVIRONMENT)
@@ -92,6 +102,7 @@ def locate_memory(explicit=None, start=None, create=False):
         if memory.is_dir():
             return memory
     if create:
+        refuse_installed(directory)
         memory = directory / MEMORY_DIRECTORY
         memory.mkdir(parents=True)
         print("learn: started memory at {}".format(memory), file=sys.stderr)
@@ -485,10 +496,18 @@ def placements(memory, batch):
 # ViewPrinter posts_list responses
 
 
+def iso(text):
+    """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
+    accepts only from Python 3.11."""
+    text = text.replace("Z", "+00:00")
+    text = re.sub(r"\.(\d+)", lambda match: "." + (match.group(1) + "000000")[:6], text, count=1)
+    return datetime.fromisoformat(text)
+
+
 def parse_time(value):
     if not value:
         return None
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = iso(value)
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
@@ -906,6 +925,10 @@ def main(argv=None):
         for entry in read_json(arguments.promoted) if arguments.promoted else []:
             promoted.append((entry["postId"], entry["accountId"]) if isinstance(entry, dict) else entry)
         report = build_report(memory, responses, as_of, rules, promoted)
+        if not report["counts"]["linkedPublications"]:
+            print("learn: no posts are linked to a batch item or format yet, so there is nothing "
+                  "to compare. Link each post with `learn.py link` when it is scheduled; the "
+                  "content-learning skill covers attributing older posts.", file=sys.stderr)
         if arguments.json_out:
             Path(arguments.json_out).write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
         text = render_markdown(report)
@@ -920,4 +943,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     sys.exit(main())

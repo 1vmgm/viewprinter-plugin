@@ -191,7 +191,10 @@ def shortcut(record):
     if link.exists() and not link.is_symlink(): return
     link.parent.mkdir(parents=True, exist_ok=True)
     temp = link.parent / ('.' + link.name + '-' + uuid.uuid4().hex)
-    temp.symlink_to(Path(record['gallery']).parent)
+    try:
+        temp.symlink_to(Path(record['gallery']).parent)
+    except OSError:  # Windows refuses links without Developer Mode; the registry is the record
+        return
     os.replace(temp, link)
 
 

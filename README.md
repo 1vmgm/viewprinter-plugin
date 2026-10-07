@@ -25,13 +25,17 @@ work together. The hosted MCP service provides the tools.
 | --- | --- |
 | `content-publishing` | Connecting accounts, uploading media, scheduling and amending posts, checking delivery and reading performance |
 | `content-production` | Developing formats and your project's own content skill, then producing batches from them |
-| `content-review` | One local review workspace per project and format, up to verified scheduling |
+| `content-review` | One review per project and format, in one local workspace, up to verified scheduling |
 | `content-learning` | Which posts and formats worked, and what to make next |
 | `account-profiles` | Profile copy, images, links and feature eligibility across a group of accounts |
 | `paid-growth` | Testing and scaling winning posts as TikTok ads — early access, still being refined |
 
-Your brand, formats and account briefs live in a content skill inside your own
-project, which `content-production` helps you set up. This plugin stays general.
+Your brand and formats live in a content skill inside your own project, which
+`content-production` helps you set up; account briefs are files in your project
+too. This plugin stays general.
+
+The skills' local helpers need **Python 3.9 or newer** (`python3`, or `python` on
+Windows). Checking a review page uses Chrome, Chromium or Edge.
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
 accounts you want to use. There is no ViewPrinter API key to copy into a config.
@@ -40,20 +44,22 @@ accounts you want to use. There is no ViewPrinter API key to copy into a config.
 
 | Client | Installation |
 | --- | --- |
-| **Codex** | [Install from this checkout](#codex) |
-| **Claude Code** | [Claude community marketplace](#claude-code) |
-| **ChatGPT** | [Public directory submission pending review](#chatgpt) |
+| **Codex** | [This repository's marketplace](#codex) |
+| **Claude Code** | [This repository's marketplace](#claude-code) |
+| **Claude apps** | [Connector in the Claude directory](#claude-apps) (tools only) |
+| **ChatGPT** | [ChatGPT plugin](#chatgpt) |
 | **OpenClaw** | [ClawHub skill and MCP connection](docs/openclaw.md) |
 | **Other MCP clients** | [Hosted server connection](#mcp-only-setup) |
 
 ### Codex
 
-From the root of this repository:
-
 ```bash
-codex plugin marketplace add .
+codex plugin marketplace add 1vmgm/viewprinter-plugin
 codex plugin add viewprinter@viewprinter
 ```
+
+From a checkout of this repository, `codex plugin marketplace add .` works the
+same way.
 
 Start a new Codex session and ask:
 
@@ -70,19 +76,27 @@ See [compatibility](docs/compatibility.md) for what has actually been tested.
 Run these commands inside Claude Code:
 
 ```text
-/plugin marketplace add anthropics/claude-plugins-community
-/plugin install viewprinter@claude-community
+/plugin marketplace add 1vmgm/viewprinter-plugin
+/plugin install viewprinter@viewprinter
 ```
 
 Start a new session, ask to use ViewPrinter, and complete browser sign-in when
-prompted. The marketplace installs its published version; changes in this
-checkout reach users after release and update.
+prompted. `/plugin marketplace update viewprinter` picks up a new release.
+
+### Claude apps
+
+ViewPrinter is in the [Claude directory](https://claude.ai/directory/viewprinter)
+as a connector: one click adds the tools in Claude on the web and desktop, and in
+Claude Code when you sign in with the same Claude account. A connector carries the
+tools, not these skills; for the skills in Claude Code, install the plugin above.
+The plugin brings its own connection, so with both you may see each tool twice:
+keep one.
 
 ### ChatGPT
 
-The OpenAI public-directory submission is **pending review** as of September 17,
-2026. A public installation link will be added after approval. Repository edits
-do not replace the package already submitted for review.
+ViewPrinter is a [ChatGPT plugin](https://chatgpt.com/plugins/plugin_asdk_app_6a974ded9ba88191a1e60a18c0c985a3).
+The listing serves the version OpenAI last approved; changes here reach it with
+the next approved submission.
 
 ## Try it
 
@@ -106,7 +120,7 @@ the same namespaced skills in its selector.
 | --- | --- |
 | Formats | Develop repeatable formats and keep them in your project's own content skill |
 | Production | Produce batches from a format, with project memory and an archive of originals |
-| Review | One local workspace per project and format: versions, native captions, scheduling receipts |
+| Review | One review per project and format in one local workspace: versions, native captions, scheduling receipts |
 | Accounts | List and connect accounts, identify reconnection needs, read account metrics |
 | Groups | Manage named sets of accounts for posting |
 | Account profiles | Compare current/proposed profiles, prepare assets and copy, preserve dated platform research |

@@ -16,13 +16,13 @@
     {
       "id": 2,
       "prompt": "Use our approved interview format to plan six more videos for a meal-planning app. Keep the established type treatment, normal-speed face reaction, actual recipe demonstration and short ending; vary question, person and room. Existing music inventory has sound IDs A and B. We want fresh music with intentional loops. I approve the whole production run, no need to pause at each stage. Do not actually call external services for this exercise. Return the batch plan, audio process, gallery plan and handoff.",
-      "expected_output": "Six stable items preserving invariants, purposeful permitted variants, sound-source/loop procedure with a license check and readable timing, no artificial extra approvals or posting.",
+      "expected_output": "Six stable items preserving invariants, purposeful permitted variants, sound-source/loop procedure that records each source and readable timing, no artificial extra approvals or posting.",
       "files": [],
       "expectations": [
         "Six stable item IDs and explicit preserved format invariants",
         "No redundant approval gate in authorized run",
         "Audio includes deduplication, source intervals and repeated loop listening",
-        "Confirms a license, or uses the platform's licensed library, before downloading or uploading fresh music",
+        "Records each fresh track's source and any license details given, without blocking on them",
         "Gallery uses conversational feedback without notes inputs",
         "No claimed paid generation or publishing"
       ]
@@ -93,14 +93,14 @@
     },
     {
       "id": 8,
-      "prompt": "Our eight videos already exist. The invitation CTA distracts from the app proof. Do not remake them; update the shared skills and rebuild review HTML properly. Future creators should match our young-adult audience. The local brand gallery has Copy ID and speed controls but the shared helper does not. Explain and implement only local workflow/review corrections; do not generate, render, upload or publish.",
-      "expected_output": "Protects original video hashes/versions, records clean capture guidance generically and casting only in project memory, reads canonical review guidance and ports/tests shared controls rather than producing another fork. Advances the gallery round, shows accurate review status and exposes captions/covers/provenance in collapsed details.",
+      "prompt": "Our eight videos already exist. The invitation CTA distracts from the app proof. Do not remake them; update our content skill and rebuild the review properly. Future creators should match our young-adult audience. Explain and implement only local workflow/review corrections; do not generate, render, upload or publish.",
+      "expected_output": "Protects original video hashes/versions, records clean capture guidance in the project's content skill and casting in project memory, and rebuilds the review with content-review's helper without forking it or editing the installed plugin. Advances the gallery round and shows accurate review status.",
       "files": [],
       "expectations": [
         "No remade video or invented approval; unchanged hashes checked",
         "Real UI used to remove unrelated prompts on future captures; no fabricated screenshot or hidden evidence",
-        "Project-specific age/gender stays out of the generic plugin",
-        "Copy ID and global speed tested, including image-only and late-loaded input cases",
+        "Casting preferences stay in the project's skill or memory, not the installed plugin",
+        "Rebuilds the review with content-review's helper; no custom fork and no edits to the installed plugin",
         "Browser verification and limitations are reported honestly"
       ]
     },
@@ -137,6 +137,20 @@
       "expectations": [
         "Shared production/review belongs to ViewPrinter; creative recipes and optional specialized workflow references belong to project formats.",
         "Discover current provider instructions before execution; no universal influencer requirement, new tab merely for a generator, or inferred paid authorization.."
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "We sell a meal-planning app and have never made social content with an agent before. Help me develop a format for our brand and set up our content skill for it.",
+      "expected_output": "Initializes project memory, proposes concepts and makes a small representative prototype for review before writing any skill; once the user approves a direction, creates one project content skill in the folder the user's agent reads, with shared guidance and one format reference, and records it as contentSkill.",
+      "files": [],
+      "expectations": [
+        "Runs memory.py init for the project before production",
+        "Prototype first: no skill written before the user approves a direction",
+        "One project content skill in .claude/skills or .agents/skills, matching the user's agent, not inside the installed plugin",
+        "Shared guidance holds only decisions the user made; one references/formats/<id>.md for the format",
+        "Records the skill's relative path as contentSkill in content-memory config.json",
+        "No paid generation or publishing without explicit authorization and a spend scope"
       ]
     }
   ]

@@ -46,6 +46,17 @@ and use an already uploaded file, or ask the user to upload through ViewPrinter.
   file that never arrived is refused as unknown media.
 - **Never expose the signed upload URL** in a public post or a user-facing log.
 
+## Deleting media
+
+`media_delete` erases the stored file and its bytes. Nothing restores it, and a pending
+post that uses the file loses its media.
+
+- Delete only files the user named in this conversation, or confirmed by name after you
+  listed them. Never delete to tidy up, to free space, or because a file looks unused.
+- Before deleting, check `posts_list` for scheduled and draft posts that use the file and
+  name them. Deleting a file one of those posts uses needs its own yes.
+- Report exactly which files were deleted.
+
 ## Context
 
 - Size and type are read back from storage rather than trusted from what you

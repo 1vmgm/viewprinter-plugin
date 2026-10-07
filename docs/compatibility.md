@@ -1,22 +1,25 @@
 # Compatibility and verification
 
-## October 6, 2026 — six skills, local package version 1.4.0
+## October 6, 2026 — version 2.0.0, six skills
 
-The plugin now carries six skills. This table records what was checked for that
-change; the September 17 table below describes the single-skill layout and is
-kept as the record of that release.
+The plugin now carries six skills. This table records what was checked for 2.0.0;
+the September 17 table below describes the single-skill layout and is kept as the
+record of that release.
 
 | Check | Result |
 | --- | --- |
 | Skill set | Validator passes: exactly six skills, each name matching its folder and its evals `skill_name`; 11 publishing rules routed to and covered; 59 evaluation case definitions |
-| New validator checks | Each fails on a planted violation: unlisted skill file, broken or escaping cross-skill link, drifted `learn.py` copy, stray SKILL.md, extra skill folder, name/folder mismatch, Codex prompt not naming its skill, wrong evals `skill_name`, invalid frontmatter YAML |
-| Skill helpers | 232 unit tests across the six skills pass |
+| Validator checks | Each fails on a planted violation: unlisted skill file, broken or escaping cross-skill link, drifted `learn.py` copy, stray SKILL.md, extra skill folder, name/folder mismatch, Codex prompt not naming its skill, wrong evals `skill_name`, invalid frontmatter YAML, text I/O without UTF-8, an entry point leaving the console in the system code page, a Claude marketplace not sourced from this repository |
+| Skill helpers | 243 unit tests pass on Python 3.9.6, the version macOS ships, and on 3.14 |
+| Review server | Tests cover refusing requests other sites start, sandboxing served files, serving a group outside a project only from its own folder, ignoring stored roots that are not projects, and Windows drive paths in file URLs; each fails with its fix undone |
 | Release regression suite | 13 tests pass, including a build from the extracted ZIP |
-| Preflights | All six exit 0; content-publishing's reached the live endpoint: 15 tools over unauthenticated `tools/list`, OAuth metadata 200 |
+| Preflights | All six pass with macOS's Python 3.9; content-publishing's reached the live endpoint |
 | Layout, portability, privacy | All three lints pass |
 | ClawHub package | One SKILL.md (content-publishing) and five `<skill>/GUIDE.md` folders; every relative link resolves inside the package; no tests or preflights |
-| Claude Code 2.1.286 | `claude plugin validate` passes with one expected warning (the contributor CLAUDE.md at the root is not plugin context). Fresh sessions loading the repository and the built ZIP each list exactly the six skills as `viewprinter:<skill>` |
-| Codex | Not re-run for six skills |
+| Claude Code 2.1.286 | `claude plugin validate` passes for the plugin (one expected warning: the contributor CLAUDE.md at the root is not plugin context) and its marketplace. Installed through this repository's marketplace in an isolated configuration: 2.0.0 with six skills and the MCP server. A fresh session loading the built ZIP lists exactly the six `viewprinter:` skills |
+| Codex CLI 0.160.1 | Installed from this repository's marketplace into an isolated Codex home: all six skills in the plugin cache. Not exercised in a signed-in session |
+| `npx skills add` | From a checkout, in a sandboxed home: lists the six skills and installs them side by side; all 95 relative links between them resolve |
+| Windows | Not run on a Windows machine; CI runs every skill's tests on Windows, macOS and Linux with Python 3.9 and 3.12 |
 | Live upload / scheduling | Not exercised |
 
 ## September 17, 2026 — local package version 1.2.0

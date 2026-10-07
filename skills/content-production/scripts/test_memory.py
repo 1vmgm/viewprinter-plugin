@@ -65,7 +65,7 @@ class MemoryTests(unittest.TestCase):
         with self.assertRaises(memory.MemoryError):
             memory.initialize(self.project)
         self.assertEqual(list(location.iterdir()), [valuable])
-        self.assertEqual(valuable.read_text(), "Do not delete this.")
+        self.assertEqual(valuable.read_text(encoding="utf-8"), "Do not delete this.")
 
     def test_init_completes_a_memory_the_posting_helper_started_and_keeps_its_logs(self):
         location = self.project / memory.MEMORY_RELATIVE
@@ -94,6 +94,18 @@ class MemoryTests(unittest.TestCase):
         with self.assertRaisesRegex(memory.MemoryError, "Conflicting"):
             memory.append(location, "feedback", dict(record, rawMessage="Replacement"))
         self.assertEqual((destination.read_bytes(), destination.stat().st_mtime_ns), original)
+        self.assertEqual(list(destination.parent.iterdir()), [destination])
+
+    def test_a_drive_without_hard_links_still_never_overwrites_a_record(self):
+        # FAT and exFAT drives refuse os.link; records are created exclusively instead.
+        location = memory.initialize(self.project)
+        record = self.event()
+        with patch.object(memory.os, "link", side_effect=PermissionError(1, "Operation not permitted")):
+            destination = memory.append(location, "feedback", record)
+            self.assertEqual(json.loads(destination.read_text(encoding="utf-8")), record)
+            self.assertEqual(memory.append(location, "feedback", dict(record)), destination)
+            with self.assertRaisesRegex(memory.MemoryError, "Conflicting"):
+                memory.append(location, "feedback", dict(record, rawMessage="Replacement"))
         self.assertEqual(list(destination.parent.iterdir()), [destination])
 
     def test_concurrent_independent_events_have_no_lost_updates(self):

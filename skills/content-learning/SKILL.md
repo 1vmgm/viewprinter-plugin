@@ -40,6 +40,14 @@ python3 <skill-directory>/scripts/learn.py link --post-id <post> --account-id <a
   edits exist. If the only evidence is indirect, record it with a `note` saying how the
   match was made, or leave the post unlinked.
 
+### Nothing linked yet
+
+A project's first report often has nothing to compare, and `learn.py report` says so.
+Tell the user, and summarize each account's recent normal from the saved `posts_list`
+pages instead of giving a format verdict. Ask which past posts belong to which format;
+link the ones the user attributes with `--note "user-attested"` and leave the rest
+unlinked. From the next batch on, link every post when it is scheduled.
+
 ## 2. Collect a complete census
 
 Use `posts_list` with the accounts and date window being reviewed, every relevant

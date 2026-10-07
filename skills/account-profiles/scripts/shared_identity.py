@@ -18,7 +18,7 @@ def resolve(data, base):
         if not account.get('identityRef'):continue
         source=(base/account['identityRef']).resolve()
         if not source.is_relative_to(project):raise ValueError('Shared identity must be inside the project')
-        record=json.loads(source.read_text());identity=record['identity']
+        record=json.loads(source.read_text(encoding='utf-8'));identity=record['identity']
         for key in ('organizationId','accountId'):
             if identity.get(key)!=account.get(key):raise ValueError('Shared account identity mismatch: '+key)
         for key in IDENTITY_FIELDS:

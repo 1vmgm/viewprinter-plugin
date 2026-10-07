@@ -17,6 +17,8 @@ import urllib.request
 SCRIPTS = Path(__file__).resolve().parent
 HUB = SCRIPTS / "review_hub.py"
 GALLERY = SCRIPTS / "review_gallery.py"
+from review_workspace import file_url, served_root, url_path  # noqa: E402
+
 DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
@@ -44,7 +46,7 @@ class ReviewHubTests(unittest.TestCase):
         self.batch = self.project / "branding" / "batch-one"
         self.batch.mkdir(parents=True)
         (self.batch / "clip.mp4").write_bytes(bytes(range(64)))
-        (self.batch / "secret.env").write_text("TOKEN=1\n")
+        (self.batch / "secret.env").write_text("TOKEN=1\n", encoding="utf-8")
         (self.batch / "review.html").write_text(
             "<title>THIS SESSION — Project: Batch one / round 2</title>"
             '<article data-status="needs-review"></article><article data-status="approved"></article>',
@@ -53,7 +55,7 @@ class ReviewHubTests(unittest.TestCase):
             'title':'THIS SESSION — Project: Batch one / round 2','round':2,
             'reviewHub':{'kind':'social-content','formatId':'batch-one'},
             'items':[{'id':'A','version':1,'title':'A','format':'portrait','status':'needs-review','src':'clip.mp4','kind':'video'},
-                     {'id':'B','version':1,'title':'B','format':'portrait','status':'approved','src':'clip.mp4','kind':'video'}]}))
+                     {'id':'B','version':1,'title':'B','format':'portrait','status':'approved','src':'clip.mp4','kind':'video'}]}), encoding="utf-8")
         self.outside = base / "outside"
         self.outside.mkdir()
         (self.outside / "other.mp4").write_bytes(b"x" * 10)
@@ -100,7 +102,7 @@ class ReviewHubTests(unittest.TestCase):
         self.assertEqual(self.entries(), ["project--batch-one"])
         link = self.hub_root / "in-review" / "project--batch-one"
         self.assertTrue(link.is_symlink())
-        record=json.loads((self.hub_root/".hub/entries/project--batch-one.json").read_text())
+        record=json.loads((self.hub_root/".hub/entries/project--batch-one.json").read_text(encoding="utf-8"))
         self.assertEqual(os.path.realpath(link), str(Path(record["gallery"]).parent))
         self.assertEqual(record["sources"][0]["manifest"], str(self.batch/"review.json"))
 
@@ -108,10 +110,10 @@ class ReviewHubTests(unittest.TestCase):
         self.hub("add", str(self.batch), "--no-server")
         self.hub("archive", "project--batch-one", "--reason", "Finished review")
         self.assertEqual(self.entries(), [])
-        record = json.loads((self.hub_root/'.hub/entries/project--batch-one.json').read_text())
-        original = Path(record['snapshotGallery']).read_text()
-        (self.batch/'review.html').write_text('New version')
-        self.assertEqual(Path(record['snapshotGallery']).read_text(), original)
+        record = json.loads((self.hub_root/'.hub/entries/project--batch-one.json').read_text(encoding="utf-8"))
+        original = Path(record['snapshotGallery']).read_text(encoding="utf-8")
+        (self.batch/'review.html').write_text('New version', encoding="utf-8")
+        self.assertEqual(Path(record['snapshotGallery']).read_text(encoding="utf-8"), original)
         self.assertEqual(record['lifecycle'], 'archived')
         self.hub('restore', 'project--batch-one')
         self.assertEqual(self.entries(), ['project--batch-one'])
@@ -136,29 +138,81 @@ class ReviewHubTests(unittest.TestCase):
             notes.append(result.stderr)
         self.assertEqual(self.entries(), ["project--pending"])
         self.assertIn("review hub", notes[0])
-        self.assertEqual(notes[1], "")
+        # Outside a project the gallery is still written, and the agent is told why it isn't in the hub.
+        self.assertIn("not inside a ViewPrinter project", notes[1])
+        self.assertIn("memory.py init --project", notes[1])
 
     def test_server_lists_entries_and_serves_only_review_files(self):
         self.hub("add", str(self.batch), "--no-server")
         sibling = self.project / "sibling"
         sibling.mkdir()
         (sibling / "shared.mp4").write_bytes(b"s" * 8)
-        (sibling / "page.html").write_text("<p>not an entry</p>")
+        (sibling / "page.html").write_text("<p>not an entry</p>", encoding="utf-8")
         self.start_server()
         status, body = self.get("/api/queue")
         [entry] = json.loads(body)["entries"]
         self.assertEqual((entry["project"], entry["label"]), ("Project", "Batch one / round 2"))
         self.assertEqual(entry["summary"], {"items": 2, "review": 1, "progress": 0, "approved": 1})
-        batch = "/files" + quote(str(self.batch))
+        batch = file_url(self.batch)
         self.assertEqual(self.get(entry["url"])[0], 200)
         self.assertEqual(self.get(batch + "/clip.mp4", Range="bytes=2-5"), (206, bytes([2, 3, 4, 5])))
         self.assertEqual(self.get(batch + "/clip.mp4", Range="bytes=-3"), (206, bytes([61, 62, 63])))
-        self.assertEqual(self.get("/files" + quote(str(sibling / "shared.mp4")))[0], 200)
-        self.assertEqual(self.get("/files" + quote(str(sibling / "page.html")))[0], 404)
+        self.assertEqual(self.get(file_url(sibling / "shared.mp4"))[0], 200)
+        self.assertEqual(self.get(file_url(sibling / "page.html"))[0], 404)
         self.assertEqual(self.get(batch + "/secret.env")[0], 404)
-        self.assertEqual(self.get("/files" + quote(str(self.outside / "other.mp4")))[0], 404)
+        self.assertEqual(self.get(file_url(self.outside / "other.mp4"))[0], 404)
         self.assertEqual(self.get(batch + "/../../../outside/other.mp4")[0], 404)
         self.assertEqual(self.get("/api/queue", Host="attacker.example")[0], 403)
+
+    def head(self, path, **headers):
+        request = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}", headers=headers, method="HEAD")
+        with DIRECT.open(request, timeout=5) as response:
+            return response.headers
+
+    def test_other_sites_cannot_embed_or_script_what_the_hub_serves(self):
+        self.hub("add", str(self.batch), "--no-server")
+        (self.batch / "badge.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', encoding="utf-8")
+        self.start_server()
+        clip = file_url(self.batch / "clip.mp4")
+        embedded = {"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "video"}
+        self.assertEqual(self.get(clip, **embedded)[0], 403)
+        self.assertEqual(self.get(clip, **dict(embedded, **{"Sec-Fetch-Site": "same-site"}))[0], 403)
+        self.assertEqual(self.get(clip, **{"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "no-cors"})[0], 200)
+        # Following a link from elsewhere still opens it; what opens is sandboxed.
+        self.assertEqual(self.get(clip, **{"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate"})[0], 200)
+        svg = self.head(file_url(self.batch / "badge.svg"))
+        self.assertEqual((svg["Content-Security-Policy"], svg["Cross-Origin-Resource-Policy"]), ("sandbox", "same-origin"))
+        self.assertIsNone(self.head(file_url(self.batch / "review.html"))["Content-Security-Policy"])
+        self.assertEqual(self.head("/api/queue")["Cross-Origin-Resource-Policy"], "same-origin")
+
+    def test_a_group_outside_a_project_serves_only_its_own_folder(self):
+        group = self.outside / "launch-accounts"
+        group.mkdir()
+        (group / "group.json").write_text(json.dumps({"id": "launch-accounts", "reviewHub": {"kind": "account-group"},
+                                                      "accounts": [{"accountId": "acct-1", "platform": "instagram"}]}),
+                                          encoding="utf-8")
+        (group / "review.html").write_text("<title>Launch accounts</title>", encoding="utf-8")
+        (group / "avatar.png").write_bytes(b"png")
+        self.hub("add", str(group), "--kind", "account-group", "--no-server")
+        record = json.loads((self.hub_root / ".hub/entries/outside--launch-accounts.json").read_text(encoding="utf-8"))
+        self.assertEqual(record["projectRoot"], str(group))
+        self.start_server()
+        self.assertEqual(self.get(file_url(group / "avatar.png"))[0], 200)
+        # The folder around it: its parent used to be served, which could be a home directory.
+        self.assertEqual(self.get(file_url(self.outside / "other.mp4"))[0], 404)
+
+    def test_a_stored_root_counts_only_if_it_is_a_project(self):
+        # Records from older versions stored a group's parent folder as its root.
+        self.assertEqual(served_root({"projectRoot": str(self.outside.parent), "target": str(self.outside)}),
+                         str(self.outside))
+        self.assertEqual(served_root({"projectRoot": str(self.project), "target": str(self.batch)}), str(self.project))
+
+    def test_file_urls_carry_windows_drive_paths(self):
+        from pathlib import PureWindowsPath
+        self.assertEqual(file_url(PureWindowsPath(r"D:\Media\Clips\a b.mp4")), "/files/D%3A/Media/Clips/a%20b.mp4")
+        clip = self.batch / "clip.mp4"
+        self.assertEqual(url_path(file_url(clip)[len("/files/"):]), str(clip))
 
     def test_http_writes_require_origin_token_and_current_revision(self):
         import re
@@ -176,11 +230,11 @@ class ReviewHubTests(unittest.TestCase):
         self.assertEqual(self.entries(),[])
 
     def test_symlink_escape_and_explicit_download(self):
-        manifest=self.batch/'review.json';data=json.loads(manifest.read_text());data['downloads']=[{'id':'brief','title':'Brief','path':'review.json'}];manifest.write_text(json.dumps(data))
+        manifest=self.batch/'review.json';data=json.loads(manifest.read_text(encoding="utf-8"));data['downloads']=[{'id':'brief','title':'Brief','path':'review.json'}];manifest.write_text(json.dumps(data), encoding="utf-8")
         (self.batch/'escape.mp4').symlink_to(self.outside/'other.mp4')
         self.hub('add',str(self.batch),'--no-server');self.start_server()
-        self.assertEqual(self.get('/files'+quote(str(self.batch/'escape.mp4')))[0],404)
-        self.assertEqual(self.get('/files'+quote(str(manifest)))[0],404)
+        self.assertEqual(self.get(file_url(self.batch/'escape.mp4'))[0],404)
+        self.assertEqual(self.get(file_url(manifest))[0],404)
         self.assertEqual(self.get('/downloads/project--batch-one/brief')[0],200)
         self.assertEqual(self.get('/downloads/project--batch-one/unknown')[0],404)
 
@@ -191,19 +245,19 @@ class ReviewHubTests(unittest.TestCase):
         (self.batch / "review.html").write_text(
             '<title>Play test</title><video src="play.mp4" preload="metadata"></video><button>Copy ID</button>',
             encoding="utf-8")
-        data=json.loads((self.batch/'review.json').read_text())
+        data=json.loads((self.batch/'review.json').read_text(encoding="utf-8"))
         for item in data['items']:item['src']='play.mp4'
         if self._testMethodName=='test_check_plays_a_gallery_headless':data['items']=data['items'][:1]
         else:data['items'][0]['previous']={'kind':'video','src':'play.mp4','version':0}
-        (self.batch/'review.json').write_text(json.dumps(data))
+        (self.batch/'review.json').write_text(json.dumps(data), encoding="utf-8")
         self.hub("add", str(self.batch), "--no-server")
         self.start_server()
         result = subprocess.run([sys.executable, str(HUB), "check", str(self.batch), "--seconds", "3", "--json"],
                                 env=self.env, capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(result.stdout)
-        record=json.loads((self.hub_root/".hub/entries/project--batch-one.json").read_text())
-        self.assertEqual(report["url"], f"http://127.0.0.1:{self.port}/files" + quote(record["gallery"]))
+        record=json.loads((self.hub_root/".hub/entries/project--batch-one.json").read_text(encoding="utf-8"))
+        self.assertEqual(report["url"], f"http://127.0.0.1:{self.port}" + file_url(record["gallery"]))
         self.assertEqual(report["problems"], [])
         self.assertGreater(report["playback"]["position"], 1.5)
         self.assertEqual((len(report["media"]), report["copyIds"]), (1, 1))
@@ -219,11 +273,11 @@ class ReviewHubTests(unittest.TestCase):
             '<details><video src="play.mp4"></video></details></article>'
             '<article><button class="copy-reference" data-copy-reference="B / v1">Copy ID</button>'
             '<div class="previews"><video src="play.mp4"></video></div></article>', encoding="utf-8")
-        data=json.loads((self.batch/'review.json').read_text())
+        data=json.loads((self.batch/'review.json').read_text(encoding="utf-8"))
         for item in data['items']:item['src']='play.mp4'
         if self._testMethodName=='test_check_plays_a_gallery_headless':data['items']=data['items'][:1]
         else:data['items'][0]['previous']={'kind':'video','src':'play.mp4','version':0}
-        (self.batch/'review.json').write_text(json.dumps(data))
+        (self.batch/'review.json').write_text(json.dumps(data), encoding="utf-8")
         self.hub("add", str(self.batch), "--no-server")
         self.start_server()
         result = subprocess.run([sys.executable, str(HUB), "check", str(self.batch), "--all-current", "--seconds", "1", "--json"],

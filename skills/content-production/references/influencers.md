@@ -22,7 +22,7 @@ Registration groups these sources into one influencer review using the same sour
 
 The review shows the creator's name and identity context, current content and native descriptions, source/previous versions, production evidence and an expandable history. Keep the actual work prominent. Profile details, prompts and long guidance are secondary. The Content pulse can filter influencers or formats; it does not need a separate review server or browser tab per creator.
 
-A project's legacy review can be converted locally with `review_hub.py manage-influencer <entry> --influencer-id <id> --profile <relative-profile.json> --guide <relative-guide.md>`. This retains its stable URL and source media. The conversion records a before receipt. Historical review snapshots belong under the active influencer's Review history, not as a misleading archived influencer in the general Archive.
+A project's legacy review can be converted locally with content-review's `review_hub.py manage-influencer <entry> --influencer-id <id> --profile <relative-profile.json> --guide <relative-guide.md>`. This retains its stable URL and source media. The conversion records a before receipt. Historical review snapshots belong under the active influencer's Review history, not as a misleading archived influencer in the general Archive.
 
 Scheduling completes review of those exact content versions; it does not retire the influencer. New content reopens review work. Archive an influencer only when the user deliberately retires or pauses management of that identity; preserve identity, account references, recipes and history. Incidental registration cannot silently restore a deliberately archived influencer.
 

@@ -56,8 +56,8 @@ proves none of those label states. Use an accepted request or an exposed saved
 setting to audit the caller's choice; use platform evidence for the visible label.
 
 When tools omit these settings, report the limitation and record the capability
-gap. Current local publisher code can explain a code path, but does not prove the
-settings on every historical publication or what the platform displayed.
+gap. How publishing works today does not prove the settings of every earlier
+publication, or what the platform displayed.
 
 ## Draft targets and partial retention curves
 

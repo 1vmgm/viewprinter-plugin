@@ -7,10 +7,17 @@ ok()  { printf "  \033[32m✓\033[0m %s\n" "$1"; }
 bad() { printf "  \033[31m✗\033[0m %s\n" "$1"; FAIL=1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null \
-  && ok "python3 3.11 or newer" || bad "python3 3.11 or newer is required"
+# python3 on macOS and Linux; a Windows install is often just python.
+PYTHON=""
+for candidate in python3 python; do
+  if "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 9))' >/dev/null 2>&1; then
+    PYTHON="$candidate"
+    break
+  fi
+done
+[ -n "$PYTHON" ] && ok "$PYTHON is 3.9 or newer" || bad "Python 3.9 or newer is required (python3 or python)"
 for script in memory.py archive.py; do
-  python3 "$HERE/$script" --help >/dev/null 2>&1 && ok "$script starts" || bad "$script does not start"
+  [ -n "$PYTHON" ] && "$PYTHON" "$HERE/$script" --help >/dev/null 2>&1 && ok "$script starts" || bad "$script does not start"
 done
 
 echo

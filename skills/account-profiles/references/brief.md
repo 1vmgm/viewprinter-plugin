@@ -62,4 +62,4 @@ An account can declare `assetBindings: {"youtube-cover":"channel-banner"}`. The 
 
 After changing a shared record, increment its revision, rebuild every referencing group and verify both served reviews. Save immutable previous manifests and shared record revisions. The exported group JSON includes resolved identity values; the source group retains identityRef for future builds.
 
-Register with the content workspace's `review_hub.py add review.html --manifest group.json --kind account-group --format-id <group-id> --name <stable-entry>`. This is a local grouping operation, not a change to ViewPrinter's remote accounts or campaigns.
+Register with the content-review skill's `review_hub.py add review.html --manifest group.json --kind account-group --format-id <group-id> --name <stable-entry>`. This is a local grouping operation, not a change to ViewPrinter's remote accounts or campaigns.

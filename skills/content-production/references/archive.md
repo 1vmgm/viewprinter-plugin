@@ -61,11 +61,11 @@ Identities are IDs, not files: archive an identity's approved reference images w
 `identity` and list them in the `inputs` of every generation that used them. Who an
 identity is, and where it may appear, belongs to project memory or the project's own skill.
 
-## Rights
+## Source and terms
 
-Record the source of everything. Archiving is not a license: an asset whose `allowedUses`
-lacks a use is not cleared for it, so one without `paid` never goes into an ad, and unknown
-rights mean review only. Licensing of music follows [audio](audio.md).
+Record where everything came from, and any license or usage terms the user gives, as
+provenance on the asset (`allowedUses` included). Whether an asset is used, in a post, an
+ad or anywhere else, is the user's decision: record it, don't enforce it.
 
 ## What stays out
 

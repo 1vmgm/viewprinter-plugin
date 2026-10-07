@@ -26,7 +26,7 @@ These are possible routes, not dependencies automatically included with ViewPrin
 | Edit and motion | User/project-selected editor; installed Tesseract video/motion skills when chosen | Editable project, source timings, annotation/audio timing and final export |
 | Music and loop | Project audio library or permitted sourcing under the current brief; shared [audio guidance](../audio.md) | Source, selected excerpt, trend evidence when requested, mix and end-to-start check |
 | Finished-video critique | Direct viewing/listening and, when available/requested, Gemini or another video-understanding tool | Exact export/version assessed, observed issues, limits of sampling and unresolved checks |
-| Review / iteration | Shared review_gallery and review_hub helpers in this skill | Existing project + format identity, batch, Copy ID, previous versions, native descriptions and provenance |
+| Review / iteration | The content-review skill's review_gallery and review_hub helpers | Existing project + format identity, batch, Copy ID, previous versions, native descriptions and provenance |
 | Posting and results | content-publishing and content-learning skills | Intended account targets, exact-version receipts, dated metrics and evidence-backed learning |
 
 Missing optional tools do not prevent reviewing existing content. If a required workflow is unavailable, identify that dependency and continue unaffected work; do not silently substitute a different deliverable. Tool names are examples of capability routes, not a claim that a package installs those tools or that every API supports every website feature.

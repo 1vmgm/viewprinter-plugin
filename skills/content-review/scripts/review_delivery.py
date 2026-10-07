@@ -3,14 +3,24 @@ import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import json
+import re
 from pathlib import Path
+import sys
 
 SCHEDULED = {'scheduled', 'queued', 'publishing', 'processing'}
 RETIRED = {'removed', 'withdrawn'}
 
+def iso(text):
+    """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
+    accepts only from Python 3.11."""
+    text = text.replace('Z', '+00:00')
+    text = re.sub(r'\.(\d+)', lambda match: '.' + (match.group(1) + '000000')[:6], text, count=1)
+    return datetime.fromisoformat(text)
+
+
 def timestamp(value):
     try:
-        return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+        return iso(value).timestamp()
     except (AttributeError, TypeError, ValueError):
         return 0
 
@@ -18,13 +28,13 @@ def timestamp(value):
 def sync(memory, pages, output):
     links = {}
     for path in sorted((memory / 'history/publications').glob('*.jsonl')):
-        for line in path.read_text().splitlines():
+        for line in path.read_text(encoding='utf-8').splitlines():
             if line.strip():
                 row = json.loads(line); key = (row['postId'], row['accountId'])
                 if key in links and any(str(links[key].get(k)) != str(row.get(k)) for k in ('itemId', 'version', 'batchId')):
                     raise ValueError('Conflicting publication links: ' + str(key))
                 links[key] = row
-    result = json.loads(output.read_text()) if output.exists() else {'placements': []}
+    result = json.loads(output.read_text(encoding='utf-8')) if output.exists() else {'placements': []}
     from review_readiness import remember
     placements = {(r['postId'], r['accountId']): r for r in result['placements']}
     for row in placements.values(): remember(row)
@@ -32,7 +42,7 @@ def sync(memory, pages, output):
     for key, link in links.items():
         placements.setdefault(key, {**{k: link.get(k) for k in ('postId', 'accountId', 'itemId', 'version', 'batchId')}, 'status': 'unknown'})
     for path in pages:
-        envelope = json.loads(path.read_text()); data = envelope.get('structuredContent', envelope)
+        envelope = json.loads(path.read_text(encoding='utf-8')); data = envelope.get('structuredContent', envelope)
         if not isinstance(data.get('posts'), list):
             raise ValueError('Expected saved posts_list object: ' + str(path))
         observed = envelope.get('observedAt') or envelope.get('checkedAt') or data.get('observedAt') or data.get('checkedAt')
@@ -84,7 +94,7 @@ def sync(memory, pages, output):
 def attach(manifest, base):
     config = manifest.get('delivery')
     if not config: return
-    snapshot = json.loads((base / config['snapshot']).resolve().read_text())
+    snapshot = json.loads((base / config['snapshot']).resolve().read_text(encoding='utf-8'))
     for item in manifest['items']:
         item['_placements'] = rows_for(item, snapshot['placements'])
         item['_deliveryTimezone'] = config.get('timezone', 'UTC')
@@ -190,6 +200,10 @@ def summarize(manifest, placements):
 
 
 if __name__ == '__main__':
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--memory', type=Path, required=True)
     parser.add_argument('--posts', type=Path, action='append', default=[])

@@ -72,7 +72,10 @@ def review_root():
 
 
 def port():
-    return int(os.environ.get("VIEWPRINTER_REVIEW_PORT") or 8765)
+    raw = os.environ.get("VIEWPRINTER_REVIEW_PORT") or "8765"
+    if not raw.isdigit():
+        raise ValueError(f"VIEWPRINTER_REVIEW_PORT must be a port number, not {raw!r}")
+    return int(raw)
 
 
 def hub_url(entry=None):
@@ -192,7 +195,7 @@ def describe(path, posted_day=None):
         "title": facts["title"] or path.name,
         "target": str(target),
         "exists": exists,
-        "url": "/files" + quote(str(gallery)) if gallery else None,
+        "url": workspace.file_url(gallery) if gallery else None,
         "summary": summarize(facts["statuses"]),
         "updated": facts["updated"] or (target.stat().st_mtime if exists else added),
         "added": added,
@@ -348,7 +351,10 @@ class Hub:
     def content_type(self, path):
         """The type to serve path as, or None when it must not be served."""
         def within(roots):
-            return any(path == root or path.startswith(root.rstrip(os.sep) + os.sep) for root in roots)
+            # normcase: Windows paths compare without regard to case.
+            target = os.path.normcase(path)
+            return any(target == os.path.normcase(root) or target.startswith(os.path.normcase(root).rstrip(os.sep) + os.sep)
+                       for root in roots)
         extension = os.path.splitext(path)[1].lower()
         with self.lock:
             if within(self.own_roots):
@@ -398,6 +404,8 @@ class Handler(BaseHTTPRequestHandler):
         hub = self.server.hub
         if (self.headers.get("Host") or "").lower() not in self.server.hosts:
             return self.reply(403, b"Forbidden host\n", "text/plain; charset=utf-8", head)
+        if self.foreign():
+            return self.reply(403, b"Forbidden cross-site request\n", "text/plain; charset=utf-8", head)
         path = urlsplit(self.path).path
         if path in ("/", "/index.html"):
             return self.reply(200, PAGE.replace("__TOKEN__", hub.token).replace("__VERSION__", str(VERSION)).encode("utf-8"), "text/html; charset=utf-8", head)
@@ -418,7 +426,7 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError: refs = []
             ref = next((r for r in refs if r['id'] == parts[3]), None)
             if not ref: return self.reply(404, b"Not found", "text/plain", head)
-            text = Path(ref['path']).read_text()
+            text = Path(ref['path']).read_text(encoding="utf-8")
             page = '<!doctype html><meta name="viewport" content="width=device-width"><title>'+html.escape(ref['label'])+'</title><style>body{margin:32px auto;max-width:900px;padding:0 20px;color:#eceaf6;background:#101018;;font:15px/1.6 system-ui}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>'+html.escape(ref['label'])+'</h1><pre>'+html.escape(text)+'</pre>'
             return self.reply(200, page.encode(), "text/html; charset=utf-8", head)
         if path.startswith("/downloads/"):
@@ -433,11 +441,18 @@ class Handler(BaseHTTPRequestHandler):
             if not download: return self.reply(404, b"Not found", "text/plain", head)
             return self.file(download["path"], head, download=True)
         if path.startswith("/files/"):
-            return self.file(os.path.normpath(unquote(path[len("/files"):])), head)
+            return self.file(workspace.url_path(path[len("/files/"):]), head)
         self.send_response(302)
         self.send_header("Location", "/")
         self.send_header("Content-Length", "0")
         self.end_headers()
+
+    def foreign(self):
+        """A request another site started: an image, video or fetch from a page that is not this hub.
+        Browsers say so in Sec-Fetch-Site. Following a link here is a navigation and stays allowed;
+        a file it opens is sandboxed (see file)."""
+        return (self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site")
+                and self.headers.get("Sec-Fetch-Mode") != "navigate")
 
     def reply(self, status, body, content_type, head):
         self.send_response(status)
@@ -445,6 +460,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.end_headers()
         if not head:
             self.wfile.write(body)
@@ -478,7 +494,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def file(self, path, head, download=False):
         path = os.path.realpath(path)
-        content_type = (mimetypes.guess_type(path)[0] or "application/octet-stream") if download else self.server.hub.content_type(path) if path.startswith("/") else None
+        content_type = (mimetypes.guess_type(path)[0] or "application/octet-stream") if download else self.server.hub.content_type(path) if os.path.isabs(path) else None
         try:
             info = os.stat(path) if content_type else None
         except OSError:
@@ -516,6 +532,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("ETag", etag)
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
+        # Only this hub's pages may embed what it serves.
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        if not content_type.startswith(("text/html", "application/pdf")):
+            # A file opened directly, such as an SVG, cannot run script in the hub's origin.
+            self.send_header("Content-Security-Policy", "sandbox")
         if status == 206:
             self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         self.end_headers()
@@ -695,13 +716,21 @@ PROBE = r"""async ({seconds, allCurrent}) => {
 
 
 def find_chrome():
-    for candidate in (os.environ.get("VIEWPRINTER_CHROME"),
-                      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                      "/Applications/Chromium.app/Contents/MacOS/Chromium",
-                      shutil.which("google-chrome"), shutil.which("chromium"), shutil.which("chromium-browser")):
+    mac = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+           os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+           "/Applications/Chromium.app/Contents/MacOS/Chromium",
+           "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+    windows = [os.path.join(base, *tail)
+               for base in filter(None, (os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"),
+                                         os.environ.get("LOCALAPPDATA")))
+               for tail in (("Google", "Chrome", "Application", "chrome.exe"),
+                            ("Microsoft", "Edge", "Application", "msedge.exe"))]
+    linux = [shutil.which(name) for name in ("google-chrome", "google-chrome-stable", "chromium",
+                                             "chromium-browser", "microsoft-edge", "chrome", "msedge")]
+    for candidate in (os.environ.get("VIEWPRINTER_CHROME"), *mac, *windows, *linux):
         if candidate and os.path.exists(candidate):
             return candidate
-    raise RuntimeError("no Chrome or Chromium found; set VIEWPRINTER_CHROME")
+    raise RuntimeError("no Chrome, Chromium or Edge found; set VIEWPRINTER_CHROME to its executable")
 
 
 def gallery_url(reference):
@@ -719,7 +748,7 @@ def gallery_url(reference):
         raise ValueError(f"no review page found for {reference}")
     if registered:
         # Verify the same HTTP/media route the user sees, including server permissions.
-        return ensure_server().rstrip("/") + "/files" + quote(str(gallery))
+        return ensure_server().rstrip("/") + workspace.file_url(gallery)
     return gallery.as_uri()
 
 
@@ -732,12 +761,16 @@ def check_gallery(reference, seconds=20, all_current=False):
         chrome = subprocess.Popen(
             [find_chrome(), "--headless=new", "--remote-debugging-port=0", f"--user-data-dir={profile}",
              "--autoplay-policy=no-user-gesture-required", "--mute-audio", "--no-first-run",
-             "--no-default-browser-check", "--window-size=1280,2000", "about:blank"],
+             "--no-default-browser-check", "--window-size=1280,2000",
+             # A throwaway profile: no keychain prompt, no sync, no background traffic.
+             "--use-mock-keychain", "--password-store=basic", "--disable-background-networking",
+             "--disable-component-update", "--disable-sync", "--disable-extensions",
+             "--disable-default-apps", "--no-pings", "about:blank"],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
             active = Path(profile) / "DevToolsActivePort"
             for _ in range(150):
-                lines = active.read_text().splitlines() if active.exists() else []
+                lines = active.read_text(encoding="utf-8").splitlines() if active.exists() else []
                 if len(lines) >= 2:
                     break
                 time.sleep(0.1)
@@ -869,7 +902,7 @@ def main(argv=None):
             print(f"{entry} is a tab at {hub_url(entry)}\n{HUB_NOTE}")
         elif args.command == "reconcile-formats":
             from review_formats import reconcile
-            print(json.dumps(reconcile(json.loads(args.plan.read_text()), args.apply), indent=2))
+            print(json.dumps(reconcile(json.loads(args.plan.read_text(encoding="utf-8")), args.apply), indent=2))
         elif args.command == "rollback-formats":
             from review_formats import rollback
             print(json.dumps(rollback(args.receipt), indent=2))
@@ -916,4 +949,8 @@ RUNTIME_SIGNATURE = hashlib.sha256(b"".join(p.read_bytes() for p in [Path(__file
 
 
 if __name__ == "__main__":
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     sys.exit(main())

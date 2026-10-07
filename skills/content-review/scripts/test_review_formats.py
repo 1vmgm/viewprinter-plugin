@@ -96,10 +96,10 @@ class FormatTests(unittest.TestCase):
     def test_guidance_optional_and_contained(self):
         a=self.source('a','A');eid=ws.register(a);self.assertEqual(ws.describe(ws.get(eid))['guidance'],[])
         cfg=self.project/'.viewprinter/content-memory/config.json';config=ws.read(cfg)
-        guide=self.project/'guide.md';guide.write_text('# Guidance')
+        guide=self.project/'guide.md';guide.write_text('# Guidance', encoding='utf-8')
         config['contentSkill']='guide.md';ws.atomic(cfg,config)
         self.assertEqual(ws.guidance(ws.get(eid))[0]['path'],str(guide))
-        (self.base/'private.md').write_text('private');config['contentSkill']='../private.md';ws.atomic(cfg,config)
+        (self.base/'private.md').write_text('private', encoding='utf-8');config['contentSkill']='../private.md';ws.atomic(cfg,config)
         self.assertEqual(ws.guidance(ws.get(eid)),[])
     def test_historical_snapshot_does_not_restore_a_duplicate(self):
         a=self.source('a','A');eid=ws.register(a);r=ws.get(eid)

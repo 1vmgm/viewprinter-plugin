@@ -5,12 +5,33 @@ import base64
 import hashlib
 import html
 import json
+import re
 import os
 from pathlib import Path
 import tempfile
-from datetime import datetime
-from zoneinfo import ZoneInfo
+import sys
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from urllib.parse import urlparse, quote
+
+
+def iso(text):
+    """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
+    accepts only from Python 3.11."""
+    text = text.replace('Z', '+00:00')
+    text = re.sub(r'\.(\d+)', lambda match: '.' + (match.group(1) + '000000')[:6], text, count=1)
+    return datetime.fromisoformat(text)
+
+
+def zone(name):
+    '''The named time zone. UTC needs no time zone database; Windows has none unless the tzdata
+    package is installed, so a zone that can't be loaded falls back to UTC, which the output names.'''
+    if name in (None, '', 'UTC', 'Etc/UTC'):
+        return timezone.utc
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return timezone.utc
 
 
 def esc(value):
@@ -74,9 +95,9 @@ def date_label(d):
     raw = d['checkedAt']
     if 'T' not in raw:
         return raw
-    observed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+    observed = iso(raw)
     if observed.tzinfo:
-        observed = observed.astimezone(ZoneInfo(d.get('timezone', 'UTC')))
+        observed = observed.astimezone(zone(d.get('timezone')))
     return observed.strftime('%b %d, %Y · %I:%M %p %Z')
 
 
@@ -124,7 +145,7 @@ def build(manifest, output):
     if output.parent.resolve() != base:
         raise ValueError('Output must be beside manifest')
     from shared_identity import resolve
-    d = resolve(json.loads(manifest.read_text()), base)
+    d = resolve(json.loads(manifest.read_text(encoding='utf-8')), base)
     for key in ('id', 'title', 'revision', 'checkedAt', 'status', 'accounts'):
         if key not in d:
             raise ValueError('Missing group field: ' + key)
@@ -211,6 +232,10 @@ def build(manifest, output):
 
 
 if __name__ == '__main__':
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)

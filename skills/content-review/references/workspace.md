@@ -25,10 +25,10 @@ Influencers have a separate identity (`kind: influencer` + `influencerId`), usin
 Declare this in each contributor-owned social review manifest; use unique batch and item IDs within the format:
 
 ```json
-{"reviewHub":{"kind":"social-content","formatId":"ugc-hook-demo","entry":"example--ugc","projectId":"example","owner":"current-task","variant":"Live action","recipeRef":".agents/skills/example-content/references/formats/ugc-hook-demo.md","accountGroups":["example--people-accounts"]}}
+{"reviewHub":{"kind":"social-content","formatId":"product-demo","entry":"example--product-demo","projectId":"example","owner":"current-task","variant":"Live action","recipeRef":".agents/skills/example-content/references/formats/product-demo.md","accountGroups":["example--people-accounts"]}}
 ```
 
-`review_gallery.py --manifest review.json --output review.html` registers only a declared `social-content` review inside a project with `.viewprinter/content-memory`. `VIEWPRINTER_REVIEW_HUB=0` renders standalone; `VIEWPRINTER_REVIEW_AUTOSTART=0` registers without starting. Registrations with the same project + format ID join one review automatically. Alternate entry names become aliases. The generator fails if hub registration fails; a standalone HTML success is not a completed social handoff.
+`review_gallery.py --manifest review.json --output review.html` registers only a declared `social-content` review inside a project with `.viewprinter/content-memory`. `VIEWPRINTER_REVIEW_HUB=0` renders standalone; `VIEWPRINTER_REVIEW_AUTOSTART=0` registers without starting. Registrations with the same project + format ID join one review automatically. Alternate entry names become aliases. The generator exits with an error if hub registration fails, and says so when the gallery is outside a project, where nothing is registered; a standalone HTML success is not a completed social handoff.
 
 For an update, first read the source revision from the registry or `/api/queue`, reread the source manifest, and change only owned work. Pass that observed value with `--source-revision N` to `review_gallery.py` or `review_hub.py add`. Alternatively set `reviewHub.sourceRevision` to N+1 in the edited source. New sources need no revision. A stale update fails without replacing the accepted review; refresh and reconcile rather than blindly incrementing. Repeating an unchanged source adds no duplicate items. Changed media for the same item/version is rejected: make a new version. Conflicting item or batch IDs from different sources require resolution.
 
@@ -37,7 +37,7 @@ Import scheduling receipts into the source's existing `delivery.snapshot`. The w
 Other registered reviews use explicit commands (paths are examples):
 
 ```sh
-python3 scripts/review_hub.py add /project/format/review.html --manifest /project/format/review.json --kind social-content --format-id ugc-hook-demo --name example--ugc --owner task-name
+python3 scripts/review_hub.py add /project/format/review.html --manifest /project/format/review.json --kind social-content --format-id product-demo --name example--product-demo --owner task-name
 python3 scripts/review_hub.py add /project/accounts/review.html --manifest /project/accounts/group.json --kind account-group --format-id people-accounts --name example--people-accounts
 python3 scripts/review_hub.py ensure
 ```
@@ -84,10 +84,10 @@ The empty example does not remove anything: the matching post must actually be p
 Archive/Restore controls and CLI preserve IDs and schedules. Archiving freezes the HTML, manifest and referenced media into a content-addressed local snapshot (copy-on-write where supported; never mutable hardlinks). Originals stay put. Archive may take time for a large format. Do not add it as a routine approval gate.
 
 ```sh
-python3 scripts/review_hub.py archive example--ugc --reason "Finished this format"
-python3 scripts/review_hub.py archive example--ugc --batch october-hooks --reason "Batch complete"
-python3 scripts/review_hub.py restore example--ugc
-python3 scripts/review_hub.py restore example--ugc--batch-october-hooks
+python3 scripts/review_hub.py archive example--product-demo --reason "Finished this format"
+python3 scripts/review_hub.py archive example--product-demo --batch october-hooks --reason "Batch complete"
+python3 scripts/review_hub.py restore example--product-demo
+python3 scripts/review_hub.py restore example--product-demo--batch-october-hooks
 ```
 
 `posted` is retired; import receipts to establish scheduling completion. Archive remains searchable without an age cutoff. A format archive explicitly puts the whole format aside; registration cannot silently revive it. Restore recomputes current readiness. A batch archive affects only that batch; restoring rejoins the same parent. Historical reviews are immutable snapshots with a date and parent link, not retired formats. Open their current parent rather than restoring a duplicate. Recipes and shared guidance are preserved; scheduling never implies archive.

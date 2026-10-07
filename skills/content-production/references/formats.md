@@ -6,7 +6,7 @@ Use this when establishing a format, turning feedback into a reusable recipe, or
 
 | Layer | Owns |
 | --- | --- |
-| content-production skill | Develop concepts and formats, select available capabilities, prototype, produce, review, preserve evidence and learn. Shared gallery behavior and the local server live here. |
+| content-production skill | Develop concepts and formats, select available capabilities, prototype, produce, review, preserve evidence and learn. Review galleries and the local server belong to the content-review skill. |
 | Generic starter | A reusable starting structure and capability map. Adapt it to the project; it is not a proven winner or a mandatory toolchain. |
 | Project content skill | One content-creation SKILL.md per project, routing to many unique format references and shared audience, voice, proof, audio, description and production guidance. |
 | Project format recipe | The recurring viewer experience, approved examples, invariants, allowed variants, tool workflows, quality checks and evidence from feedback/results. It lives in `references/formats/<format-id>.md` under the project’s one content skill, following the project’s established structure. |
@@ -38,17 +38,17 @@ These filenames illustrate the existing pattern, not required new files. Reuse t
 1. Read the project skill/memory and look for an existing matching format. Use its stable format ID even when the title, tool, directory or contributor changes.
 2. If none fits, record a stable ID, display name, short concept and viewer sequence in project memory. A format-specific recipe file is optional; the existing project content skill still applies. Use the [hook/demo starter](formats/hook-demo.md) when that structure fits; other formats can start from a short brief.
 3. Make the requested prototype within the user's production scope, put it in that format's review, and retain its sources and exact version. A new experimental format is reviewable immediately.
-4. Translate accepted feedback into invariants and allowed variation. Preserve the user's actual decision and scope. Write or update a format reference under the existing project content skill when the project’s promotion criteria are met. If the project has no content skill yet, use installed skill-creator guidance to establish that one shared entry skill.
+4. Translate accepted feedback into invariants and allowed variation. Preserve the user's actual decision and scope. Write or update a format reference under the existing project content skill once the user has approved an example and said what must stay the same, unless the project sets a different bar. If the project has no content skill yet, create it as SKILL.md describes under “A project with no content skill yet”.
 5. Link the recipe to the existing format ID and approved examples. Documenting the recipe later does not create another format, reset its review, or erase history.
 6. Keep creative preference, technical success and measured audience performance distinct. Record model/workflow tests and evidence dates; one project's favorite model does not become the generic default.
 
-Do not create a SKILL.md for every batch. Keep changing job receipts, media, account IDs, captions and schedules in project data. The recipe points to that evidence and captures reusable decisions. Improve shared ViewPrinter guidance when the lesson applies across projects.
+Do not create a SKILL.md for every batch. Keep changing job receipts, media, account IDs, captions and schedules in project data. The recipe points to that evidence and captures reusable decisions. When a lesson would apply to every project, tell the user; this plugin's shared guidance is not edited from a project.
 
 ## Decide format versus variant versus workflow
 
 A format is the recurring experience the viewer recognizes: opening, progression, proof or reveal, and ending. A variant changes an agreed dimension within that experience. A workflow describes how to produce it. Switching a generator, editor or contributor alone does not establish a new format; sharing a tool does not combine different formats.
 
-Follow the user's chosen boundary. If the user groups live action and motion treatments under one format, keep them as named variants/batches in one review. If the user explicitly separates green-screen reactions and video memes, preserve that boundary even if both use the same source library.
+Follow the user's chosen boundary. If the user groups live action and motion treatments under one format, keep them as named variants/batches in one review. If the user explicitly separates two treatments into different formats, preserve that boundary even if both use the same source library.
 
 Special workflows can add their own inputs, stages and checks. For a Higgsfield influencer-based format, for example, the project recipe can reference the selected identity, approved source performance, chosen workflow, supported request fields, identity/motion checks and generation receipts. Inspect the connected provider's current workflow instructions before execution. Keep provider details in that workflow reference, and surface only relevant extra evidence in the review card's production disclosure. Do not force every format through influencer generation or require a paid dependency merely to review content.
 

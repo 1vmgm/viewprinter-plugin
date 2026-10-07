@@ -29,13 +29,28 @@ jobs:
           node-version: '22'
       - run: python -m pip install -r scripts/requirements.txt
       - run: python -m unittest discover -s scripts -p 'test_*.py' -v
+      - run: python scripts/build.py
+  # The helpers run on the customer's machine, so they are tested where customers
+  # are: Linux, macOS and Windows, on the Python macOS ships (3.9) and a current one.
+  helpers:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.9', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
       # Every skill's helpers, found on disk so a new skill's tests run without
       # anyone remembering to add a line here.
       - name: Every skill's own helpers
+        shell: bash
         run: |
           for scripts in skills/*/scripts; do
             echo "::group::$scripts"
             python -m unittest discover -s "$scripts" -p 'test_*.py' -v || exit 1
             echo "::endgroup::"
           done
-      - run: python scripts/build.py

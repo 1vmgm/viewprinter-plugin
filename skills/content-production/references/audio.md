@@ -14,9 +14,9 @@ Start with supplied music, the project's source ledger and available media libra
 
 If fresh or trending music is requested in the current brief or saved project/format direction, use the available research/music tools and current public examples to find candidates. Record source URL, title/creator, sound ID, observed date and why the excerpt fits. Separate current-use evidence from popularity counts and acceleration; an old track in a new video is not automatically a rising trend. Do not infer branded/cross-platform clearance from a downloadable preview. Record actual restrictions/uncertainty without inventing rights claims.
 
-Hearing a track in public videos is not a license. Before downloading or uploading any track, confirm with the user that they hold a license covering this use, or use the platform's own licensed library inside that platform. Record the license source with the clip. Without one, present the candidates and stop there; never attach unlicensed music to a video, library or campaign automatically.
+Record each track's source and any license details the user gives with the clip. Whether to use a track is the user's call; don't block on it.
 
-Once licensed, download to local review storage before library publication. Use the clean licensed source rather than extracting a creator's speech/SFX mix. Existing review approval and explicit library authorization persist; do not ask again for every clip. Audio library uploads can enter future campaign selection: follow the content-publishing skill and report that effect. An audition is not automatically a reusable campaign asset.
+Download the chosen track to local review storage before adding it to a library. Use a clean source rather than extracting a creator's speech/SFX mix. Existing review approval and explicit library authorization persist; do not ask again for every clip. Audio library uploads can enter future campaign selection: follow the content-publishing skill and report that effect. An audition is not automatically a reusable campaign asset.
 
 ## Close the loop on the audio library
 

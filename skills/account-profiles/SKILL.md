@@ -43,8 +43,10 @@ unresearched until a sourced module is added, without blocking the rest of the g
 ## Research and persist
 
 Use [research.md](references/research.md) when adding or refreshing platform facts.
-Store reusable facts, source URLs, source publication/update dates, observation dates,
-scope and uncertainty in this skill's platform modules and `references/research.json`.
+Read the shipped facts in this skill's platform modules and `references/research.json`.
+Record facts you refresh, with source URLs, source and observation dates, scope and
+uncertainty, in the project beside the brief: an installed skill is replaced on update.
+Tell the user which shipped facts look out of date.
 Keep account handles, branding choices, assets, schedules and approvals in the project.
 
 Inspect public profiles and native settings when available. Missing biographies,
@@ -95,6 +97,6 @@ evidence. Refresh connection/profile URLs after handle changes.
 
 For cadence recommendations, inspect existing queue and campaign reservations with
 timestamps, especially on shared accounts. Creative approval, queued delivery,
-published delivery and profile application are separate states. Use `viewprinter`
+published delivery and profile application are separate states. Use the content-publishing skill
 for posting, remote-group writes or queue mutations; never imply this handoff queued
 content. Finish with the review link, proposal/application state and specific gaps.

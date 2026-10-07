@@ -133,7 +133,7 @@ class LearnTests(unittest.TestCase):
         learn.link(self.memory, self.record("p1", createdAt="2026-10-01T00:00:00Z"))
         directory = self.memory / "history" / "publications"
         self.assertEqual(sorted(p.name for p in directory.iterdir()), [".gitattributes", "2026-10.jsonl"])
-        self.assertIn("*.jsonl merge=union", (directory / ".gitattributes").read_text())
+        self.assertIn("*.jsonl merge=union", (directory / ".gitattributes").read_text(encoding="utf-8"))
 
     def test_a_real_lock_failure_is_reported_instead_of_falling_back(self):
         def failing(descriptor, operation):
@@ -160,7 +160,7 @@ class LearnTests(unittest.TestCase):
         self.assertEqual(sorted(learn.load_publications(self.memory)), [("p1", "acct"), ("p2", "acct")])
         directory = self.memory / "history" / "publications"
         self.assertTrue((directory / ".lock").is_file())
-        self.assertIn(".lock", (directory / ".gitignore").read_text().splitlines())
+        self.assertIn(".lock", (directory / ".gitignore").read_text(encoding="utf-8").splitlines())
 
     def test_parallel_links_from_separate_processes_are_all_kept(self):
         script = Path(learn.__file__).resolve()
@@ -200,6 +200,36 @@ class LearnTests(unittest.TestCase):
         nested = self.project / "a" / "b"
         nested.mkdir(parents=True)
         self.assertEqual(learn.locate_memory(start=nested), self.memory)
+
+    def test_memory_is_never_started_inside_the_installed_skills(self):
+        # An update replaces the installed skills, and posting checkpoints kept there with them.
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        home = Path(elsewhere.name).resolve() / "skills"
+        installed = home / "content-publishing"
+        installed.mkdir(parents=True)
+        with patch.object(learn, "SKILLS_HOME", home):
+            with self.assertRaises(learn.LearnError):
+                learn.locate_memory(start=installed, create=True)
+            with self.assertRaises(learn.LearnError):
+                learn.locate_memory(installed / "memory", create=True)
+        self.assertEqual(list(home.rglob("*memory*")), [])
+
+    def test_timestamps_with_z_and_any_fraction_parse_before_python_3_11(self):
+        from datetime import datetime, timezone
+        self.assertEqual(learn.parse_time("2026-10-06T12:00:00.12345Z"),
+                         datetime(2026, 10, 6, 12, 0, 0, 123450, tzinfo=timezone.utc))
+        self.assertEqual(learn.parse_time("2026-10-06T12:00:00.1234567+00:00"),
+                         datetime(2026, 10, 6, 12, 0, 0, 123456, tzinfo=timezone.utc))
+        self.assertEqual(learn.parse_time("2026-10-06T12:00:00Z"), datetime(2026, 10, 6, 12, tzinfo=timezone.utc))
+
+    def test_a_report_with_nothing_linked_says_how_to_start(self):
+        saved = self.project / "posts.json"
+        saved.write_text(json.dumps({"posts": self.peers("acct", 3, 1000)}), encoding="utf-8")
+        errors = io.StringIO()
+        with contextlib.redirect_stderr(errors), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(learn.main(["report", "--memory", str(self.memory), "--posts", str(saved)]), 0)
+        self.assertIn("no posts are linked", errors.getvalue())
 
     # -- posting checkpoints ----------------------------------------------------
 
@@ -441,7 +471,7 @@ class LearnTests(unittest.TestCase):
         markdown = self.project / "report.md"
         self.assertEqual(learn.main(["report", "--memory", str(self.memory), "--posts", str(saved),
                                      "--markdown", str(markdown)]), 0)
-        text = markdown.read_text()
+        text = markdown.read_text(encoding="utf-8")
         self.assertIn("| format-a | 1 | 1 | 3.00x", text)
         self.assertEqual(learn.main(["report", "--memory", str(self.memory), "--posts", str(saved),
                                      "--as-of", "2026-09-05T00:00", "--markdown", str(markdown)]), 0)

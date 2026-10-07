@@ -19,10 +19,10 @@ class DeliveryTests(unittest.TestCase):
             log = root / 'history/publications'
             log.mkdir(parents=True)
             link = {'postId': 'p', 'accountId': 'a', 'itemId': 'clip', 'version': 1, 'batchId': 'b'}
-            (log / '2026-10.jsonl').write_text(json.dumps(link)+'\n')
+            (log / '2026-10.jsonl').write_text(json.dumps(link)+'\n', encoding='utf-8')
             page = root / 'page.json'
             page.write_text(json.dumps({'posts': [{'post': {'id': 'p', 'status': 'scheduled'}, 'targets': [
-                {'socialAccountId': 'a', 'status': 'published', 'url': 'https://example.com/post', 'account': {'handle': '@a', 'platform': 'instagram'}}]}]}))
+                {'socialAccountId': 'a', 'status': 'published', 'url': 'https://example.com/post', 'account': {'handle': '@a', 'platform': 'instagram'}}]}]}), encoding='utf-8')
             output = root / 'delivery.json'
             result = sync(root, [page], output)
             self.assertEqual(result['placements'][0]['status'], 'published')
@@ -33,7 +33,7 @@ class DeliveryTests(unittest.TestCase):
             self.assertEqual(manifest['items'][1]['_placements'], [])
             # Missing from a partial response is not cancellation or deletion.
             self.assertEqual(sync(root, [], output)['placements'][0]['status'], 'published')
-            page.write_text(json.dumps({'posts': [{'post': {'id': 'p', 'status': 'scheduled', 'scheduledAt': '2026-10-04T13:37:00Z'}, 'targets': [{'socialAccountId': 'a', 'status': 'pending'}]}]}))
+            page.write_text(json.dumps({'posts': [{'post': {'id': 'p', 'status': 'scheduled', 'scheduledAt': '2026-10-04T13:37:00Z'}, 'targets': [{'socialAccountId': 'a', 'status': 'pending'}]}]}), encoding='utf-8')
             queued = sync(root, [page], output)['placements'][0]
             self.assertEqual(queued['status'], 'scheduled')
             self.assertEqual(queued['targetStatus'], 'pending')

@@ -122,9 +122,9 @@ the latter as unknown unless the current tools explicitly expose that state.
 from delivery. A post that is queued has not yet gone out.
 
 For a batch, record a checkpoint after each successful save and readback, before
-starting the next placement:
+starting the next placement. Run it from the project folder (see `learning`):
 
-    python3 scripts/learn.py checkpoint --batch <batch> --item <item> --version <n> \
+    python3 <skill-directory>/scripts/learn.py checkpoint --batch <batch> --item <item> --version <n> \
       --account-id <account> --key <idempotency-key> --post-id <post> \
       --status saved [--details <file.json>|-]
 

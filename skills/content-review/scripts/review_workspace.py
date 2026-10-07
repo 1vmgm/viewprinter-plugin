@@ -5,7 +5,7 @@ import hashlib
 import html
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 import re
 import shutil
 import tempfile
@@ -24,14 +24,34 @@ def root(): return Path(os.environ.get('VIEWPRINTER_REVIEW_ROOT') or Path.home()
 def registry(): return root()/'.hub'/'entries'
 def slug(value): return re.sub(r'[^a-z0-9._-]+','-',value.lower()).strip('-.') or 'review'
 def read(path, default=None):
-    try: return json.loads(Path(path).read_text())
+    try: return json.loads(Path(path).read_text(encoding='utf-8'))
     except (OSError, ValueError): return default
+def file_url(path):
+    """The hub URL for a local file: /files/ and its absolute path with forward slashes, so a
+    Windows drive path (C:/...) travels the same way a POSIX one does."""
+    path=path if isinstance(path,PurePath) else Path(path)
+    return '/files/'+quote(path.as_posix().lstrip('/'))
+def url_path(rest):
+    """The local path a /files/ URL names, given the part after /files/."""
+    rest=unquote(rest)
+    return os.path.normpath(rest if os.name=='nt' else '/'+rest)
+def shortcut(link, folder):
+    """A convenience link in ~/ViewPrinter/in-review. The registry is the record; where links
+    are not allowed (Windows without Developer Mode) there is simply no shortcut."""
+    try:link.parent.mkdir(parents=True,exist_ok=True);link.symlink_to(folder)
+    except OSError:pass
+def served_root(record):
+    """The folder whose media the hub may serve for a review: its ViewPrinter project, or for
+    work outside a project only the review's own folder. Older records stored the folder's parent
+    here, which could be a home directory, so a stored root counts only if it is a project."""
+    project=Path(record['projectRoot'])
+    return str(project) if (project/'.viewprinter'/'content-memory').is_dir() else record['target']
 
 def atomic(path, value):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.'+path.name+'.',dir=path.parent)
     try:
-        with os.fdopen(fd,'w') as f: json.dump(value,f,indent=2,ensure_ascii=False);f.write('\n');f.flush();os.fsync(f.fileno())
+        with os.fdopen(fd,'w', encoding='utf-8') as f: json.dump(value,f,indent=2,ensure_ascii=False);f.write('\n');f.flush();os.fsync(f.fileno())
         os.replace(temp,path)
     finally:
         if os.path.exists(temp):os.unlink(temp)
@@ -125,14 +145,14 @@ def register(target, name=None, kind=None, manifest=None, format_id=None, owner=
         if any(r['id']==entry and r is not existing for r in all_records):raise ValueError('Entry ID belongs to another review')
         r=existing or {'schemaVersion':SCHEMA_VERSION,'id':entry,'createdAt':now(),'revision':0,'lifecycle':'active','aliases':[]}
         r.update(kind=kind,manifest=str(mf),gallery=str(gallery),target=str(gallery.parent),
-            projectRoot=str(project) if project else str(target.parent),projectId=declared.get('projectId') or (project or target.parent).name,
+            projectRoot=str(project) if project else str(gallery.parent),projectId=declared.get('projectId') or (project or target.parent).name,
             formatId=identity,owner=owner or r.get('owner') or declared.get('owner') or 'unassigned',
             accountGroups=groups if groups is not None else declared.get('accountGroups',r.get('accountGroups',[])),updatedAt=now(),revision=r['revision']+1)
         atomic(registry()/(entry+'.json'),r)
         # Keep Finder shortcuts and old agent paths stable.
         link=root()/'in-review'/entry
         if r['lifecycle']=='active' and not r.get('batchId') and not os.path.lexists(link):
-            link.parent.mkdir(parents=True,exist_ok=True);link.symlink_to(gallery.parent)
+            shortcut(link,gallery.parent)
     return entry
 
 
@@ -213,23 +233,23 @@ def freeze(record, batch=None):
         from review_gallery import build_gallery
         tmp=mf.parent/('.archive-'+slug(batch)+'.json');out=mf.parent/('.archive-'+slug(batch)+'.html')
         atomic(tmp,data)
-        try:build_gallery(tmp,out);text=out.read_text()
+        try:build_gallery(tmp,out);text=out.read_text(encoding='utf-8')
         finally:tmp.unlink(missing_ok=True);out.unlink(missing_ok=True)
-    else:text=source.read_text()
+    else:text=source.read_text(encoding='utf-8')
     sources={};project=Path(record['projectRoot']).resolve()
     def replace(match):
         key,q,value=match.groups();raw=html.unescape(value);parts=urlsplit(raw)
         if parts.scheme or not parts.path or raw.startswith('#'):return match.group(0)
-        p=Path(unquote(parts.path[6:])) if parts.path.startswith('/files/') else (source.parent/unquote(parts.path)).resolve()
+        p=Path(url_path(parts.path[len('/files/'):])) if parts.path.startswith('/files/') else (source.parent/unquote(parts.path)).resolve()
         if not p.is_file() or not p.is_relative_to(project) or p.suffix.lower() not in MEDIA:return match.group(0)
         if str(p) not in sources:
             digest=hashlib.sha256(p.read_bytes()).hexdigest();dest=folder/'media'/(digest+p.suffix.lower())
             if not dest.exists():clone(p,dest)
             sources[str(p)]={'path':str(dest),'sha256':digest}
-        url='/files'+quote(sources[str(p)]['path'])
+        url=file_url(sources[str(p)]['path'])
         return key+'='+q+html.escape(url,quote=True)+q
     text=LINK_RE.sub(replace,text)
-    (folder/'review.html').write_text(text)
+    (folder/'review.html').write_text(text, encoding='utf-8')
     atomic(folder/'manifest.json',data);atomic(folder/'assets.json',sources)
     return {'snapshotGallery':str(folder/'review.html'),'snapshotManifest':str(folder/'manifest.json'),
             'snapshotAssets':str(folder/'assets.json'),'snapshotBase':str(mf.parent)}
@@ -278,8 +298,8 @@ def lifecycle(entry, action, revision=None, reason='', actor='local-user', batch
                 parent.setdefault('batchStates',{})[r['batchId']]='active'
                 r['lifecycle']='restored-history';parent['revision']+=1;parent['updatedAt']=now();atomic(registry()/(parent['id']+'.json'),parent)
             else:
-                r['lifecycle']='active';link=root()/'in-review'/r['id'];link.parent.mkdir(parents=True,exist_ok=True)
-                if not os.path.lexists(link):link.symlink_to(Path(r['gallery']).parent)
+                r['lifecycle']='active';link=root()/'in-review'/r['id']
+                if not os.path.lexists(link):shortcut(link,Path(r['gallery']).parent)
         r['revision']+=1;r['updatedAt']=now()
         r.setdefault('history',[]).append({'action':action,'at':now(),'reason':reason,'actor':actor, 'snapshotGallery':r.get('snapshotGallery')})
         atomic(registry()/(r['id']+'.json'),r)
@@ -321,7 +341,7 @@ def describe(record):
     for path in [mf,gallery]:
         if path and Path(path).exists():dates.append(Path(path).stat().st_mtime)
     entry={**record,'name':record['id'],'project':project.replace('-',' ').title(),'title':title,'label':label,
-        'exists':bool(gallery and Path(gallery).is_file()),'url':'/files'+quote(gallery) if gallery else None,
+        'exists':bool(gallery and Path(gallery).is_file()),'url':file_url(gallery) if gallery else None,
         'updated':max(dates,default=0),'added':0,'summary':None,'thumbnail':None,'platforms':[],'search':label.lower(),
         'batches':[],'downloads':[],'sourceErrors':source_errors,'guidance':guidance(record),'influencer':influencer_profile(record)}
     entry['sources']=[{k:s.get(k) for k in ('id','manifest','owner','revision','batchIds')} for s in record.get('sources',[])]
@@ -342,7 +362,7 @@ def describe(record):
             if pic:
                 path=str((base/pic).resolve());assets=cached_read(record.get('snapshotAssets')) or {}
                 if archived and path in assets:path=assets[path]['path']
-                entry['thumbnail']='/files'+quote(path)
+                entry['thumbnail']=file_url(path)
         accounts=[t for i in active for t in (i.get('distribution') or {}).get('targets',[])]
         entry['platforms']=sorted({t.get('platform') for t in accounts if t.get('platform')})
         entry['search']=' '.join([label,*[str(i.get(k,'')) for i in active for k in ('id','title','format')],*[b['label'] for b in entry['batches']],*[str(t.get('accountName') or t.get('accountId')) for t in accounts]]).lower()
@@ -360,7 +380,7 @@ def describe(record):
         entry['platforms']=sorted({a['platform'] for a in entry['accounts']})
         entry['status']=data.get('status','Profile review')
         asset=next((a for a in data.get('assets',[]) if a.get('kind')=='avatar'),None)
-        if asset:entry['thumbnail']='/files'+quote(str((base/asset['src']).resolve()))
+        if asset:entry['thumbnail']=file_url((base/asset['src']).resolve())
         entry['search']=' '.join([label,*[str(a.get('handle')) for a in entry['accounts']]]).lower()
     for dl in data.get('downloads',[]):
         p=(base/dl['path']).resolve()
@@ -380,7 +400,7 @@ def influencer_profile(record):
     result={k:profile[k] for k in ('name','description','voice','identityType','audience') if profile.get(k)}
     if profile.get('avatar'):
         avatar=(project/profile['avatar']).resolve()
-        if avatar.is_relative_to(project) and avatar.is_file() and avatar.suffix.lower() in {'.png','.jpg','.jpeg','.webp'}:result['avatar']='/files'+quote(str(avatar))
+        if avatar.is_relative_to(project) and avatar.is_file() and avatar.suffix.lower() in {'.png','.jpg','.jpeg','.webp'}:result['avatar']=file_url(avatar)
     return result
 
 
@@ -406,7 +426,7 @@ def scan():
         e=describe(r)
         if r['lifecycle']=='active':e['aliases']=[*e.get('aliases',[]),*[h['id'] for h in all_records if h.get('parentId')==r['id'] and h['lifecycle']=='restored-history']]
         (history if r['lifecycle']=='history' else archived if r['lifecycle']=='archived' else current).append(e)
-        own.add(e['target']);projects.add(r['projectRoot'])
+        own.add(e['target']);projects.add(served_root(r))
         for source in r.get('sources',[]):own.add(str(Path(source['gallery']).parent))
         if r.get('snapshotGallery'):own.add(str(Path(r['snapshotGallery']).parent))
     for e in [*current,*archived]:e['history']=[{'id':h['id'],'label':h['label'],'date':h.get('historyDate')} for h in history if h.get('parentId')==e['id']]

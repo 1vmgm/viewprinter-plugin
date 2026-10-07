@@ -297,12 +297,12 @@ class MemoryTests(unittest.TestCase):
 
     def test_init_is_idempotent_and_never_overwrites_config(self):
         memory = arena.initialize(self.project, "Example")
-        config = json.loads((memory / "config.json").read_text())
+        config = json.loads((memory / "config.json").read_text(encoding="utf-8"))
         self.assertEqual(config["rules"]["scalePayers"], 15)
         config["value"]["breakEvenPerPayer"] = 31.5
-        (memory / "config.json").write_text(json.dumps(config))
+        (memory / "config.json").write_text(json.dumps(config), encoding="utf-8")
         self.assertEqual(arena.initialize(self.project, "Example"), memory)
-        self.assertEqual(json.loads((memory / "config.json").read_text())["value"]["breakEvenPerPayer"], 31.5)
+        self.assertEqual(json.loads((memory / "config.json").read_text(encoding="utf-8"))["value"]["breakEvenPerPayer"], 31.5)
         nested = self.project / "a" / "b"
         nested.mkdir(parents=True)
         self.assertEqual(arena.locate(nested), memory)

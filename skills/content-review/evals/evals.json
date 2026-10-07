@@ -3,22 +3,22 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "A revised product video and a separate furniture poster are ready for review. Local HTML galleries have been generated. Desktop browser tools are available. The user says they cannot see an open browser. Complete the handoff without uploading or publishing anything. Explain what changes if browser access is unavailable.",
-      "expected_output": "Opens the current local gallery with the available browser tools, verifies current previews load, links the same gallery and asks the user to confirm they can see it rather than driving their desktop, and preserves Needs review status. A link alone is insufficient when browser access exists. Applies equally to video and static work; unavailable access is explicitly reported.",
+      "prompt": "A revised product video and a separate furniture poster are ready for review, and their galleries are built in the project. The user says they can't see anything. Complete the handoff without uploading or publishing anything. Explain what changes if the review hub can't start.",
+      "expected_output": "Registers both galleries with the review hub, opens the hub only when no hub tab is connected, verifies every current preview with review_hub.py check, links the hub and asks the user to confirm they can see the work, and keeps Needs review status. Never opens a gallery in a new tab or window. The same handoff applies to video and static work; if the hub can't start, it reports why and gives the gallery file path.",
       "files": [],
       "expectations": [
-        "Opens and verifies the current local gallery rather than only regenerating HTML or returning a file link",
+        "Uses the one hub tab: review_hub.py open only when no tab is connected, never a new tab or window per gallery",
+        "Verifies previews with review_hub.py check rather than only regenerating HTML",
         "Keeps current versions under Needs review; does not infer approval from opening",
         "No autoplay, public hosting, upload or publishing",
-        "Same handoff applies to video and static content without imposing generation or audio steps on a poster",
-        "If browser access is unavailable, reports the specific limit and provides the local gallery link",
-        "Asks the user to confirm they can see the gallery instead of treating automation navigation as proof or taking control of the desktop"
+        "Same handoff for video and static content, without imposing generation or audio steps on a poster",
+        "Asks the user to confirm they can see the work; if the hub can't start, reports the specific limit and the gallery file path"
       ]
     },
     {
       "id": 2,
       "prompt": "Our ongoing creator-hook/product-demo format has eight current videos in review/ugc.html, with earlier versions and approvals. Make one prototype for a new couple-story angle in a new dated production directory; wait for approval before the other eleven. The prototype is now ready. Describe the gallery update and handoff without generating or publishing.",
-      "expected_output": "Adds the prototype to the existing review/ugc.html, leads with its pending decision, preserves all eight prior creatives and exact-version states/history, records canonical gallery/manifest paths, and opens/links that same page. No new destination just because the story, date, production directory or approval checkpoint changed.",
+      "expected_output": "Adds the prototype to the existing review/ugc.html, leads with its pending decision, preserves all eight prior creatives and exact-version states/history, records canonical gallery/manifest paths, and links that same review in the hub. No new destination just because the story, date, production directory or approval checkpoint changed.",
       "files": [],
       "expectations": [
         "Canonical HTML path and recognizable title stay stable",
@@ -90,12 +90,12 @@
     {
       "id": 8,
       "prompt": "Improve our review UI. Use dark mode and the existing purple accent, and make sure it feels polished when opening a gallery on a phone.",
-      "expected_output": "Improve the shared workspace and renderer, including iframe backgrounds, cards, controls, text contrast, selected states and guidance. Preserve original media. Verify desktop and 390px/320px layouts, Copy ID, playback speed, batch filters and one-player behavior. Do not fork a review shell per agent.",
+      "expected_output": "Explains that the review workspace and gallery renderer ship with the plugin, so edits to an installed copy are lost on update; uses what the project controls, and writes up the specific requests (dark mode, purple accent, phone layout at 390px and 320px) for the user to report. Does not fork a review shell.",
       "files": [],
       "expectations": [
-        "Shared dark theme across workspace and generated galleries",
-        "Purple accent, clear hierarchy, useful contrast and no narrow overflow",
-        "Checks actual served UI and existing controls",
+        "Does not edit the installed plugin or fork a review shell per agent",
+        "Uses what the project controls, where it fits",
+        "Writes up the specific UI requests for the user to report",
         "Preserves media and one managed tab"
       ]
     }

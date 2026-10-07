@@ -23,7 +23,17 @@ For a new project, initialize local memory with:
 python3 <skill-directory>/scripts/memory.py init --project <project-root> --name <project-name>
 ```
 
-Use existing authorization and decisions from the conversation. These phases are production stages, not automatic permission gates. A request for concepts only stops before paid generation; a request for an entire unattended run permits reasonable local decisions within that scope. Stop at a review checkpoint the user actually requested. Do not invent approval because time elapsed.
+### A project with no content skill yet
+
+Make the first prototype before writing a skill: a format is reviewable before its recipe exists. Once the user approves a direction, create the project's one content skill:
+
+- Claude Code reads `<project>/.claude/skills/<project>-content/SKILL.md`; Codex and most other agents read `<project>/.agents/skills/<project>-content/SKILL.md`. Use the folder the user's agent reads; for both, keep one copy and link the other folder to it.
+- Give it frontmatter with a `name` and a `description` of when to use it, then only what the project has decided: audience, voice, proof, audio and captions. Route to one `references/formats/<format-id>.md` per format; see [develop project formats](references/formats.md).
+- Record its path, relative to the project, as `contentSkill` in `.viewprinter/content-memory/config.json`, so the review workspace shows it as the project's guidance.
+
+Write down the user's decisions, not guesses. A format's recipe grows from approved examples.
+
+Use existing authorization and decisions from the conversation. These phases are production stages, not automatic permission gates. Paid generation is the exception: it needs a provider the user connected or named and a spend scope, a count or a budget, from the user or project memory. Ask once per batch when either is missing. A request for concepts only stops before paid generation; a request for an entire unattended run permits reasonable local decisions within that scope. Stop at a review checkpoint the user actually requested. Do not invent approval because time elapsed.
 
 ## Choose the mode
 
@@ -83,6 +93,6 @@ Record the user's words plus an actionable interpretation: targets, versions, ch
 
 Inspect final exports, not just source previews. Verify content, readable timing, framing, continuity and product proof; check audio levels and playback boundaries where audio exists. For a trending/looping brief, verify current sound evidence, hook-to-payoff energy and the final end-to-start audition described in [audio](references/audio.md). Missing listening or trend evidence remains an explicit unresolved check; encoding success does not satisfy it. Distinguish measured checks from listening and from user review. Deliver playable/viewable outputs, editable sources when supported, approval status, unresolved limitations and the current gallery.
 
-Update memory before handing off. Separate production changes from conclusions about results. Record a finding with evidence, scope, confidence and what would change the conclusion. Promote repeated, transferable lessons into a narrow skill improvement with a regression case; one project's taste stays in project memory. See [hardening](references/hardening.md).
+Update memory before handing off. Separate production changes from conclusions about results. Record a finding with evidence, scope, confidence and what would change the conclusion. Promote repeated lessons into the project's content skill; one batch's taste stays in project memory. A lesson that would hold for every project goes to the user to report; the installed plugin is not edited. See [hardening](references/hardening.md).
 
 For uploads and reusable campaign assets, scheduling, captions, label choices, publishing, and delivery or performance checks, use [content publishing](../content-publishing/SKILL.md). To learn which formats worked and decide what to make next, use [content learning](../content-learning/SKILL.md): it links each publication to its item and version and compares results with each account's normal. An approved creative is not automatically authorized for every account, and views alone do not prove conversion. Preserve already authorized choices rather than asking again.

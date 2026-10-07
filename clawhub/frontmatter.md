@@ -14,14 +14,15 @@ description: >-
   — do NOT use them to schedule anything anywhere else, or for a platform ViewPrinter does
   not support.
 metadata:
-  version: "1.4.0"
+  version: "2.0.0"
 license: MIT
 allowed-tools: >-
   ViewPrinter MCP (platforms, accounts, groups, media, posts), and local Python helpers
-  that read and write the project's own files and make no network calls: scripts/learn.py
-  (publication links and posting checkpoints); content-production's memory.py and
-  archive.py (project memory, an archive of originals); content-review's review scripts,
-  which serve review pages on 127.0.0.1 only, open them in the user's browser and check
-  them in a headless Chrome; account-profiles' build_review.py; and paid-growth's arena.py
-  (ad decisions from exported numbers)
+  that read and write the project's files and a ~/ViewPrinter folder (the review registry
+  and the source archive) and call no outside service: scripts/learn.py (publication links
+  and posting checkpoints); content-production's memory.py and archive.py (project memory,
+  an archive of originals); content-review's review scripts, which serve review pages on
+  127.0.0.1 only, open them in the user's browser and check them in a headless Chrome with
+  its background networking off; account-profiles' build_review.py; and paid-growth's
+  arena.py (ad decisions from exported numbers)
 ---

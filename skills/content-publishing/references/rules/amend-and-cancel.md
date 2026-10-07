@@ -56,11 +56,16 @@ user will discover on their own feed.
 
 ## Stopping campaigns for one account
 
-Read `campaigns_list` and identify the account by its stable id. If a campaign
+Campaign tools exist only on accounts with campaigns turned on. When `campaigns_list`
+is available, read it and identify the account by its stable id. If a campaign
 also serves other accounts, use `campaigns_save` with the complete remaining
 `account_ids` to remove only the requested account. Pause a campaign whose only
 destination is the requested account. Do not pause unrelated destinations or
 delete campaign history merely to stop one profile.
+
+When the campaign tools are not available, say so and tell the user to change the
+campaign in ViewPrinter. Still audit the queue below: `posts_list` with
+`source: ["campaign"]` lists the posts campaigns made.
 
 Campaign membership changes do not replace a queue audit. Read `posts_list`
 for that account with scheduled and draft statuses, follow every cursor, and
@@ -77,10 +82,11 @@ without filters before deciding how to stop it.**
   Do not use whole-post cancellation to silently stop other accounts. Report
   any destination the available tools cannot stop within the authorized scope.
 
-Finally re-read campaigns, the account's queue and the changed post ids. Report
+Finally re-read campaigns (when available), the account's queue and the changed post ids. Report
 campaign membership removed, deliveries removed/cancelled and anything already
 in flight separately. Published posts stay in place. Record each change with
-`scripts/learn.py checkpoint`, so a later resume does not recreate or resend it:
+`python3 <skill-directory>/scripts/learn.py checkpoint`, run from the project folder (see
+`learning`), so a later resume does not recreate or resend it:
 `--status canceled` on every account removed from a post and `--status amended` on
 every account that keeps it, with the post id and the before/after account ids in
 `--details`. Pass the post's batch id as `--batch`, or for a campaign-sourced post the
@@ -90,4 +96,4 @@ placement by post id.
 ## Context
 
 - Deleting media a pending post depends on is a different way to break a post.
-  See `media-upload` for the delete warning.
+  `media-upload` has the rule for deleting.

@@ -11,7 +11,7 @@ class SharedIdentityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);(root/'.viewprinter/content-memory').mkdir(parents=True)
             art=root/'banner.jpg';art.write_bytes(b'banner1')
-            identity=root/'identity.json';d={'revision':2,'identity':{'organizationId':'o','accountId':'a','proposed':{'name':'Shared name'},'application':{'status':'owner-confirmed'}},'assets':[{'id':'banner','src':'banner.jpg','sha256':hashlib.sha256(art.read_bytes()).hexdigest()}]};identity.write_text(json.dumps(d))
+            identity=root/'identity.json';d={'revision':2,'identity':{'organizationId':'o','accountId':'a','proposed':{'name':'Shared name'},'application':{'status':'owner-confirmed'}},'assets':[{'id':'banner','src':'banner.jpg','sha256':hashlib.sha256(art.read_bytes()).hexdigest()}]};identity.write_text(json.dumps(d), encoding='utf-8')
             source={'accounts':[{'ref':'local','organizationId':'o','accountId':'a','role':'group-specific','identityRef':'../identity.json','assetBindings':{'cover':'banner'}}],'assets':[{'id':'cover','src':'old.jpg'}]}
             output=[]
             for name in ('one','two'):
@@ -22,7 +22,7 @@ class SharedIdentityTests(unittest.TestCase):
                 self.assertEqual((folder/result['assets'][0]['src']).read_bytes(),b'banner1')
             self.assertEqual(output[0]['assets'][0]['sha256'],output[1]['assets'][0]['sha256'])
             self.assertNotIn('proposed',source['accounts'][0])
-            d['identity']['accountId']='wrong';identity.write_text(json.dumps(d))
+            d['identity']['accountId']='wrong';identity.write_text(json.dumps(d), encoding='utf-8')
             with self.assertRaises(ValueError):resolve(source,root/'one')
 
 if __name__=='__main__':unittest.main()

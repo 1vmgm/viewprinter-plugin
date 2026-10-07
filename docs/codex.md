@@ -3,22 +3,20 @@
 The full plugin bundles six skills and the hosted MCP connection. See
 [compatibility](compatibility.md) for tested versions and workflow coverage.
 
-## Install this checkout
-
-From the repository root:
+## Install
 
 ```bash
-codex plugin marketplace add .
+codex plugin marketplace add 1vmgm/viewprinter-plugin
 codex plugin add viewprinter@viewprinter
 ```
 
-Open a new Codex session, find the ViewPrinter skills in the selector, and ask to list
-your accounts. Complete browser OAuth when prompted. This local marketplace
-works independently of the pending OpenAI directory review.
+From a checkout of this repository, `codex plugin marketplace add .` registers the
+same marketplace locally.
 
-The GitHub installation route can be tested after these files are released.
-Until then, use the checkout containing the new marketplace; the previous
-revision on GitHub contains only Claude packaging.
+Open a new Codex session, find the ViewPrinter skills in the selector, and ask to list
+your accounts. Complete browser OAuth when prompted. This marketplace works
+independently of the ChatGPT listing. `codex plugin marketplace upgrade` refreshes a
+GitHub marketplace when a new release is out.
 
 ## Update or remove
 

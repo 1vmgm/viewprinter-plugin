@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate the package offline using pinned portable schemas and shared invariants."""
+import ast
 import json
 import os
 import re
@@ -73,6 +74,57 @@ def check_links(path, inside):
         require(resolved.is_relative_to(inside.resolve()), f'Link leaves {inside.relative_to(ROOT) if inside != ROOT else "the package"} in {where}: {target}')
 
 
+def constant(node):
+    return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
+
+
+def text_io_without_encoding(node):
+    """What kind of text read or write `node` is when it names no encoding, else None.
+
+    Without one Python uses the system code page, which on Windows is not UTF-8: a
+    manifest written with an em dash then fails to read back.
+    """
+    if not isinstance(node, ast.Call) or any(kw.arg == 'encoding' for kw in node.keywords):
+        return None
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        name, base = func.attr, func.value
+        if name in ('read_text', 'write_text'):
+            return name
+        if name == 'fdopen':
+            mode = constant(node.args[1]) if len(node.args) > 1 else 'r'
+            return None if mode is None or 'b' in mode else name
+        if name != 'open' or isinstance(base, ast.Name) and base.id in ('os', 'webbrowser', 'zipfile', 'tarfile'):
+            return None
+        if node.args and isinstance(node.args[0], ast.JoinedStr):
+            return None  # an opener fetching a URL
+        index = 1 if isinstance(base, ast.Name) and base.id == 'io' else 0  # Path.open(mode)
+    elif isinstance(func, ast.Name) and func.id == 'open':
+        index = 1
+    else:
+        return None
+    mode = constant(node.args[index]) if len(node.args) > index else 'r'
+    mode = next((constant(kw.value) for kw in node.keywords if kw.arg == 'mode'), mode)
+    return None if mode is None or 'b' in mode else 'open'
+
+
+def helper_encoding_problems():
+    """Text I/O without an encoding, and entry points that leave the console in the
+    system code page: agents read output through a pipe, which on Windows is not UTF-8."""
+    problems = []
+    for path in sorted((ROOT / 'skills').glob('*/scripts/*.py')):
+        source = path.read_text(encoding='utf-8')
+        where = path.relative_to(ROOT)
+        for node in ast.walk(ast.parse(source, str(where))):
+            kind = text_io_without_encoding(node)
+            if kind:
+                problems.append(f'{where}:{node.lineno} {kind} names no encoding')
+        if (not path.name.startswith('test_') and re.search(r'^if __name__ == ', source, re.M)
+                and 'reconfigure(encoding=' not in source):
+            problems.append(f'{where}: entry point leaves the console in the system code page')
+    return problems
+
+
 def stray_skill_files():
     """A SKILL.md anywhere but skills/<name>/ is installed as a skill by repository scanners."""
     allowed = {ROOT / 'skills' / name / 'SKILL.md' for name in SKILLS}
@@ -121,6 +173,12 @@ def check_manifests(portable):
     legacy_mcp = read_json('.mcp.json')['mcpServers']['viewprinter']
     require(legacy_mcp['type'] == 'http', 'Claude transport')
     require(legacy_mcp['url'] == mcp['mcpServers']['viewprinter']['url'] == ENDPOINT, 'Endpoint drift')
+
+    # Claude Code installs only from a marketplace; this one makes the repository its own.
+    claude_market = read_json('.claude-plugin/marketplace.json')
+    require(claude_market['name'] == 'viewprinter', 'Claude marketplace name')
+    require([(p['name'], p['source']) for p in claude_market['plugins']] == [(portable['name'], './')],
+            'Claude marketplace must list this plugin once, sourced from the repository root')
 
     market = read_json('.agents/plugins/marketplace.json')
     require(market['name'] == 'viewprinter', 'Marketplace name')
@@ -219,6 +277,8 @@ def validate():
     for original, copy in SHARED_COPIES:
         require((ROOT / original).read_bytes() == (ROOT / copy).read_bytes(),
                 f'{copy} must be an exact copy of {original}')
+    problems = helper_encoding_problems()
+    require(not problems, 'Pass encoding="utf-8": ' + '; '.join(problems))
 
     stray = stray_skill_files()
     require(not stray, f'SKILL.md outside skills/<name>/ would be installed as a skill: {", ".join(stray)}')

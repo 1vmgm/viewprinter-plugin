@@ -83,7 +83,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | Rule | Priority | Covers |
 |---|---|---|
 | `platforms-first` | CRITICAL | Live platform rules and connection-specific schema mismatches |
-| `media-upload` | CRITICAL | Uploading is two steps, and the second is yours |
+| `media-upload` | CRITICAL | Uploading is two steps, and the second is yours; deleting is permanent |
 | `destinations` | CRITICAL | Workspaces, and why a group is a snapshot |
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |

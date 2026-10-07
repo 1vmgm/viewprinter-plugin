@@ -226,9 +226,19 @@ def append(memory, collection, record):
             stream.flush()
             os.fsync(stream.fileno())
         try:
-            # Linking a fully written file publishes it atomically and exclusively.
-            # Concurrent events never read/modify/write a shared collection file.
-            os.link(temporary, destination)
+            try:
+                # Linking a fully written file publishes it atomically and exclusively.
+                # Concurrent events never read/modify/write a shared collection file.
+                os.link(temporary, destination)
+            except FileExistsError:
+                raise
+            except OSError:
+                # No hard links on this drive (FAT, exFAT, some network shares). An exclusive
+                # create still never overwrites a record; a reader may briefly see it half written.
+                with open(destination, "xb") as stream:
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
         except FileExistsError:
             refuse_link(destination)
             if json_bytes(read_object(destination)) != data:
@@ -266,4 +276,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    # Agents read this through a pipe, which on Windows defaults to the system code page.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     sys.exit(main())

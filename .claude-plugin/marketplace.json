@@ -1,0 +1,17 @@
+{
+  "name": "viewprinter",
+  "owner": {
+    "name": "VMGM Software",
+    "email": "hello@vmgmsoftware.com"
+  },
+  "metadata": {
+    "description": "The ViewPrinter plugin: make, review and publish social content."
+  },
+  "plugins": [
+    {
+      "name": "viewprinter",
+      "source": "./",
+      "description": "Make, review and publish social content with ViewPrinter"
+    }
+  ]
+}

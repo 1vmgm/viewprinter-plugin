@@ -65,9 +65,9 @@ class ReviewReadinessTests(unittest.TestCase):
     def test_import_preserves_original_scheduling_receipt_before_live_update(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);logs=root/'history/publications';logs.mkdir(parents=True)
-            (logs/'links.jsonl').write_text(json.dumps({'postId':'p','accountId':'one','itemId':'A','version':1})+'\n')
-            output=root/'delivery.json';output.write_text(json.dumps({'placements':self.rows[:1]}))
-            page=root/'posts.json';page.write_text(json.dumps({'observedAt':'2026-10-07T12:00:00Z','posts':[{'post':{'id':'p'},'targets':[{'socialAccountId':'one','status':'failed'}]}]}))
+            (logs/'links.jsonl').write_text(json.dumps({'postId':'p','accountId':'one','itemId':'A','version':1})+'\n', encoding='utf-8')
+            output=root/'delivery.json';output.write_text(json.dumps({'placements':self.rows[:1]}), encoding='utf-8')
+            page=root/'posts.json';page.write_text(json.dumps({'observedAt':'2026-10-07T12:00:00Z','posts':[{'post':{'id':'p'},'targets':[{'socialAccountId':'one','status':'failed'}]}]}), encoding='utf-8')
             row=sync(root,[page],output)['placements'][0]
             self.assertEqual(row['status'],'failed')
             self.assertEqual(row['handoff']['confirmedAt'],'2026-10-06T12:00:00Z')
@@ -77,9 +77,9 @@ class ReviewReadinessTests(unittest.TestCase):
             root=Path(tmp);(root/'p.png').write_bytes(b'image')
             item={**self.item,'format':'UGC','title':'A','kind':'image','src':'p.png'}
             manifest={'title':'Review','round':1,'reviewHub':{'kind':'social-content','formatId':'ugc'},'items':[item], 'delivery':{'snapshot':'delivery.json'}}
-            (root/'delivery.json').write_text(json.dumps({'placements':self.rows}))
-            (root/'review.json').write_text(json.dumps(manifest));build_gallery(root/'review.json',root/'review.html')
-            html=(root/'review.html').read_text()
+            (root/'delivery.json').write_text(json.dumps({'placements':self.rows}), encoding='utf-8')
+            (root/'review.json').write_text(json.dumps(manifest), encoding='utf-8');build_gallery(root/'review.json',root/'review.html')
+            html=(root/'review.html').read_text(encoding='utf-8')
             self.assertIn('id="section-scheduled"',html)
             self.assertIn('data-delivery="scheduled"',html)
             self.assertNotIn('value="posted"',html)

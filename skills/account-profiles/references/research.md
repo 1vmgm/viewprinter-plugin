@@ -2,6 +2,9 @@
 
 `research.json` is a dated fact register, not a list of eternal defaults. Read only
 the matching platform module; open the relevant fact rows when updating evidence.
+The shipped register is read-only in an installed plugin, which an update replaces: keep
+refreshed facts, in the same shape, in the project beside the brief, and tell the user
+which shipped facts look out of date.
 
 Each fact has a stable `id`, `platform`, `topic`, `claim`, `scope`, `status`, `sources`
 (URL/title/publisher/sourceUpdatedAt), `checkedAt`, `checkMethod`, `recheckAfter`,
