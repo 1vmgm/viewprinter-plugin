@@ -6,9 +6,14 @@ An original is the file as it arrived, before any edit: a generated take or stil
 device or screen capture, a recording, or licensed or sourced audio. Rejected
 attempts are kept too, with the reason.
 
-Python standard library only. No network calls; nothing is uploaded. The archive must
-live outside the installed skill and by default lives in your home folder, not in a
-project; a root inside a repository has to be ignored by git.
+Python standard library only. No network calls; nothing is uploaded. To keep originals in
+ViewPrinter as well, the agent uploads them through its ViewPrinter connector:
+upload-list says what to send, upload-steps pairs ViewPrinter's answers with it, stored
+records what ViewPrinter's own answers show it holds, and release lets a local copy go,
+with the user's approval, only when a fresh listing shows ViewPrinter keeps those exact
+bytes as source material; restore brings one back. The archive must live outside the
+installed skill and by default lives in your home folder, not in a project; a root inside
+a repository has to be ignored by git.
 
   root     --root, else $VIEWPRINTER_ARCHIVE_ROOT, else "archive.root" in the
            project memory's config.json, else ~/ViewPrinter/archive
@@ -18,7 +23,8 @@ project; a root inside a repository has to be ignored by git.
   <root>/<project>/catalog.jsonl                one line per event, never rewritten
   <root>/<project>/<format>/<kind>/<id><ext>    the original, never edited
 
-Commands: add, note, find, show, checkout, verify, where.
+Commands: add, note, find, show, checkout, verify, upload-list, upload-steps, stored,
+release, restore, where.
 """
 
 import argparse
@@ -77,7 +83,23 @@ KINDS = {
 }
 # Set by the archive, or only ever part of an answer: never accepted in a record.
 COMPUTED = ("event", "sha256", "bytes", "path", "archivedAt", "notedAt", "originalName", "restoredAt",
-            "noteCount", "updatedAt", "file", "duplicate", "restored", "project", "events")
+            "noteCount", "updatedAt", "file", "duplicate", "restored", "project", "events",
+            "viewprinterMedia", "releasedLocally")
+# Written only by the archive's own stored and released events, never taken from a record:
+# where ViewPrinter keeps an original, and that its local copy was let go.
+VIEWPRINTER_STATE = ("viewprinterMedia", "releasedLocally")
+# What ViewPrinter keeps, and the Content-Type an upload of each declares and sends.
+UPLOAD_KINDS = ("video", "image", "audio")
+MIME_TYPES = {
+    ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
+    ".mkv": "video/x-matroska", ".avi": "video/x-msvideo",
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif",
+    ".heic": "image/heic", ".tif": "image/tiff", ".tiff": "image/tiff", ".bmp": "image/bmp",
+    ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".aac": "audio/aac", ".flac": "audio/flac",
+    ".ogg": "audio/ogg", ".aif": "audio/aiff", ".aiff": "audio/aiff", ".opus": "audio/opus",
+}
+UPLOAD_BATCH = 50  # files in one media_upload or media_save call
+TAG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 FIXED_AFTER_ADD = ("id", "kind", "format")
 LOCK_WAIT_SECONDS = 600
 # The errors a file system gives when it cannot lock a folder at all (some network disks).
@@ -372,6 +394,7 @@ def apply_note(asset, event):
             asset[key] = value
     if event.get("restoredAt"):
         asset["restoredAt"] = event["restoredAt"]
+        asset.pop("releasedLocally", None)  # back on this disk
     count = asset.get("noteCount")
     asset["noteCount"] = (count if isinstance(count, int) else 0) + 1
     asset["updatedAt"] = event.get("notedAt")
@@ -387,10 +410,18 @@ def assets(project_dir):
     state = {}
     for event in read_log(catalog(project_dir)):
         identifier = event.get("id")
-        if event.get("event") == "add" and isinstance(identifier, str) and isinstance(event.get("path"), str):
-            state.setdefault(identifier, dict(event))
-        elif event.get("event") == "note" and isinstance(identifier, str) and identifier in state:
+        kind = event.get("event")
+        if kind == "add" and isinstance(identifier, str) and isinstance(event.get("path"), str):
+            state.setdefault(identifier, {k: v for k, v in event.items() if k not in VIEWPRINTER_STATE})
+        elif not (isinstance(identifier, str) and identifier in state):
+            continue
+        elif kind == "note":
             apply_note(state[identifier], event)
+        elif kind in ("stored", "released") and isinstance(event.get("mediaId"), str):
+            fields = ("mediaId", "purpose", "existing", "storedAt") if kind == "stored" else (
+                "mediaId", "approval", "releasedAt")
+            state[identifier]["viewprinterMedia" if kind == "stored" else "releasedLocally"] = {
+                k: event[k] for k in fields if k in event}
     return state
 
 
@@ -603,8 +634,15 @@ def restore(project_dir, asset, source, incoming, rename, before):
     size, this file takes its place and the old one is set aside, never deleted."""
     original = inside(project_dir, asset["path"])
     answer = dict(asset, duplicate=True, file=str(original))
-    if same_file(source, original) or intact(original, asset):
+    in_place = same_file(source, original)
+    if (in_place or intact(original, asset)) and not asset.get("releasedLocally"):
         return answer
+    if in_place or (original.is_file() and not original.is_symlink() and digest(original)[0] == asset["sha256"]):
+        # It was let go, and is back on this disk another way, such as a backup copied in.
+        now = utc_now()
+        event = {"event": "note", "id": asset["id"], "notedAt": now, "restoredAt": now}
+        append_line(catalog(project_dir), log_line(event))
+        return dict(apply_note(dict(asset), event), duplicate=True, restored=True, file=str(original))
     original.parent.mkdir(parents=True, exist_ok=True)
     # Stage and check the replacement first, so a refused restore leaves the old file alone.
     if rename:
@@ -677,6 +715,8 @@ def checkout(root, project, identifier, target, usage=None):
     if asset is None:
         raise ArchiveError("No asset {} in project {}".format(identifier, project))
     original = inside(project_dir, asset["path"])
+    if not original.is_file() and asset.get("releasedLocally"):
+        raise ArchiveError(restore_steps(asset))
     if not original.is_file():
         raise ArchiveError("The original of {} is missing: {}".format(identifier, original))
     as_directory = str(target).endswith(("/", os.sep))
@@ -705,10 +745,13 @@ def verify(root, project, rehash=False):
     and catalog lines a crash cut off."""
     project_dir = project_directory(root, project, create=False)
     state = assets(project_dir)
-    problems, known = [], set()
+    problems, known, released = [], set(), 0
     for asset in state.values():
         path = project_dir / asset["path"]
         known.add(path)
+        if not path.exists() and asset.get("releasedLocally"):
+            released += 1  # kept in ViewPrinter instead, with the user's approval
+            continue
         if not path.is_file():
             problems.append({"problem": "missing", "id": asset["id"], "file": str(path)})
         elif path.stat().st_size != asset.get("bytes") or (rehash and digest(path)[0] != asset.get("sha256")):
@@ -733,7 +776,355 @@ def verify(root, project, rehash=False):
             problems.append({"problem": "catalog line cut off by a crash", "id": None, "file": str(path)})
         elif not path.name.startswith("."):
             problems.append({"problem": "not in catalog", "id": None, "file": str(path)})
-    return {"project": project, "assets": len(state), "rehashed": rehash, "problems": problems}
+    return {"project": project, "assets": len(state), "rehashed": rehash, "releasedToViewPrinter": released,
+            "problems": problems}
+
+
+# ---------------------------------------------------------------------------
+# ViewPrinter keeps the originals too
+#
+# The agent does the uploading, through the ViewPrinter connector it is signed in to:
+# this file makes no network calls. It says what to upload, pairs ViewPrinter's answers
+# with the originals they answer, records only what ViewPrinter's own answers show it
+# holds, and lets a local copy go only when a fresh listing shows ViewPrinter keeps those
+# exact bytes as source material.
+
+
+def fit(text, limit):
+    """Text cut to `limit` as ViewPrinter counts length (UTF-16 code units), whole characters."""
+    text = str(text).strip()[:limit]
+    while len(text.encode("utf-16-le")) > 2 * limit:
+        text = text[:-1]
+    return text.rstrip()
+
+
+def tag(value):
+    """A ViewPrinter tag: lower-case words joined by hyphens, at most 40 characters."""
+    text = re.sub(r"[^a-z0-9]+", "-", str(value).lower()).strip("-")[:40].strip("-")
+    return text if TAG.fullmatch(text) else None
+
+
+def upload_tags(project, asset):
+    """What to find an original by in ViewPrinter: its project, format, origin, a verdict,
+    who it shows, then its own tags. At most 20, as ViewPrinter takes."""
+    values = [project, asset.get("format"), asset.get("origin"),
+              asset.get("status") if asset.get("status") in ("selected", "rejected") else None,
+              *strings(asset.get("identity")), *strings(asset.get("tags"))]
+    tags = []
+    for value in values:
+        label = tag(value) if value and value != UNFILED else None
+        if label and label not in tags:
+            tags.append(label)
+    return tags[:20]
+
+
+def upload_metadata(asset, state):
+    """How it was made, in ViewPrinter's metadata fields, which refuse anything else."""
+    metadata = {}
+    for key, field, limit in (("provider", "tool", 40), ("model", "model", 200), ("prompt", "prompt", 8000),
+                              ("jobId", "requestId", 200), ("ref", "itemId", 60)):
+        value = asset.get(field)
+        if isinstance(value, (str, int)) and not isinstance(value, bool) and str(value).strip():
+            metadata[key] = fit(value, limit)
+    cost = asset.get("cost") if isinstance(asset.get("cost"), dict) else {}
+    amount = cost.get("amount")
+    if (str(cost.get("unit", "")).lower() == "usd" and cost.get("basis") in ("reported", "estimate")
+            and isinstance(amount, (int, float)) and not isinstance(amount, bool) and amount >= 0):
+        metadata["costUsd"] = amount
+    rights = asset.get("rights") if isinstance(asset.get("rights"), dict) else {}
+    source = asset.get("sourceUrl") or rights.get("source")
+    if isinstance(source, str) and re.match(r"https?://[^\s/]+", source) and len(source) <= 2000:
+        metadata["sourceUrl"] = source
+    # ViewPrinter's inputs are its own media IDs: an input already stored there is named by that ID.
+    inputs = [((state.get(i) or {}).get("viewprinterMedia") or {}).get("mediaId") for i in strings(asset.get("inputs"))]
+    inputs = [i for i in inputs if isinstance(i, str) and 0 < len(i) <= 64][:10]
+    if inputs:
+        metadata["inputs"] = inputs
+    return metadata
+
+
+def pending_inputs(asset, state):
+    """Inputs not in ViewPrinter yet. Uploaded in the same call, they get their media IDs from
+    its answers, and upload-steps adds them to the metadata."""
+    return [i for i in strings(asset.get("inputs")) if i in state and not state[i].get("viewprinterMedia")]
+
+
+def upload_description(asset):
+    """A first draft of the asset summary from the record. Say what the file actually shows
+    when you know it: who or what is on screen, the setting and the action."""
+    origin = str(asset.get("origin") or "original").capitalize()
+    text = "{} {}".format(origin, asset.get("kind"))
+    if asset.get("format") not in (None, UNFILED):
+        text += " for the {} format".format(asset["format"])
+    if asset.get("batchId"):
+        text += ", batch {}".format(asset["batchId"]) + (", item {}".format(asset["itemId"]) if asset.get("itemId") else "")
+    made = " ".join(str(asset[k]) for k in ("tool", "model") if asset.get(k))
+    if made:
+        text += ", made with {}".format(made)
+    text += "."
+    if asset.get("status") in ("selected", "rejected"):
+        text += " {}{}.".format(asset["status"].capitalize(), ": " + str(asset["reason"]) if asset.get("reason") else "")
+    # The start of the prompt, so its words find the file; metadata keeps all of it.
+    prompt = asset.get("prompt").strip() if isinstance(asset.get("prompt"), str) else ""
+    if prompt:
+        text += " Prompt: " + (prompt[:500].rstrip() + "…" if len(prompt) > 500 else prompt)
+    return fit(text, 8000)
+
+
+def mime_for(kind, suffix):
+    """The Content-Type an upload declares: the file's type, as the kind its record says. An
+    audio-only .mp4 or .webm is audio."""
+    mime = MIME_TYPES.get(suffix)
+    if mime and mime.split("/")[0] != kind:
+        mime = {("audio", ".mp4"): "audio/mp4", ("audio", ".m4v"): "audio/mp4",
+                ("audio", ".webm"): "audio/webm"}.get((kind, suffix))
+    return mime
+
+
+def restore_steps(asset):
+    media = (asset.get("releasedLocally") or asset.get("viewprinterMedia") or {}).get("mediaId")
+    return ("{0} is kept in ViewPrinter (media {1}), not on this disk. To bring it back, get its url from media_list "
+            "with media_id {1}, download it, then run: archive.py restore --id {0} --file <download> --move".format(
+                asset["id"], media))
+
+
+def upload_list(root, project, format_id=None, batch=None, status=None, tags=(), limit=UPLOAD_BATCH):
+    """Originals not yet in ViewPrinter, in the shape its tools take: `upload` is one
+    media_upload item, `describe` the media_save change once the file has landed. An
+    original's inputs that aren't stored yet come along in the same call, ahead of it and
+    whatever the filters, so upload-steps can link them by their new media IDs."""
+    project_dir = project_directory(root, project, create=False)
+    state = assets(project_dir)
+
+    def problem(asset):
+        path = inside(project_dir, asset["path"])
+        if asset.get("kind") not in UPLOAD_KINDS:
+            return "ViewPrinter keeps video, images and audio only"
+        if not mime_for(asset.get("kind"), path.suffix.lower()):
+            return "its file type doesn't match its kind"
+        return None if intact(path, asset) else "missing or changed here; run verify"
+
+    def item(asset):
+        path = inside(project_dir, asset["path"])
+        return {"archiveId": asset["id"], "file": str(path), "bytes": asset.get("bytes"),
+                "upload": {"kind": asset["kind"], "mime_type": mime_for(asset["kind"], path.suffix.lower()),
+                           "sha256": asset["sha256"], "purpose": "source"},
+                "describe": {"description": upload_description(asset), "tags": upload_tags(project, asset),
+                             "metadata": upload_metadata(asset, state)},
+                "pendingInputs": pending_inputs(asset, state)}
+
+    candidates, skipped = [], {}
+    for asset in state.values():
+        if (asset.get("viewprinterMedia") or (format_id and asset.get("format") != format_id)
+                or (batch and asset.get("batchId") != batch) or (status and asset.get("status") != status)
+                or not set(tags) <= set(strings(asset.get("tags")))):
+            continue
+        reason = problem(asset)
+        if reason:
+            skipped[reason] = skipped.get(reason, 0) + 1
+        else:
+            candidates.append(asset)
+    page, seen = [], set()
+    for asset in candidates:
+        if asset["id"] in seen:
+            continue
+        group = [state[i] for i in pending_inputs(asset, state) if i not in seen and problem(state[i]) is None]
+        group = (group + [asset])[-limit:]
+        if page and len(page) + len(group) > limit:
+            break
+        for member in group:
+            page.append(item(member))
+            seen.add(member["id"])
+    return {"project": project, "items": page, "remaining": sum(a["id"] not in seen for a in candidates),
+            "skipped": skipped}
+
+
+def upload_steps(listed, answers):
+    """Pair media_upload's answers with the upload-list items they answer, in order: what to
+    PUT, what to describe with media_save, and what ViewPrinter already had (`landed`, to
+    record as it is). A file ViewPrinter already had is never described again: it may be a
+    library file whose description someone wrote. `unlinked` names inputs that weren't in
+    this call, so their media IDs couldn't be linked."""
+    items = listed.get("items") if isinstance(listed, dict) else listed
+    answers = answers.get("items") if isinstance(answers, dict) and isinstance(answers.get("items"), list) else answers
+    if not isinstance(items, list) or not isinstance(answers, list):
+        raise ArchiveError("Pass upload-list's answer as --list and media_upload's as --answers")
+    if len(items) != len(answers):
+        raise ArchiveError("{} items but {} answers: pass the list that went to media_upload".format(
+            len(items), len(answers)))
+    for item, answer in zip(items, answers):
+        if not (isinstance(item, dict) and isinstance(answer, dict) and isinstance(answer.get("id"), str)):
+            raise ArchiveError("Each answer needs the id media_upload gave it")
+    ids = {item.get("archiveId"): answer["id"] for item, answer in zip(items, answers)}
+    put, save, landed, unlinked = [], [], [], []
+    for item, answer in zip(items, answers):
+        if answer.get("existing") is True:
+            landed.append({"id": answer["id"], "sha256": (item.get("upload") or {}).get("sha256")})
+            continue
+        if not answer.get("url"):
+            raise ArchiveError("No upload url for {}: this client can't upload directly".format(item.get("archiveId")))
+        put.append({"archiveId": item.get("archiveId"), "file": item.get("file"), "url": answer["url"],
+                    "headers": answer.get("headers") or {}})
+        describe = dict(item.get("describe") or {})
+        metadata = dict(describe.get("metadata") or {})
+        inputs = list(metadata.get("inputs") or []) + [ids[i] for i in item.get("pendingInputs") or [] if i in ids]
+        inputs = [i for n, i in enumerate(inputs) if isinstance(i, str) and 0 < len(i) <= 64 and i not in inputs[:n]]
+        if inputs:
+            metadata["inputs"] = inputs[:10]
+        save.append(dict(describe, id=answer["id"], metadata=metadata))
+        missing = [i for i in item.get("pendingInputs") or [] if i not in ids]
+        if missing:
+            unlinked.append({"archiveId": item.get("archiveId"), "inputs": missing})
+    return {"put": put, "save": save, "landed": landed, "unlinked": unlinked}
+
+
+def server_rows(answer):
+    """The files in ViewPrinter's own answers: media_list's media, media_save's saved, or
+    upload-steps' landed; one answer, or several pages in a list."""
+    rows = []
+
+    def take(value):
+        if isinstance(value, list):
+            for entry in value:
+                take(entry)
+        elif isinstance(value, dict):
+            if isinstance(value.get("id"), str) and isinstance(value.get("sha256"), str):
+                rows.append(value)
+            else:
+                for key in ("media", "saved", "landed", "items"):
+                    take(value.get(key))
+    take(answer)
+    return rows
+
+
+def stored(root, project, answer):
+    """Record the originals ViewPrinter's answers show it holds. A row's sha256 is the
+    digest ViewPrinter read from the bytes it holds, so it names the original itself:
+    nothing is paired by hand. Where several rows show the same bytes, source material
+    wins. Rows for other files are left out; the rest are recorded together or not at all."""
+    rows = server_rows(answer)
+    if not rows:
+        raise ArchiveError("No files with an id and sha256 in that answer: pass media_save's or media_list's answer, "
+                           "or upload-steps' landed")
+    project_dir = project_directory(root, project, create=False)
+    with locked(project_dir):
+        state = assets(project_dir)
+        by_sha = {asset["sha256"]: asset for asset in state.values()}
+        chosen, other = {}, 0
+        for row in rows:
+            asset = by_sha.get(row["sha256"].lower())
+            if asset is None or not 0 < len(row["id"]) <= 200:
+                other += 1
+                continue
+            current = chosen.get(asset["id"])
+            if current is None or (row.get("purpose") == "source" and current.get("purpose") != "source"):
+                chosen[asset["id"]] = row
+        if not chosen:
+            raise ArchiveError("None of these files is an original in project {}: archive the original first, then "
+                               "record it".format(project))
+        lines, recorded, now = [], [], utc_now()
+        for identifier, row in chosen.items():
+            purpose = row.get("purpose") if row.get("purpose") in ("library", "source") else None
+            known = state[identifier].get("viewprinterMedia") or {}
+            if known.get("mediaId") == row["id"] and (purpose is None or known.get("purpose") == purpose):
+                continue
+            event = {"event": "stored", "id": identifier, "storedAt": now, "mediaId": row["id"]}
+            if purpose:
+                event["purpose"] = purpose
+            lines.append(log_line(event))
+            recorded.append({"id": identifier, "mediaId": row["id"], "purpose": purpose})
+        if lines:
+            append_line(catalog(project_dir), b"".join(lines))
+    return {"recorded": recorded, "otherFiles": other}
+
+
+def release_originals(root, project, answer, approval=None, ids=(), format_id=None, everything=False,
+                      dry_run=False):
+    """Let go of local originals that ViewPrinter keeps, with the user's approval in their
+    words. Only on ViewPrinter's fresh word: a media_list row showing the recorded media ID
+    as source material with the original's sha256. A library file can still be deleted, so
+    it never stands in. Each local file is hashed first, so only those exact bytes go.
+    Space comes back only where no other copy shares the data."""
+    if not dry_run and not (isinstance(approval, str) and approval.strip()):
+        raise ArchiveError("release removes local files: pass --approval with the user's words agreeing to it")
+    if not (ids or format_id or everything):
+        raise ArchiveError("Say what to release: --id, --format or --all-stored")
+    listed = {row["id"]: row for row in server_rows(answer)}
+    if not listed:
+        raise ArchiveError("Pass a fresh media_list answer (purpose: source) as --listed, so ViewPrinter "
+                           "confirms what it keeps")
+    project_dir = project_directory(root, project, create=False)
+    state = assets(project_dir)
+    for identifier in ids:
+        if identifier not in state:
+            raise ArchiveError("No asset {} in project {}".format(identifier, project))
+        if not state[identifier].get("viewprinterMedia"):
+            raise ArchiveError("{} is not in ViewPrinter yet; store it first".format(identifier))
+    chosen = [state[i] for i in ids] if ids else [a for a in state.values() if a.get("viewprinterMedia") and (
+        everything or a.get("format") == format_id)]
+    # Hash before taking the lock, so no other writer waits on a large file.
+    plan, skipped = [], []
+    for asset in chosen:
+        path = inside(project_dir, asset["path"])
+        if asset.get("releasedLocally") and not path.exists():
+            continue
+        media = asset["viewprinterMedia"]["mediaId"]
+        row = listed.get(media)
+        reason = ("ViewPrinter's listing doesn't include media {}: pass a media_list answer that does".format(media)
+                  if row is None else
+                  "ViewPrinter's file {} has a different sha256: it isn't this original".format(media)
+                  if str(row.get("sha256", "")).lower() != asset["sha256"] else
+                  "ViewPrinter keeps media {} as a file to post, which can be deleted: only source material lets "
+                  "the local copy go".format(media) if row.get("purpose") != "source" else
+                  "not on this disk; run verify" if not path.is_file() or path.is_symlink() else None)
+        if reason:
+            skipped.append({"id": asset["id"], "reason": reason})
+            continue
+        before = signature(path)
+        if digest(path)[0] != asset["sha256"]:
+            skipped.append({"id": asset["id"], "reason": "changed since it was archived; run verify"})
+            continue
+        plan.append((asset, path, before, media))
+    if dry_run:
+        return {"wouldRelease": [plan_entry[0]["id"] for plan_entry in plan],
+                "bytes": sum(entry[2][0] for entry in plan), "skipped": skipped}
+    released = []
+    with locked(project_dir):
+        current = assets(project_dir)
+        for asset, path, before, media in plan:
+            latest = current.get(asset["id"], {})
+            if ((latest.get("viewprinterMedia") or {}).get("mediaId") != media or not path.exists()
+                    or signature(path) != before):
+                skipped.append({"id": asset["id"], "reason": "changed while releasing; try again"})
+                continue
+            now = utc_now()
+            line = log_line({"event": "released", "id": asset["id"], "releasedAt": now, "mediaId": media,
+                             "approval": fit(approval, 2000)})
+            try:
+                path.unlink()
+            except OSError as error:  # Windows refuses a file that is open or read-only
+                skipped.append({"id": asset["id"], "reason": "could not remove it: {}".format(error)})
+                continue
+            append_line(catalog(project_dir), line)
+            released.append((asset["id"], before[0]))
+    return {"released": [i for i, _ in released], "bytes": sum(size for _, size in released), "skipped": skipped}
+
+
+def restore_original(root, project, identifier, source, move=False):
+    """Put a released original back from its download. The file must be that original,
+    byte for byte; anything else is refused, not archived as something new."""
+    project_dir = project_directory(root, project, create=False)
+    asset = assets(project_dir).get(identifier)
+    if asset is None:
+        raise ArchiveError("No asset {} in project {}".format(identifier, project))
+    source = Path(source).expanduser()
+    if not source.is_file():
+        raise ArchiveError("No file at {}".format(source))
+    if digest(source)[0] != asset["sha256"]:
+        raise ArchiveError("{} is not the original of {} (its sha256 differs); nothing was restored".format(
+            source, identifier))
+    # With its id, a file that changed after that check is refused rather than added as new.
+    return add(root, project, source, identifier=identifier, move=move)
 
 
 # ---------------------------------------------------------------------------
@@ -741,11 +1132,15 @@ def verify(root, project, rehash=False):
 
 
 def read_json(value):
-    """A JSON file, or standard input for `-`."""
+    """A JSON file, or standard input for `-`. Windows PowerShell's > writes UTF-16 with a
+    byte-order mark, so a mark decides the encoding; anything else is UTF-8."""
     try:
         if value == "-":
             return json.load(sys.stdin)
-        return json.loads(Path(value).expanduser().read_text(encoding="utf-8"))
+        data = Path(value).expanduser().read_bytes()
+        encoding = ("utf-16" if data.startswith((b"\xff\xfe", b"\xfe\xff"))
+                    else "utf-8-sig" if data.startswith(b"\xef\xbb\xbf") else "utf-8")
+        return json.loads(data.decode(encoding))
     except (OSError, ValueError) as error:
         raise ArchiveError("Cannot read JSON {}: {}".format(value, error)) from error
 
@@ -801,6 +1196,36 @@ def main(argv=None):
     sub = command("verify", "Check originals against the catalog", all_projects=True)
     sub.add_argument("--rehash", action="store_true", help="Recompute every SHA-256, not just sizes")
 
+    sub = command("upload-list", "Originals not yet in ViewPrinter, ready for media_upload and media_save")
+    sub.add_argument("--format")
+    sub.add_argument("--batch")
+    sub.add_argument("--status", choices=STATUSES)
+    sub.add_argument("--tag", action="append", default=[])
+    sub.add_argument("--limit", type=int, default=UPLOAD_BATCH, help="Files per media_upload call (at most 50)")
+    sub.add_argument("--out", help="Write the answer to this file, as UTF-8, instead of printing it")
+
+    sub = command("upload-steps", "Pair media_upload's answers with the list: what to PUT and to describe")
+    sub.add_argument("--list", required=True, help="upload-list's answer, as sent; - reads stdin")
+    sub.add_argument("--answers", required=True, help="media_upload's answer to those items")
+    sub.add_argument("--out", help="Write the answer to this file, as UTF-8, instead of printing it")
+
+    sub = command("stored", "Record the originals ViewPrinter's answers show it holds")
+    sub.add_argument("--listed", required=True,
+                     help="media_save's or media_list's answer, or upload-steps' landed; - reads stdin")
+
+    sub = command("release", "Remove local originals ViewPrinter keeps, with the user's approval")
+    sub.add_argument("--listed", required=True, help="A fresh media_list answer (purpose: source); - reads stdin")
+    sub.add_argument("--id", action="append", default=[])
+    sub.add_argument("--format", help="Every stored original of this format")
+    sub.add_argument("--all-stored", action="store_true", help="Every stored original in the project")
+    sub.add_argument("--approval", help="The user's words agreeing to remove the local copies")
+    sub.add_argument("--dry-run", action="store_true", help="Say what would go, and how many bytes, without removing")
+
+    sub = command("restore", "Put a released original back from its download")
+    sub.add_argument("--id", required=True)
+    sub.add_argument("--file", required=True, help="The file downloaded from its media_list url")
+    sub.add_argument("--move", action="store_true", help="Move the download in instead of copying it")
+
     command("where", "Show the resolved root, project and catalog")
 
     arguments = parser.parse_args(argv)
@@ -834,8 +1259,11 @@ def main(argv=None):
                 if arguments.as_json:
                     print(json.dumps(asset, ensure_ascii=False, sort_keys=True))
                 else:
-                    print("{project}/{id}  {kind}  {format}  {status}  {tags}  {file}".format(
-                        tags=",".join(strings(asset.get("tags"))) or "-", **{k: asset.get(k) for k in (
+                    where = (" [released: in ViewPrinter only]" if asset.get("releasedLocally")
+                             and not Path(asset["file"]).exists()
+                             else " [also in ViewPrinter]" if asset.get("viewprinterMedia") else "")
+                    print("{project}/{id}  {kind}  {format}  {status}  {tags}  {file}{where}".format(
+                        tags=",".join(strings(asset.get("tags"))) or "-", where=where, **{k: asset.get(k) for k in (
                             "project", "id", "kind", "format", "status", "file")}))
             if len(found) > arguments.limit:
                 print("archive: {} more; narrow the search or raise --limit".format(len(found) - arguments.limit),
@@ -852,9 +1280,28 @@ def main(argv=None):
             reports = [verify(root, name, arguments.rehash) for name in projects]
             print(json.dumps(reports if everything else reports[0], indent=2, ensure_ascii=False))
             return 1 if any(report["problems"] for report in reports) else 0
+        elif arguments.command == "upload-list":
+            if not 1 <= arguments.limit <= UPLOAD_BATCH:
+                raise ArchiveError("--limit must be 1 to {}: one media_upload call takes that many".format(UPLOAD_BATCH))
+            result = upload_list(root, project, arguments.format, arguments.batch, arguments.status, arguments.tag,
+                                 arguments.limit)
+        elif arguments.command == "upload-steps":
+            result = upload_steps(read_json(arguments.list), read_json(arguments.answers))
+        elif arguments.command == "stored":
+            result = stored(root, project, read_json(arguments.listed))
+        elif arguments.command == "release":
+            result = release_originals(root, project, read_json(arguments.listed), arguments.approval, arguments.id,
+                                       arguments.format, arguments.all_stored, arguments.dry_run)
+        elif arguments.command == "restore":
+            result = restore_original(root, project, arguments.id, arguments.file, arguments.move)
         else:
             result = {"root": str(root), "project": project, "catalog": str(root / project / CATALOG)}
-        print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
+        text = json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True)
+        if getattr(arguments, "out", None):
+            # Written directly, as UTF-8: a shell redirect may re-encode it (PowerShell writes UTF-16).
+            Path(arguments.out).expanduser().write_text(text + "\n", encoding="utf-8")
+            text = json.dumps({"wrote": str(Path(arguments.out).expanduser())})
+        print(text)
         return 0
     except (ArchiveError, project_memory.MemoryError, OSError, TypeError, KeyError) as error:
         print("archive: {}".format(error), file=sys.stderr)

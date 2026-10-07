@@ -2,15 +2,17 @@
 """Run with: python3 -m unittest discover -s scripts -p 'test_archive.py'."""
 
 import contextlib
+import errno
 import io
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import archive
 
@@ -451,6 +453,259 @@ class ArchiveTests(unittest.TestCase):
         missing = self.cli("add", "--root", self.root, "--project", "brand", "--file", self.work / "nope.mp4")
         self.assertEqual(missing.returncode, 1)
         self.assertIn("No file", missing.stderr)
+
+    # -- ViewPrinter keeps the originals too ---------------------------------------
+
+    def row(self, asset, media_id, purpose="source"):
+        """A file as ViewPrinter's media_list or media_save answers describe it."""
+        return {"id": media_id, "sha256": asset["sha256"], "purpose": purpose, "kind": asset["kind"]}
+
+    def keep(self, *pairs, purpose="source"):
+        """ViewPrinter's media_save answer for these (asset, media id) pairs, recorded."""
+        return archive.stored(self.root, "brand", {"saved": [self.row(a, m, purpose) for a, m in pairs]})
+
+    def test_upload_list_gives_media_upload_items_and_what_to_save_about_each(self):
+        still = archive.add(self.root, "brand", self.original("still.png", b"still"), {"origin": "generated"},
+                            format_id="street-interview")
+        self.keep((still, "m-still"))
+        reference = archive.add(self.root, "brand", self.original("ref.jpg", b"reference"), {},
+                                format_id="street-interview")
+        take = archive.add(self.root, "brand", self.original(), self.provenance(
+            status="selected", reason="best laugh", identity="Host One", tags=["Couch Scene", "night"],
+            batchId="october", itemId="SI-04", inputs=[still["id"], reference["id"], "not-archived"],
+            rights={"source": "https://example.com/where-it-was-found"}), format_id="street-interview")
+        archive.add(self.root, "brand", self.original("notes.txt", b"notes"), {}, format_id="street-interview")
+        listed = archive.upload_list(self.root, "brand")
+        self.assertEqual([item["archiveId"] for item in listed["items"]], [reference["id"], take["id"]])
+        self.assertEqual(listed["skipped"], {"ViewPrinter keeps video, images and audio only": 1})
+        item = listed["items"][1]
+        self.assertEqual(item["upload"], {"kind": "video", "mime_type": "video/mp4", "sha256": take["sha256"],
+                                          "purpose": "source"})
+        self.assertEqual(item["describe"]["tags"], ["brand", "street-interview", "generated", "selected",
+                                                    "host-one", "couch-scene", "night"])
+        self.assertEqual(item["describe"]["metadata"], {
+            "provider": "example-provider", "model": "example-video-1", "prompt": self.provenance()["prompt"],
+            "jobId": "req-1", "ref": "SI-04", "costUsd": 4.55,
+            "sourceUrl": "https://example.com/where-it-was-found", "inputs": ["m-still"]})
+        self.assertEqual(item["pendingInputs"], [reference["id"]])  # takes its media id from this batch's answers
+        self.assertIn("Selected: best laugh.", item["describe"]["description"])
+        self.assertIn("Prompt: A man laughs", item["describe"]["description"])
+        # The description carries the start of a long prompt; metadata keeps all of it, measured as
+        # ViewPrinter measures (UTF-16), so a character outside the basic plane counts twice.
+        long = dict(take, prompt="word " * 400)
+        self.assertTrue(archive.upload_description(long).endswith("word…"))
+        self.assertEqual(archive.upload_metadata(long, {})["prompt"], ("word " * 400).strip())
+        self.assertEqual(archive.fit("ab\U0001F600cd", 3), "ab")
+        # An audio-only .mp4 is uploaded as audio.
+        voice = archive.add(self.root, "brand", self.original("voice.mp4", b"voice"), {}, kind="audio")
+        voiced = [i for i in archive.upload_list(self.root, "brand")["items"] if i["archiveId"] == voice["id"]]
+        self.assertEqual(voiced[0]["upload"]["mime_type"], "audio/mp4")
+        # One media_upload call at a time, and nothing missing from disk is offered.
+        self.assertEqual((len(archive.upload_list(self.root, "brand", limit=2)["items"]),
+                          archive.upload_list(self.root, "brand", limit=2)["remaining"]), (2, 1))
+        Path(take["file"]).unlink()
+        self.assertEqual(archive.upload_list(self.root, "brand", format_id="street-interview")["skipped"],
+                         {"ViewPrinter keeps video, images and audio only": 1, "missing or changed here; run verify": 1})
+
+    def test_upload_steps_pairs_answers_describes_only_new_files_and_links_inputs(self):
+        reference = archive.add(self.root, "brand", self.original("ref.jpg", b"reference"), {})
+        take = archive.add(self.root, "brand", self.original(), self.provenance(inputs=[reference["id"]]))
+        listed = archive.upload_list(self.root, "brand")
+        put = {"url": "https://storage.example/put", "headers": {"Content-Type": "x"}, "expires_in_seconds": 900}
+        steps = archive.upload_steps(listed, {"items": [dict(put, id="m-ref"), dict(put, id="m-take")]})
+        self.assertEqual([p["archiveId"] for p in steps["put"]], [reference["id"], take["id"]])
+        self.assertEqual(steps["put"][1]["file"], take["file"])
+        self.assertEqual([s["id"] for s in steps["save"]], ["m-ref", "m-take"])
+        self.assertEqual(steps["save"][1]["metadata"]["inputs"], ["m-ref"])
+        self.assertEqual(steps["landed"], [])
+        # A file ViewPrinter already had is recorded as it is, and never described again.
+        steps = archive.upload_steps(listed, [{"id": "m-old", "existing": True}, dict(put, id="m-take")])
+        self.assertEqual(steps["landed"], [{"id": "m-old", "sha256": reference["sha256"]}])
+        self.assertEqual([s["id"] for s in steps["save"]], ["m-take"])
+        self.assertEqual(steps["save"][0]["metadata"]["inputs"], ["m-old"])
+        for answers in ([dict(put, id="m-ref")], [{"id": "m-ref"}, dict(put, id="m-take")], [{}, {}]):
+            with self.assertRaises(archive.ArchiveError):
+                archive.upload_steps(listed, answers)
+
+    def test_an_input_outside_the_filter_comes_along_so_it_can_be_linked(self):
+        face = archive.add(self.root, "brand", self.original("face.png", b"identity reference"), {})
+        take = archive.add(self.root, "brand", self.original(), self.provenance(batchId="b1", inputs=[face["id"]]))
+        listed = archive.upload_list(self.root, "brand", batch="b1")
+        self.assertEqual([i["archiveId"] for i in listed["items"]], [face["id"], take["id"]])
+        put = {"url": "https://storage.example/put", "headers": {}}
+        steps = archive.upload_steps(listed, [dict(put, id="m-face"), dict(put, id="m-take")])
+        self.assertEqual((steps["save"][1]["metadata"]["inputs"], steps["unlinked"]), (["m-face"], []))
+        # An input that can't go along is named, not dropped silently.
+        steps = archive.upload_steps({"items": listed["items"][1:]}, [dict(put, id="m-take")])
+        self.assertEqual(steps["unlinked"], [{"archiveId": take["id"], "inputs": [face["id"]]}])
+
+    def test_stored_records_only_what_viewprinters_answers_show_matching_by_sha256(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance())
+        other = archive.add(self.root, "brand", self.original("b.mp4", b"take two"), self.provenance())
+        stranger = {"id": "m-x", "sha256": "0" * 64, "purpose": "source"}
+        answer = archive.stored(self.root, "brand", {"saved": [self.row(take, "m-1"), stranger]})
+        self.assertEqual((answer["recorded"], answer["otherFiles"]),
+                         ([{"id": take["id"], "mediaId": "m-1", "purpose": "source"}], 1))
+        self.assertEqual(archive.stored(self.root, "brand", [self.row(take, "m-1")])["recorded"], [])  # again: nothing new
+        # Pages of media_list answers, and upload-steps' landed rows, whose purpose isn't known yet.
+        archive.stored(self.root, "brand", [{"media": [self.row(take, "m-1", "library")], "nextCursor": None},
+                                            {"landed": [{"id": "m-2", "sha256": other["sha256"]}]}])
+        state = archive.assets(self.root / "brand")
+        self.assertEqual(state[take["id"]]["viewprinterMedia"]["purpose"], "library")
+        self.assertEqual(state[other["id"]]["viewprinterMedia"], {"mediaId": "m-2", "storedAt": ANY})
+        with self.assertRaises(archive.ArchiveError):
+            archive.stored(self.root, "brand", {"saved": []})
+        with self.assertRaisesRegex(archive.ArchiveError, "archive the original first"):
+            archive.stored(self.root, "brand", {"media": [stranger]})
+        with self.assertRaises(archive.ArchiveError):  # only the archive's own events say where it is kept
+            archive.note(self.root, "brand", take["id"], {"viewprinterMedia": {"mediaId": "forged"}})
+        # Where a listing shows the same bytes twice, source material wins.
+        archive.stored(self.root, "brand", [self.row(other, "m-lib", "library"), self.row(other, "m-src")])
+        self.assertEqual(archive.show(self.root, "brand", other["id"])["viewprinterMedia"]["mediaId"], "m-src")
+
+    def released_take(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance(), format_id="street-interview")
+        self.keep((take, "m-1"))
+        archive.release_originals(self.root, "brand", {"media": [self.row(take, "m-1")]}, "yes, free the space",
+                                  ids=[take["id"]])
+        return take
+
+    def test_release_takes_viewprinters_fresh_word_the_users_approval_and_identical_bytes(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance(), format_id="street-interview")
+        other = archive.add(self.root, "brand", self.original("b.mp4", b"take two"), self.provenance(),
+                            format_id="street-interview")
+        posted = archive.add(self.root, "brand", self.original("c.mp4", b"take six"), self.provenance(),
+                             format_id="street-interview")
+        listing = {"media": [self.row(take, "m-1"), self.row(other, "m-2"), self.row(posted, "m-3", "library")]}
+        with self.assertRaisesRegex(archive.ArchiveError, "not in ViewPrinter"):
+            archive.release_originals(self.root, "brand", listing, "yes, free the space", ids=[take["id"]])
+        self.keep((take, "m-1"), (other, "m-2"))
+        self.keep((posted, "m-3"), purpose="library")
+        with self.assertRaisesRegex(archive.ArchiveError, "fresh media_list"):
+            archive.release_originals(self.root, "brand", {}, "yes", ids=[take["id"]])
+        with self.assertRaisesRegex(archive.ArchiveError, "approval"):
+            archive.release_originals(self.root, "brand", listing, "  ", ids=[take["id"]])
+        preview = archive.release_originals(self.root, "brand", listing, format_id="street-interview", dry_run=True)
+        self.assertEqual((sorted(preview["wouldRelease"]), preview["bytes"]), (sorted([take["id"], other["id"]]), 16))
+        self.assertIn("file to post", preview["skipped"][0]["reason"])  # a library file can be deleted
+        self.assertTrue(Path(take["file"]).exists())
+        # ViewPrinter's listing decides: missing from it, or a different file there, and nothing goes.
+        for wrong in ({"media": [self.row(other, "m-2")]}, {"media": [dict(self.row(take, "m-1"), sha256="f" * 64)]}):
+            self.assertEqual(archive.release_originals(self.root, "brand", wrong, "yes", ids=[take["id"]])["released"],
+                             [])
+        Path(other["file"]).write_bytes(b"take TWO")  # same size, different bytes: never released
+        released = archive.release_originals(self.root, "brand", listing, "yes, free the space",
+                                             format_id="street-interview")
+        self.assertEqual((released["released"], released["bytes"]), ([take["id"]], 8))
+        self.assertEqual(sorted(s["id"] for s in released["skipped"]), sorted([other["id"], posted["id"]]))
+        self.assertFalse(Path(take["file"]).exists())
+        kept = archive.show(self.root, "brand", take["id"])["releasedLocally"]
+        self.assertEqual((kept["approval"], kept["mediaId"]), ("yes, free the space", "m-1"))
+        report = archive.verify(self.root, "brand")
+        self.assertEqual(report["releasedToViewPrinter"], 1)
+        self.assertNotIn(take["id"], [problem["id"] for problem in report["problems"]])
+        with self.assertRaisesRegex(archive.ArchiveError, "media_id m-1.*archive.py restore --id"):
+            archive.checkout(self.root, "brand", take["id"], self.work / "copy.mp4")
+        self.assertEqual(archive.release_originals(self.root, "brand", listing, "again", ids=[take["id"]])["released"],
+                         [])
+
+    def test_a_file_that_cannot_be_removed_is_skipped_and_stays_recorded_as_local(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance())
+        self.keep((take, "m-1"))
+        with patch.object(Path, "unlink", side_effect=PermissionError("in use")):
+            answer = archive.release_originals(self.root, "brand", {"media": [self.row(take, "m-1")]}, "yes",
+                                               ids=[take["id"]])
+        self.assertEqual((answer["released"], answer["skipped"][0]["id"]), ([], take["id"]))
+        self.assertTrue(Path(take["file"]).exists())
+        self.assertNotIn("releasedLocally", archive.show(self.root, "brand", take["id"]))
+
+    def test_restore_takes_only_the_same_bytes_and_ends_the_release(self):
+        take = self.released_take()
+        with self.assertRaisesRegex(archive.ArchiveError, "not the original"):
+            archive.restore_original(self.root, "brand", take["id"], self.original("wrong.mp4", b"take two"))
+        self.assertIn("releasedLocally", archive.show(self.root, "brand", take["id"]))
+        restored = archive.restore_original(self.root, "brand", take["id"],
+                                            self.original("download.mp4", b"take one"), move=True)
+        self.assertTrue(restored["restored"])
+        self.assertNotIn("releasedLocally", archive.show(self.root, "brand", take["id"]))
+        self.assertEqual(archive.checkout(self.root, "brand", take["id"], self.work / "copy.mp4").read_bytes(),
+                         b"take one")
+        self.assertEqual(archive.verify(self.root, "brand")["releasedToViewPrinter"], 0)
+        # Copied back another way, such as from a backup: adding it again ends the release too.
+        archive.release_originals(self.root, "brand", {"media": [self.row(take, "m-1")]}, "yes", ids=[take["id"]])
+        Path(take["file"]).write_bytes(b"take one")
+        self.assertTrue(archive.add(self.root, "brand", self.original("again.mp4", b"take one"))["restored"])
+        self.assertNotIn("releasedLocally", archive.show(self.root, "brand", take["id"]))
+        # A different file of the same size in its place is set aside, and the original goes back.
+        archive.release_originals(self.root, "brand", {"media": [self.row(take, "m-1")]}, "yes", ids=[take["id"]])
+        Path(take["file"]).write_bytes(b"take ONE")
+        archive.restore_original(self.root, "brand", take["id"], self.original("download.mp4", b"take one"))
+        self.assertEqual(Path(take["file"]).read_bytes(), b"take one")
+        self.assertEqual([p.read_bytes() for p in Path(take["file"]).parent.glob("*.changed-*")], [b"take ONE"])
+
+    def test_fields_an_older_catalog_named_released_or_viewprinter_are_only_fields(self):
+        song = archive.add(self.root, "shared-music", self.original("song.mp3", b"song"),
+                           {"origin": "licensed", "released": "2019-05-01", "viewprinter": "lib-123"})
+        project = self.root / "shared-music"
+        # A hand-written line can't claim the archive's own state either.
+        with open(project / "catalog.jsonl", "ab") as catalog:
+            catalog.write(archive.log_line({"event": "note", "id": song["id"], "notedAt": "2026-01-01T00:00:00Z",
+                                            "releasedLocally": {"mediaId": "m"}}))
+        state = archive.assets(project)[song["id"]]
+        self.assertEqual((state["released"], state.get("releasedLocally")), ("2019-05-01", None))
+        self.assertEqual(len(archive.upload_list(self.root, "shared-music")["items"]), 1)
+        Path(song["file"]).unlink()
+        self.assertEqual([p["problem"] for p in archive.verify(self.root, "shared-music")["problems"]], ["missing"])
+        with self.assertRaisesRegex(archive.ArchiveError, "is missing"):
+            archive.checkout(self.root, "shared-music", song["id"], self.work / "copy.mp3")
+
+    def test_writes_work_where_a_folder_cannot_be_locked(self):
+        if archive.fcntl is None:
+            self.skipTest("Windows always locks with a file; every test there takes this path")
+        flock = archive.fcntl.flock
+
+        def no_folder_locks(descriptor, operation):
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                raise OSError(errno.ENOTSUP, "this disk cannot lock a folder")
+            return flock(descriptor, operation)
+        with patch.object(archive.fcntl, "flock", side_effect=no_folder_locks):
+            take = self.released_take()
+            archive.restore_original(self.root, "brand", take["id"], self.original("download.mp4", b"take one"))
+            archive.note(self.root, "brand", take["id"], {"status": "selected"})
+        self.assertEqual(archive.show(self.root, "brand", take["id"])["status"], "selected")
+
+    def test_command_line_upload_steps_stored_release_and_restore(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance(), format_id="street-interview")
+        base = ("--root", self.root, "--project", "brand")
+        listed = self.cli("upload-list", *base)
+        self.assertEqual(json.loads(listed.stdout)["items"][0]["archiveId"], take["id"])
+        self.assertEqual(self.cli("upload-list", *base, "--limit", "51").returncode, 1)
+        answers = self.work / "answers.json"
+        answers.write_text(json.dumps({"items": [{"id": "m-1", "url": "https://storage.example/put", "headers": {}}]}),
+                           encoding="utf-8")
+        steps = self.cli("upload-steps", *base, "--list", "-", "--answers", answers, stdin=listed.stdout)
+        self.assertEqual(json.loads(steps.stdout)["save"][0]["id"], "m-1", steps.stderr)
+        listing = json.dumps({"media": [self.row(take, "m-1")], "nextCursor": None})
+        recorded = self.cli("stored", *base, "--listed", "-", stdin=listing)
+        self.assertEqual(recorded.returncode, 0, recorded.stderr)
+        self.assertIn("[also in ViewPrinter]", self.cli("find", *base).stdout)
+        refused = self.cli("release", *base, "--all-stored", "--listed", "-", stdin=listing)
+        self.assertEqual(refused.returncode, 1)
+        self.assertIn("--approval", refused.stderr)
+        released = self.cli("release", *base, "--all-stored", "--listed", "-", "--approval", "remove them",
+                            stdin=listing)
+        self.assertEqual(json.loads(released.stdout)["released"], [take["id"]], released.stderr)
+        self.assertIn("[released: in ViewPrinter only]", self.cli("find", *base).stdout)
+        back = self.cli("restore", *base, "--id", take["id"], "--file", self.original("download.mp4", b"take one"))
+        self.assertTrue(json.loads(back.stdout)["restored"], back.stderr)
+        # --out writes UTF-8 itself; and a file Windows PowerShell's > wrote (UTF-16) still reads.
+        other = archive.add(self.root, "brand", self.original("e.mp4", b"take two"), self.provenance(prompt="café"))
+        written = self.cli("upload-list", *base, "--out", self.work / "list.json")
+        self.assertEqual(json.loads(written.stdout)["wrote"], str(self.work / "list.json"), written.stderr)
+        listing = (self.work / "list.json").read_text(encoding="utf-8")
+        self.assertIn("café", listing)
+        (self.work / "list-utf16.json").write_text(listing, encoding="utf-16")
+        self.assertEqual(archive.read_json(str(self.work / "list-utf16.json"))["items"][0]["archiveId"], other["id"])
 
 
 if __name__ == "__main__":

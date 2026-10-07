@@ -14,7 +14,7 @@ The installed skill is replaceable; project memory is not. Keep stable join keys
 
 | Location | Contents | Update behavior |
 |---|---|---|
-| `config.json` | Schema version and project name; add defaults such as asset paths, relative to the memory directory, only as needed, and `archive.project` / `archive.root` for the [source archive](archive.md) | Targeted, deliberate edits |
+| `config.json` | Schema version and project name; add defaults such as asset paths, relative to the memory directory, only as needed, and `archive.project` / `archive.root` for the [source archive](archive.md), with `archive.keepInViewPrinter` recording whether ViewPrinter keeps the originals too | Targeted, deliberate edits |
 | `project.md` | Current brand preferences, production conventions, review expectations and their scope | Update the affected rule; preserve provenance and exceptions |
 | `assets/phone-mounts/<id>/v<revision>/` | Canonical frame, fitted screen geometry/mask, provenance and approved reference; `config.json` points to the default preset | Preserve existing revisions; copy exact assets rather than regenerate |
 | `formats/<id>/v<revision>.json` | Concept, presentation structure, invariants, allowed variation, prototype references and decision source | New immutable revision |
