@@ -37,7 +37,8 @@ Run this once for each destination `posts_save` returns, while the details are a
   memory), or the name the user already uses when there are none. A record's `aliases`
   fold old names into its ID in the report. `--paid-support` marks a post that will run
   as an ad.
-- To backfill, use only receipts that name the post id. Never match posts to videos by
+- To backfill, use receipts that name the post id, or the user's own attribution recorded
+  with `--note "user-attested"` (see content-learning). Never match posts to videos by
   caption or by how they look.
 
 ### Keep review galleries synchronized

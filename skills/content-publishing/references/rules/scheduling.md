@@ -141,7 +141,7 @@ Never change a key to force a retry past a duplicate warning.
 
 Keep the returned post id and each destination's account id with what was posted:
 the file, its version and the batch it came from. A result can only be traced back
-to the version that earned it if that record is made now: `scripts/learn.py link`,
+to the version that earned it if that record is made now: `<skill-directory>/scripts/learn.py link`,
 described in `learning`.
 
 Separate accepted request settings from independent readback evidence. Verify

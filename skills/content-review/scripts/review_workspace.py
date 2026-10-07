@@ -32,20 +32,36 @@ def file_url(path):
     path=path if isinstance(path,PurePath) else Path(path)
     return '/files/'+quote(path.as_posix().lstrip('/'))
 def url_path(rest):
-    """The local path a /files/ URL names, given the part after /files/."""
+    """The local path a /files/ URL names, given the part after /files/, or None. Only a
+    drive path on Windows: a network path (\\\\host\\share) would make Windows contact that host."""
     rest=unquote(rest)
-    return os.path.normpath(rest if os.name=='nt' else '/'+rest)
+    if os.name=='nt':
+        return os.path.normpath(rest) if re.match(r'[A-Za-z]:[\\/]',rest) else None
+    return None if rest.startswith(('/','\\')) else os.path.normpath('/'+rest)
+def broad(folder):
+    """A home folder, a folder above one, or a drive root: too broad to be a project."""
+    folder=Path(folder)
+    try:home=Path.home().resolve()
+    except RuntimeError:return folder==folder.parent
+    return folder==folder.parent or folder==home or folder in home.parents
 def shortcut(link, folder):
     """A convenience link in ~/ViewPrinter/in-review. The registry is the record; where links
     are not allowed (Windows without Developer Mode) there is simply no shortcut."""
-    try:link.parent.mkdir(parents=True,exist_ok=True);link.symlink_to(folder)
+    try:link.parent.mkdir(parents=True,exist_ok=True);link.symlink_to(folder,target_is_directory=True)
     except OSError:pass
+def drop_shortcut(link):
+    """Remove a shortcut link. Windows removes a link to a folder with rmdir."""
+    for remove in (os.unlink,os.rmdir):
+        try:remove(link);return
+        except FileNotFoundError:return
+        except OSError:continue
 def served_root(record):
     """The folder whose media the hub may serve for a review: its ViewPrinter project, or for
     work outside a project only the review's own folder. Older records stored the folder's parent
     here, which could be a home directory, so a stored root counts only if it is a project."""
     project=Path(record['projectRoot'])
-    return str(project) if (project/'.viewprinter'/'content-memory').is_dir() else record['target']
+    if broad(project) or not (project/'.viewprinter'/'content-memory').is_dir():return record['target']
+    return str(project)
 
 def atomic(path, value):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
@@ -73,6 +89,7 @@ def lock():
 
 def project_root(path):
     for p in (path,*path.parents):
+        if broad(p):return None  # a home folder is never a project, even one holding memory
         if (p/'.viewprinter/content-memory').is_dir():return p
     return None
 
@@ -287,7 +304,7 @@ def lifecycle(entry, action, revision=None, reason='', actor='local-user', batch
             if not batch:r.update(freeze(r))
             r.update(lifecycle='archived',archive={'at':now(),'reason':reason,'actor':actor})
             link=root()/'in-review'/r['id']
-            if link.is_symlink():link.unlink()
+            if link.is_symlink():drop_shortcut(link)
         else:
             if r.get('lifecycle')!='archived':raise ValueError('Only archived work can be restored')
             if r.get('batchId'):

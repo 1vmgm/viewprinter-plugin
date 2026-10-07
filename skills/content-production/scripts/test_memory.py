@@ -32,7 +32,7 @@ class MemoryTests(unittest.TestCase):
 
     def cli(self, *arguments):
         return subprocess.run([sys.executable, str(Path(memory.__file__).resolve()), *map(str, arguments)],
-                              capture_output=True, text=True, check=False)
+                              capture_output=True, text=True, check=False, encoding="utf-8")
 
     def alias(self):
         """A symlinked ancestor, as macOS /tmp and /var are, on every platform."""
@@ -217,8 +217,45 @@ class MemoryTests(unittest.TestCase):
         destination = memory.append(through_alias / memory.MEMORY_RELATIVE, "feedback", self.event())
         self.assertEqual(destination, location / "history" / "feedback" / "feedback-001.json")
 
+    def test_a_home_folder_is_never_a_project(self):
+        home = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, home)
+        with patch("pathlib.Path.home", return_value=home):
+            with self.assertRaisesRegex(memory.MemoryError, "home folder"):
+                memory.initialize(home)
+            # Memory an older version left in a home folder is not found from a project below it.
+            (home / ".viewprinter" / "content-memory").mkdir(parents=True)
+            work = home / "work"
+            work.mkdir()
+            with self.assertRaisesRegex(memory.MemoryError, "No project memory"):
+                memory.locate(work)
+            self.assertEqual(memory.locate(memory.initialize(work)), memory.initialize(work))
+
+    def test_the_install_is_found_by_what_it_holds_not_by_folder_depth(self):
+        base = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, base)
+        (base / "plugin" / ".claude-plugin").mkdir(parents=True)
+        skill = base / "plugin" / "skills" / "content-production"
+        skill.mkdir(parents=True)
+        self.assertEqual(memory.installed_roots(skill), [skill, skill.parent, base / "plugin"])
+        package = base / "project" / "viewprinter"
+        package.mkdir(parents=True)
+        (package / "SKILL.md").write_text("---\nname: x\n---\n", encoding="utf-8")
+        self.assertEqual(memory.installed_roots(package), [package])
+
+    def test_an_interrupted_write_on_a_drive_without_hard_links_leaves_no_record(self):
+        location = memory.initialize(self.project)
+        record = self.event()
+        with patch.object(memory.os, "link", side_effect=PermissionError(1, "Operation not permitted")), \
+                patch.object(memory.os, "replace", side_effect=OSError(28, "No space left on device")):
+            with self.assertRaises(OSError):
+                memory.append(location, "feedback", record)
+        folder = location / "history" / "feedback"
+        self.assertEqual(list(folder.iterdir()), [])
+        self.assertTrue(memory.append(location, "feedback", record).is_file())
+
     def test_init_refuses_invalid_environment_override(self):
-        for override in ("", str(memory.SKILL_ROOT / "memory")):
+        for override in ("", str(memory.INSTALLED[0] / "memory")):
             with self.subTest(override=override), patch.dict(os.environ, {"VIEWPRINTER_CONTENT_MEMORY": override}):
                 with self.assertRaises(memory.MemoryError):
                     memory.initialize(self.project)
@@ -257,7 +294,7 @@ class MemoryTests(unittest.TestCase):
         self.assertEqual(list(external.iterdir()), [record_target])
 
     def test_skill_directory_cannot_be_used_for_memory_or_discovery(self):
-        with patch.object(memory, "SKILL_ROOT", self.project):
+        with patch.object(memory, "INSTALLED", [self.project]):
             with self.assertRaisesRegex(memory.MemoryError, "installed skill"):
                 memory.initialize(self.project)
             with self.assertRaisesRegex(memory.MemoryError, "installed skill"):

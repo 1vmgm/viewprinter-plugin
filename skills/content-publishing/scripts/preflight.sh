@@ -11,15 +11,27 @@ FAIL=0
 ok()  { printf "  \033[32m✓\033[0m %s\n" "$1"; }
 bad() { printf "  \033[31m✗\033[0m %s\n" "$1"; FAIL=1; }
 
-# The endpoint is declared once, in the manifest, so this cannot drift from what
-# the plugin actually installs.
-ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-MCP_URL=$(python3 -c "import json;print(json.load(open('$ROOT/.mcp.json'))['mcpServers']['viewprinter']['url'])" 2>/dev/null)
-[ -n "$MCP_URL" ] && ok "endpoint: $MCP_URL" || { bad "no endpoint in .mcp.json"; echo; exit 1; }
-
-for t in curl python3; do
-  command -v "$t" >/dev/null && ok "$t on PATH" || bad "$t missing"
+# python3 on macOS and Linux; a Windows install is often python, or the py launcher.
+PYTHON=""
+for candidate in python3 python "py -3"; do
+  if $candidate -c 'import sys; sys.exit(sys.version_info < (3, 9))' >/dev/null 2>&1; then
+    PYTHON="$candidate"
+    break
+  fi
 done
+[ -n "$PYTHON" ] && ok "$PYTHON is 3.9 or newer" || { bad "Python 3.9 or newer is required (python3, python or py -3)"; echo; exit 1; }
+command -v curl >/dev/null && ok "curl on PATH" || bad "curl missing"
+
+# Installed as a plugin, the endpoint is the one its manifest declares, so this cannot
+# drift from what the plugin installs. A skill installed on its own has no manifest.
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+MCP_URL=$($PYTHON -c "import json;print(json.load(open('$ROOT/.mcp.json'))['mcpServers']['viewprinter']['url'])" 2>/dev/null)
+if [ -n "$MCP_URL" ]; then
+  ok "endpoint: $MCP_URL"
+else
+  MCP_URL="https://viewprinter.tech/api/mcp"
+  ok "endpoint: $MCP_URL (installed without the plugin manifest)"
+fi
 
 # tools/list with no credentials. Unauthenticated discovery is deliberate: it is
 # how mcp.so, Smithery and Glama scan the server, and losing it silently delists
@@ -32,7 +44,7 @@ resp=$(curl -sS --max-time 20 -X POST "$MCP_URL" \
 if [ -z "$resp" ]; then
   bad "no response from $MCP_URL"
 else
-  count=$(printf '%s' "$resp" | python3 -c "
+  count=$(printf '%s' "$resp" | $PYTHON -c "
 import json,sys
 raw = sys.stdin.read()
 for line in raw.splitlines():
@@ -50,7 +62,7 @@ fi
 
 # The sign-in the user completes themselves. Without this the connect flow in
 # references/connecting.md has nowhere to send them.
-origin=$(python3 -c "
+origin=$($PYTHON -c "
 from urllib.parse import urlparse
 u = urlparse('$MCP_URL'); print(f'{u.scheme}://{u.netloc}')" 2>/dev/null)
 code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 \

@@ -6,7 +6,7 @@ Read the active brief, format and project preferences. For performance-oriented 
 
 For a trending-audio brief, compare a small shortlist of current sounds before committing the batch. Record the platform, sound URL/ID and exact recording, dated usage evidence, intended excerpt, energy at the opening, demo/payoff accent and likely loop boundary. Research belongs to the sound decision, not after the final render. Familiarity, total plays, a model’s suggestion or an old hit alone do not establish a current trend. Explain selection for this audience and story; “trending” does not guarantee performance.
 
-Record the intended delivery: music embedded from an authorized source, or the exact sound to add through the platform’s licensed library. Platform availability is not cross-platform reuse permission. If research or the intended sound is unavailable, mark that dependency and prepare the remaining work; do not pass off an arbitrary generated bed as the requested trending sound. Preserve any existing source/use authorization rather than asking for it again.
+Record the intended delivery: music embedded in the video, with its source, or the exact sound to add through the platform’s own library. If research or the intended sound is unavailable, mark that dependency and prepare the remaining work; do not pass off an arbitrary generated bed as the requested trending sound. Preserve any existing source/use authorization rather than asking for it again.
 
 ## Find a suitable source
 

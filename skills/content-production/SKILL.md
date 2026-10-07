@@ -29,7 +29,7 @@ Make the first prototype before writing a skill: a format is reviewable before i
 
 - Claude Code reads `<project>/.claude/skills/<project>-content/SKILL.md`; Codex and most other agents read `<project>/.agents/skills/<project>-content/SKILL.md`. Use the folder the user's agent reads; for both, keep one copy and link the other folder to it.
 - Give it frontmatter with a `name` and a `description` of when to use it, then only what the project has decided: audience, voice, proof, audio and captions. Route to one `references/formats/<format-id>.md` per format; see [develop project formats](references/formats.md).
-- Record its path, relative to the project, as `contentSkill` in `.viewprinter/content-memory/config.json`, so the review workspace shows it as the project's guidance.
+- Record the path of its SKILL.md, relative to the project (for example `.agents/skills/<project>-content/SKILL.md`), as `contentSkill` in `.viewprinter/content-memory/config.json`, so the review workspace shows it as the project's guidance.
 
 Write down the user's decisions, not guesses. A format's recipe grows from approved examples.
 

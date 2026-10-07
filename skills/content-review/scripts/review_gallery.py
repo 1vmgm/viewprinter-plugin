@@ -333,6 +333,8 @@ def iso(text):
     """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
     accepts only from Python 3.11."""
     text = text.replace('Z', '+00:00')
+    text = re.sub(r'(\d{2}:\d{2}:\d{2}),(\d+)', r'\1.\2', text, count=1)  # a comma fraction
+    text = re.sub(r'([+-]\d{2})(\d{2})$', r'\1:\2', text)  # a +0000 offset
     text = re.sub(r'\.(\d+)', lambda match: '.' + (match.group(1) + '000000')[:6], text, count=1)
     return datetime.fromisoformat(text)
 
@@ -528,6 +530,9 @@ def prepare_generation(records, context):
             if not isinstance(entry[field], str):
                 raise ValueError(f"{context}.generation.{field} must be a string")
         cost = record.get("cost", {"status": "unknown"})
+        if isinstance(cost, dict) and "status" not in cost and "basis" in cost:
+            # The source archive records the same facts as basis; take its record as it is.
+            cost = dict(cost, status={"estimate": "estimated"}.get(cost["basis"], cost["basis"]))
         if not isinstance(cost, dict) or cost.get("status") not in {"reported", "estimated", "unknown"}:
             raise ValueError(f"{context}.generation.cost status must be reported, estimated or unknown")
         if cost["status"] != "unknown":
@@ -834,5 +839,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())

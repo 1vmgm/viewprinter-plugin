@@ -4,7 +4,7 @@
 
 The HTML is for seeing the work. The conversation is for feedback. Do not add note textareas, fake approval controls or a second feedback system the user must maintain. Stable IDs let the user say “approve 01 and 04; give 03 new music; move every headline higher.”
 
-Follow [review UI quality](review-ui.md) for the dark purple workspace and generated galleries. Use this skill’s shared `scripts/review_gallery.py` after reading this reference. A brand skill’s summary does not replace the review workflow. Don't build a project-local fork of the gallery; later batches would silently lose whatever it adds. The review helpers ship with the plugin: don't edit an installed copy, which an update replaces. When a reusable control is missing, use what exists and tell the user the gap; changes to the helpers belong in the plugin's own repository. Keep brand-specific titles, descriptions and assets in manifests.
+Follow [review UI quality](review-ui.md) for the dark purple workspace and generated galleries. Use this skill’s shared `scripts/review_gallery.py` after reading this reference. A brand skill’s summary does not replace the review workflow. Don't build a project-local fork of the gallery; later batches would silently lose whatever it adds. The review helpers ship with the plugin: don't edit an installed copy, which an update replaces. When a reusable control is missing, use what exists and tell the user the gap, which they can report at https://github.com/1vmgm/viewprinter-plugin/issues; changes to the helpers belong in the plugin's own repository. Keep brand-specific titles, descriptions and assets in manifests.
 
 Every card exposes the exact `ID / vN` as selectable text and a **Copy ID** button. Copy only that reference, so the user can paste it into conversation. Support local-file clipboard restrictions with selection-copy fallback and an honest manual-copy message if copying fails. Announce the result accessibly; never show “Copied” on failure.
 
@@ -109,9 +109,9 @@ Add `"delivery": {"snapshot": "delivery.json", "timezone": "America/Chicago"}` t
 After an accepted save, use ViewPrinter's `learn.py link` for each destination, save dated readbacks and run:
 
 ```sh
-python3 scripts/review_delivery.py --memory <project>/.viewprinter/content-memory \
+python3 <skill-directory>/scripts/review_delivery.py --memory <project>/.viewprinter/content-memory \
   --posts <saved-posts-list.json> --output <gallery-folder>/delivery.json
-python3 scripts/review_gallery.py --manifest <review.json> --output <review.html>
+python3 <skill-directory>/scripts/review_gallery.py --manifest <review.json> --output <review.html>
 ```
 
 Repeat `--posts` for paginated readbacks. Match exact post/account and item/version links, never captions. `review_readiness.py` derives the next action and preserves the accepted scheduling handoff. Published evidence can establish a past handoff, but creates no additional Posted lane. Later delivery failures and performance belong in ViewPrinter; they do not reopen completed review work. A new version, new required destination or changed approved copy/media needs its own matching handoff. Partial scheduling leaves the remaining work active.

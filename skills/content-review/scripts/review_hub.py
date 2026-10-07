@@ -73,8 +73,8 @@ def review_root():
 
 def port():
     raw = os.environ.get("VIEWPRINTER_REVIEW_PORT") or "8765"
-    if not raw.isdigit():
-        raise ValueError(f"VIEWPRINTER_REVIEW_PORT must be a port number, not {raw!r}")
+    if not raw.isdigit() or not 1 <= int(raw) <= 65535:
+        raise ValueError(f"VIEWPRINTER_REVIEW_PORT must be a port number from 1 to 65535, not {raw!r}")
     return int(raw)
 
 
@@ -101,6 +101,8 @@ def visible_children(folder):
 def project_root(path):
     """The nearest ancestor holding ViewPrinter content memory, which marks a project."""
     for folder in (path, *path.parents):
+        if workspace.broad(folder):  # a home folder is never a project
+            return None
         if (folder / ".viewprinter" / "content-memory").is_dir():
             return folder
     return None
@@ -241,7 +243,7 @@ def remove(reference):
         record.update(lifecycle="excluded", revision=record["revision"]+1, updatedAt=workspace.now())
         workspace.atomic(workspace.registry()/(record["id"]+".json"), record)
         link = entries_dir()/record["id"]
-        if link.is_symlink(): link.unlink()
+        if link.is_symlink(): workspace.drop_shortcut(link)
         return record["id"]
 
 
@@ -452,7 +454,7 @@ class Handler(BaseHTTPRequestHandler):
         Browsers say so in Sec-Fetch-Site. Following a link here is a navigation and stays allowed;
         a file it opens is sandboxed (see file)."""
         return (self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site")
-                and self.headers.get("Sec-Fetch-Mode") != "navigate")
+                and (self.headers.get("Sec-Fetch-Mode"), self.headers.get("Sec-Fetch-Dest")) != ("navigate", "document"))
 
     def reply(self, status, body, content_type, head):
         self.send_response(status)
@@ -461,6 +463,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        if content_type.startswith("text/html"):
+            self.send_header("Content-Security-Policy", "frame-ancestors 'self'")
         self.end_headers()
         if not head:
             self.wfile.write(body)
@@ -493,11 +497,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b"event: queue\ndata: " + text.encode("utf-8") + b"\n\n")
 
     def file(self, path, head, download=False):
-        path = os.path.realpath(path)
-        content_type = (mimetypes.guess_type(path)[0] or "application/octet-stream") if download else self.server.hub.content_type(path) if os.path.isabs(path) else None
+        # Check the plain path before touching the file system, then again once resolved, so a
+        # link inside a served folder cannot lead out of it.
         try:
+            if path is None or not os.path.isabs(path) or not (download or self.server.hub.content_type(path)):
+                raise ValueError("not a served path")
+            path = os.path.realpath(path)
+            content_type = (mimetypes.guess_type(path)[0] or "application/octet-stream") if download else self.server.hub.content_type(path)
             info = os.stat(path) if content_type else None
-        except OSError:
+        except (OSError, ValueError):
             info = None
         if not info or not stat.S_ISREG(info.st_mode):
             return self.reply(404, b"Not found\n", "text/plain; charset=utf-8", head)
@@ -534,7 +542,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         # Only this hub's pages may embed what it serves.
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
-        if not content_type.startswith(("text/html", "application/pdf")):
+        if content_type.startswith("text/html"):
+            self.send_header("Content-Security-Policy", "frame-ancestors 'self'")
+        elif not content_type.startswith("application/pdf"):
             # A file opened directly, such as an SVG, cannot run script in the hub's origin.
             self.send_header("Content-Security-Policy", "sandbox")
         if status == 206:
@@ -757,15 +767,18 @@ def check_gallery(reference, seconds=20, all_current=False):
     if seconds <= 0:
         raise ValueError("seconds must be greater than zero")
     url = gallery_url(reference)
+    # A throwaway profile: no keychain prompt, no sync. Checking a local review, Chrome resolves
+    # no other host, so its own background requests go nowhere.
+    offline = [] if re.match(r"https?://(?!127\.0\.0\.1[:/])", url) else [
+        "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1"]
     with tempfile.TemporaryDirectory(prefix="review-check-") as profile:
         chrome = subprocess.Popen(
             [find_chrome(), "--headless=new", "--remote-debugging-port=0", f"--user-data-dir={profile}",
              "--autoplay-policy=no-user-gesture-required", "--mute-audio", "--no-first-run",
              "--no-default-browser-check", "--window-size=1280,2000",
-             # A throwaway profile: no keychain prompt, no sync, no background traffic.
              "--use-mock-keychain", "--password-store=basic", "--disable-background-networking",
              "--disable-component-update", "--disable-sync", "--disable-extensions",
-             "--disable-default-apps", "--no-pings", "about:blank"],
+             "--disable-default-apps", "--no-pings", *offline, "about:blank"],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
             active = Path(profile) / "DevToolsActivePort"
@@ -875,7 +888,7 @@ def main(argv=None):
         operation.add_argument("--revision", type=int)
         operation.add_argument("--reason", default="")
         operation.add_argument("--batch")
-    posted = commands.add_parser("posted", help="move an entry to posted/<today>")
+    posted = commands.add_parser("posted", help="retired: import delivery receipts, and archive a finished format")
     posted.add_argument("entry", help="entry name, batch folder or gallery path")
     posted.add_argument("--url", help="where it was posted or scheduled")
     posted.add_argument("--note")
@@ -952,5 +965,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())

@@ -772,5 +772,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())

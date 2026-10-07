@@ -66,7 +66,7 @@ class ReviewHubTests(unittest.TestCase):
 
     def hub(self, *args):
         result = subprocess.run([sys.executable, str(HUB), *args], env=self.env,
-                                capture_output=True, text=True, timeout=30)
+                                capture_output=True, text=True, timeout=30, encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stderr)
         return result
 
@@ -132,7 +132,7 @@ class ReviewHubTests(unittest.TestCase):
             (folder / "review.json").write_text(json.dumps(manifest), encoding="utf-8")
             result = subprocess.run([sys.executable, str(GALLERY), "--manifest", str(folder / "review.json"),
                                      "--output", str(folder / "review.html")],
-                                    env=self.env, capture_output=True, text=True, timeout=30)
+                                    env=self.env, capture_output=True, text=True, timeout=30, encoding="utf-8")
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), str(folder / "review.html"))
             notes.append(result.stderr)
@@ -179,11 +179,14 @@ class ReviewHubTests(unittest.TestCase):
         self.assertEqual(self.get(clip, **embedded)[0], 403)
         self.assertEqual(self.get(clip, **dict(embedded, **{"Sec-Fetch-Site": "same-site"}))[0], 403)
         self.assertEqual(self.get(clip, **{"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "no-cors"})[0], 200)
-        # Following a link from elsewhere still opens it; what opens is sandboxed.
-        self.assertEqual(self.get(clip, **{"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate"})[0], 200)
+        # Following a link from elsewhere still opens it; what opens is sandboxed. Framing it is refused.
+        link = {"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document"}
+        self.assertEqual(self.get(clip, **link)[0], 200)
+        self.assertEqual(self.get("/", **dict(link, **{"Sec-Fetch-Dest": "iframe"}))[0], 403)
         svg = self.head(file_url(self.batch / "badge.svg"))
         self.assertEqual((svg["Content-Security-Policy"], svg["Cross-Origin-Resource-Policy"]), ("sandbox", "same-origin"))
-        self.assertIsNone(self.head(file_url(self.batch / "review.html"))["Content-Security-Policy"])
+        self.assertEqual(self.head(file_url(self.batch / "review.html"))["Content-Security-Policy"], "frame-ancestors 'self'")
+        self.assertEqual(self.head("/")["Content-Security-Policy"], "frame-ancestors 'self'")
         self.assertEqual(self.head("/api/queue")["Cross-Origin-Resource-Policy"], "same-origin")
 
     def test_a_group_outside_a_project_serves_only_its_own_folder(self):
@@ -207,6 +210,26 @@ class ReviewHubTests(unittest.TestCase):
         self.assertEqual(served_root({"projectRoot": str(self.outside.parent), "target": str(self.outside)}),
                          str(self.outside))
         self.assertEqual(served_root({"projectRoot": str(self.project), "target": str(self.batch)}), str(self.project))
+
+    def test_a_home_folder_holding_memory_is_still_not_a_project(self):
+        # An agent once ran a memory command from a home folder; that must not serve the home folder.
+        from unittest.mock import patch
+        import review_workspace
+        home = self.outside
+        (home / ".viewprinter" / "content-memory").mkdir(parents=True)
+        with patch("pathlib.Path.home", return_value=home):
+            self.assertIsNone(review_workspace.project_root(home / "launch"))
+            self.assertEqual(served_root({"projectRoot": str(home), "target": str(home / "launch")}), str(home / "launch"))
+
+    def test_network_and_escaping_paths_are_refused_before_the_disk(self):
+        from unittest.mock import patch
+        import review_workspace
+        self.assertIsNone(url_path("/etc/passwd"))  # /files//etc/passwd
+        self.assertIsNone(url_path(quote("\\\\host\\share\\x.png")))
+        with patch.object(review_workspace.os, "name", "nt"):
+            for network in ("%5C%5Chost%5Cshare%5Cx.png", "/host/share/x.png", "%5C%5C%3F%5CC%3A%5Cx.png", "C%3Ax.png"):
+                self.assertIsNone(url_path(network), network)
+            self.assertEqual(url_path("C%3A/Media/x.png"), os.path.normpath("C:/Media/x.png"))
 
     def test_file_urls_carry_windows_drive_paths(self):
         from pathlib import PureWindowsPath
@@ -253,7 +276,7 @@ class ReviewHubTests(unittest.TestCase):
         self.hub("add", str(self.batch), "--no-server")
         self.start_server()
         result = subprocess.run([sys.executable, str(HUB), "check", str(self.batch), "--seconds", "3", "--json"],
-                                env=self.env, capture_output=True, text=True, timeout=120)
+                                env=self.env, capture_output=True, text=True, timeout=120, encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(result.stdout)
         record=json.loads((self.hub_root/".hub/entries/project--batch-one.json").read_text(encoding="utf-8"))
@@ -281,7 +304,7 @@ class ReviewHubTests(unittest.TestCase):
         self.hub("add", str(self.batch), "--no-server")
         self.start_server()
         result = subprocess.run([sys.executable, str(HUB), "check", str(self.batch), "--all-current", "--seconds", "1", "--json"],
-                                env=self.env, capture_output=True, text=True, timeout=120)
+                                env=self.env, capture_output=True, text=True, timeout=120, encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(result.stdout)
         self.assertTrue(report["servedOverHttp"])

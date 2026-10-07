@@ -2,7 +2,7 @@
   "skill_name": "content-publishing",
   "skill": "viewprinter-social-manager",
   "version": "2.0.0",
-  "description": "Scenario tests for the content-publishing skill. A run passes only when every item in 'expect' is satisfied. The refusal and honesty scenarios are mandatory: each one encodes a mistake that has actually been made, in this product or in its app-store review.",
+  "description": "Scenario tests for the content-publishing skill. A run passes only when every item in 'assertions' is satisfied. The refusal and honesty scenarios are mandatory: each one encodes a mistake that has actually been made, in this product or in its app-store review.",
   "evals": [
     {
       "id": 1,
@@ -74,11 +74,10 @@
       "rules": [
         "scheduling"
       ],
-      "prompt": "That timed out \u2014 try again.",
+      "prompt": "That timed out — try again.",
       "expected_output": "reuses the original idempotency_key rather than calling again bare",
       "assertions": [
-        "reuses the original idempotency_key rather than calling again bare",
-        "or checks posts_list first to see whether the post already exists",
+        "reuses the original idempotency_key rather than calling again bare, or checks posts_list first to see whether the post already exists",
         "does not create a second post with the same caption and destinations"
       ],
       "files": []
@@ -234,7 +233,7 @@
         "asks separately about own-brand promotion and AI-generated labels before sending",
         "does not treat a business account, generated media, or approval to post as permission to enable disclosure flags",
         "explains any applicable platform requirement rather than silently choosing",
-        "waits for the user\u2019s answer before publishing or scheduling"
+        "waits for the user’s answer before publishing or scheduling"
       ],
       "files": []
     },
@@ -245,9 +244,9 @@
         "scheduling"
       ],
       "prompt": "Schedule the approved batch on TikTok and Instagram. I explicitly decline optional promotional-content and AI labels for this batch. The current platform rules do not require them for these clips.",
-      "expected_output": "preserves the user\u2019s explicit choices without asking again",
+      "expected_output": "preserves the user’s explicit choices without asking again",
       "assertions": [
-        "preserves the user\u2019s explicit choices without asking again",
+        "preserves the user’s explicit choices without asking again",
         "omits declined optional flags, including true values inherited from templates",
         "does not add disclosure text to captions or overlays",
         "does not promise that the platform itself will never apply a label"
@@ -380,7 +379,7 @@
         "learning",
         "scheduling"
       ],
-      "prompt": "Schedule these three approved videos for tomorrow and make sure we can learn from them later.",
+      "prompt": "Schedule batch spring-01's three approved videos for 9am tomorrow on both of our accounts, and record what each post was made from.",
       "context": "The videos come from a batch with item names and versions. Posting is approved.",
       "expected_output": "after posts_save returns, records one link per destination with post id, account id, batch, item, version and format",
       "assertions": [

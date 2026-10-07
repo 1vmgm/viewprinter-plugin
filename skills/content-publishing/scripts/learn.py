@@ -37,8 +37,30 @@ except ImportError:  # Windows
     import msvcrt
 
 MEMORY_DIRECTORY = Path(".viewprinter") / "content-memory"
-# The folder the installed skills live in. Memory started under it is lost when they update.
-SKILLS_HOME = Path(__file__).resolve().parents[2]
+
+
+def installed_roots(skill=Path(__file__).resolve().parents[1]):
+    """This skill's folder and the install around it: a skills folder, a package carrying
+    skills, a plugin. An update replaces them, and memory kept there with them."""
+    roots = [skill]
+    for folder in skill.parents:
+        if not (folder.name == "skills" or (folder / "SKILL.md").is_file()
+                or any((folder / marker).exists() for marker in (".claude-plugin", ".codex-plugin", "plugin.json"))):
+            break
+        roots.append(folder)
+    return roots
+
+
+INSTALLED = installed_roots()
+
+
+def broad(folder):
+    """A home folder, a folder above one, or a drive root: too broad to be a project."""
+    try:
+        home = Path.home().resolve()
+    except RuntimeError:  # no home folder at all
+        return folder == folder.parent
+    return folder == folder.parent or folder == home or folder in home.parents
 MEMORY_ENVIRONMENT = "VIEWPRINTER_CONTENT_MEMORY"
 SAFE_PART = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 
@@ -73,10 +95,15 @@ class LearnError(Exception):
 
 
 def refuse_installed(path):
-    if path == SKILLS_HOME or SKILLS_HOME in path.parents:
+    """Refuse to start memory where it would be lost or too widely shared."""
+    if any(path == root or root in path.parents for root in INSTALLED):
         raise LearnError("Run learn.py from the project's folder, or pass --memory "
                          "<project>/.viewprinter/content-memory: memory started inside the "
                          "installed skills would be lost when they update")
+    project = path.parents[1] if path.parts[-2:] == MEMORY_DIRECTORY.parts else path
+    if broad(project):
+        raise LearnError("Run learn.py from the project's own folder: {} is a home folder or "
+                         "a drive root, not a project".format(project))
 
 
 def locate_memory(explicit=None, start=None, create=False):
@@ -98,6 +125,8 @@ def locate_memory(explicit=None, start=None, create=False):
         return locate_memory(override, create=create)
     directory = Path(start or Path.cwd()).resolve()
     for candidate in (directory, *directory.parents):
+        if broad(candidate):  # a home folder is never a project, even one holding memory
+            break
         memory = candidate / MEMORY_DIRECTORY
         if memory.is_dir():
             return memory
@@ -500,6 +529,8 @@ def iso(text):
     """datetime.fromisoformat with a Z suffix and any number of fractional digits, which it
     accepts only from Python 3.11."""
     text = text.replace("Z", "+00:00")
+    text = re.sub(r"(\d{2}:\d{2}:\d{2}),(\d+)", r"\1.\2", text, count=1)  # a comma fraction
+    text = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", text)  # a +0000 offset
     text = re.sub(r"\.(\d+)", lambda match: "." + (match.group(1) + "000000")[:6], text, count=1)
     return datetime.fromisoformat(text)
 
@@ -946,5 +977,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())

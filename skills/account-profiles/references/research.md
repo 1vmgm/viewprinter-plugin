@@ -34,7 +34,8 @@ conditions when documented; follower/activity/verification prerequisites; exact
 native setting path; who must act; side effects; what evidence confirms success.
 Do not infer native unlocks from API scopes, active OAuth or a business connection.
 
-Append source changes to the register's history with old/new claim and reason. Keep
+Append source changes to the history in the project's copy of the register, with
+old/new claim and reason. Keep
 last-known evidence when a source becomes unavailable; change verification state
 instead of resetting its date. Record product/tool defects with reproducible output
 and a next step, apart from platform eligibility and project strategy.

@@ -47,7 +47,7 @@ class ArchiveTests(unittest.TestCase):
 
     def cli(self, *arguments, stdin=None, cwd=None):
         return subprocess.run([sys.executable, str(Path(archive.__file__).resolve()), *map(str, arguments)],
-                              input=stdin, capture_output=True, text=True, check=False, cwd=cwd or self.work)
+                              input=stdin, capture_output=True, text=True, check=False, cwd=cwd or self.work, encoding="utf-8")
 
     def problems(self, **options):
         return sorted(p["problem"].split(";")[0] for p in archive.verify(self.root, "brand", **options)["problems"])
@@ -428,7 +428,7 @@ class ArchiveTests(unittest.TestCase):
         with self.assertRaises(archive.ArchiveError):
             archive.add(root, "linked-catalog", self.original("w.mp4", b"w"))
         with self.assertRaises(archive.ArchiveError):
-            archive.resolve(archive.SKILL_ROOT / "archive", "brand")
+            archive.resolve(archive.INSTALLED[0] / "archive", "brand")
 
     # -- command line ----------------------------------------------------------------
 

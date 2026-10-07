@@ -45,7 +45,21 @@ except ImportError:  # Windows
 import memory as project_memory
 
 ROOT_ENVIRONMENT = "VIEWPRINTER_ARCHIVE_ROOT"
-SKILL_ROOT = Path(__file__).resolve().parents[1]
+
+
+def installed_roots(skill=Path(__file__).resolve().parents[1]):
+    """This skill's folder and the install around it: a skills folder, a package carrying
+    skills, a plugin. An update replaces them, and anything kept there with them."""
+    roots = [skill]
+    for folder in skill.parents:
+        if not (folder.name == "skills" or (folder / "SKILL.md").is_file()
+                or any((folder / marker).exists() for marker in (".claude-plugin", ".codex-plugin", "plugin.json"))):
+            break
+        roots.append(folder)
+    return roots
+
+
+INSTALLED = installed_roots()
 CATALOG = "catalog.jsonl"
 # A generation helper's ledger of paid jobs, kept beside the catalog so a job whose
 # response was lost is resumed, not paid for twice.
@@ -110,8 +124,8 @@ def resolve(root=None, project=None, start=None):
     if root is None:
         root = Path.home() / "ViewPrinter" / "archive"
     root = Path(os.path.abspath(Path(root).expanduser())).resolve()
-    if root == SKILL_ROOT or SKILL_ROOT in root.parents:
-        raise ArchiveError("The archive must live outside the installed skill: {}".format(root))
+    if any(root == installed or installed in root.parents for installed in INSTALLED):
+        raise ArchiveError("The archive must live outside the installed skills: {}".format(root))
     return root, project
 
 
@@ -851,5 +865,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())

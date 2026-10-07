@@ -214,12 +214,48 @@ class LearnTests(unittest.TestCase):
         home = Path(elsewhere.name).resolve() / "skills"
         installed = home / "content-publishing"
         installed.mkdir(parents=True)
-        with patch.object(learn, "SKILLS_HOME", home):
+        with patch.object(learn, "INSTALLED", [installed, home]):
             with self.assertRaises(learn.LearnError):
                 learn.locate_memory(start=installed, create=True)
             with self.assertRaises(learn.LearnError):
                 learn.locate_memory(installed / "memory", create=True)
         self.assertEqual(list(home.rglob("*memory*")), [])
+
+    def test_the_install_is_found_by_what_it_holds_not_by_folder_depth(self):
+        base = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(lambda: __import__("shutil").rmtree(base))
+        # A plugin: the skill, the skills folder and the plugin around them.
+        plugin = base / "plugin"
+        (plugin / ".claude-plugin").mkdir(parents=True)
+        skill = plugin / "skills" / "content-publishing"
+        skill.mkdir(parents=True)
+        self.assertEqual(learn.installed_roots(skill), [skill, plugin / "skills", plugin])
+        # One package unzipped straight into a project: only the package is installed.
+        project = base / "project"
+        package = project / "viewprinter"
+        package.mkdir(parents=True)
+        (package / "SKILL.md").write_text("---\nname: x\n---\n", encoding="utf-8")
+        self.assertEqual(learn.installed_roots(package), [package])
+        with patch.object(learn, "INSTALLED", [package]):
+            created = learn.locate_memory(project / ".viewprinter" / "content-memory", create=True)
+        self.assertEqual(created, project / ".viewprinter" / "content-memory")
+
+    def test_a_home_folder_is_never_a_project(self):
+        home = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(lambda: __import__("shutil").rmtree(home))
+        with patch("pathlib.Path.home", return_value=home):
+            with self.assertRaises(learn.LearnError):
+                learn.locate_memory(start=home, create=True)
+            with self.assertRaises(learn.LearnError):
+                learn.locate_memory(home / ".viewprinter" / "content-memory", create=True)
+            # Memory left in a home folder by an older version is not found from a project below.
+            (home / ".viewprinter" / "content-memory").mkdir(parents=True)
+            project = home / "work"
+            project.mkdir()
+            with self.assertRaises(learn.LearnError):
+                learn.locate_memory(start=project)
+            (project / ".viewprinter" / "content-memory").mkdir(parents=True)
+            self.assertEqual(learn.locate_memory(start=project), project / ".viewprinter" / "content-memory")
 
     def test_timestamps_with_z_and_any_fraction_parse_before_python_3_11(self):
         from datetime import datetime, timezone

@@ -78,6 +78,10 @@ def constant(node):
     return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
 
 
+def constant_true(node):
+    return isinstance(node, ast.Constant) and node.value is True
+
+
 def text_io_without_encoding(node):
     """What kind of text read or write `node` is when it names no encoding, else None.
 
@@ -87,6 +91,10 @@ def text_io_without_encoding(node):
     if not isinstance(node, ast.Call) or any(kw.arg == 'encoding' for kw in node.keywords):
         return None
     func = node.func
+    name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', None)
+    if name in ('run', 'Popen', 'check_output') and any(
+            kw.arg in ('text', 'universal_newlines') and constant_true(kw.value) for kw in node.keywords):
+        return name + ' text=True'  # decodes the child's output in the system code page
     if isinstance(func, ast.Attribute):
         name, base = func.attr, func.value
         if name in ('read_text', 'write_text'):

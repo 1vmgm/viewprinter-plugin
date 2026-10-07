@@ -8,13 +8,13 @@ Instagram, Facebook, YouTube and X**, and learn which ones worked.
 ### Install
 
 ```bash
-npx skills add https://viewprinter.tech    # the skills, from our domain — any agent
-npx skills add 1vmgm/viewprinter-plugin    # the skills, from this repo
+npx skills add 1vmgm/viewprinter-plugin    # the six skills, from this repo — any agent
+npx skills add https://viewprinter.tech    # the same, as one combined skill
 ```
 
-The scheme is required on the first one: a bare hostname is treated as a git
-repository. Either installs the skills only — neither installs the MCP server,
-because the skills CLI has no MCP handling. For both together, install the
+The scheme is required on the second one: a bare hostname is treated as a git
+repository. The domain serves the latest published release as one combined skill.
+Neither installs the MCP server, because the skills CLI has no MCP handling. For both together, install the
 plugin in Claude Code or Codex (below).
 
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
@@ -34,8 +34,8 @@ Your brand and formats live in a content skill inside your own project, which
 `content-production` helps you set up; account briefs are files in your project
 too. This plugin stays general.
 
-The skills' local helpers need **Python 3.9 or newer** (`python3`, or `python` on
-Windows). Checking a review page uses Chrome, Chromium or Edge.
+The skills' local helpers need **Python 3.9 or newer** (`python3`; on Windows often
+`python` or `py -3`). Checking a review page uses Chrome, Chromium or Edge.
 
 You need a ViewPrinter account. Sign in with **OAuth**, then connect the social
 accounts you want to use. There is no ViewPrinter API key to copy into a config.
@@ -130,15 +130,16 @@ the same namespaced skills in its selector.
 | Learning | Tie each post to the format that made it; double down on, vary or retire formats |
 | Paid growth | Choose which posts get ad spend, cut losers and scale winners (early access) |
 
-Uploads require a client that can read the file and send an HTTP PUT. Where that
-is unavailable, use media already uploaded to ViewPrinter or upload through the
-ViewPrinter site. The [media upload rule](skills/content-publishing/references/rules/media-upload.md)
-covers reserve → PUT → confirm.
+In Claude and ChatGPT, `media_upload` shows an upload box for the person's files;
+elsewhere it gives an `upload_page` link, or an agent that holds the file PUTs it to a
+short-lived URL. There is no confirm step: the file is recorded once it arrives. See
+the [media upload rule](skills/content-publishing/references/rules/media-upload.md).
 
 A draft **held in ViewPrinter** stays out of the queue. A platform draft can
 upload content to the social platform for you to finish there. Name the kind you
-want. Posts can only be amended while every destination is pending; cancellation
-cannot recall a delivery already in progress. Account metrics include their
+want. A post's caption and destinations can change only while every destination is
+pending, though its time can still move; cancellation cannot recall a delivery
+already in progress. Account metrics include their
 measurement time and are not live counters.
 
 ## MCP-only setup

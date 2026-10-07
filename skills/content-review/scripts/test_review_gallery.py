@@ -280,6 +280,15 @@ class GalleryTests(unittest.TestCase):
         self.assertIn("video,audio", review_gallery.SCRIPT)
         self.assertNotIn("Total spend", self.text)
 
+    def test_a_cost_copied_from_the_source_archive_renders(self):
+        # The archive records the same facts as basis: reported, estimate or unknown.
+        self.item["generation"] = [
+            {"asset":"Performance", "platform":"Provider A", "model":"Model A", "cost":{"amount":4.55, "unit":"USD", "basis":"estimate"}},
+            {"asset":"Still", "platform":"Provider B", "model":"Model B", "cost":{"basis":"unknown"}}]
+        self.build()
+        self.assertIn("4.55 USD · estimated", self.text)
+        self.assertIn("Cost not reported", self.text)
+
     def test_invalid_costs_and_undated_balances_are_rejected(self):
         g = {"asset":"Still", "platform":"Provider", "model":"Model"}
         self.item["generation"] = [g]
@@ -303,13 +312,13 @@ class GalleryTests(unittest.TestCase):
     def test_cli_writes_gallery_and_reports_validation_failure(self):
         self.manifest_path.write_text(json.dumps(self.manifest), encoding="utf-8")
         command = [sys.executable, str(Path(review_gallery.__file__)), "--manifest", str(self.manifest_path), "--output", str(self.output)]
-        result = subprocess.run(command, text=True, capture_output=True, cwd=self.root)
+        result = subprocess.run(command, text=True, capture_output=True, cwd=self.root, encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), str(self.output.resolve()))
         self.item["src"] = "missing.png"
         self.manifest_path.write_text(json.dumps(self.manifest), encoding="utf-8")
         original = self.output.read_bytes()
-        result = subprocess.run(command, text=True, capture_output=True, cwd=self.root)
+        result = subprocess.run(command, text=True, capture_output=True, cwd=self.root, encoding="utf-8")
         self.assertEqual(result.returncode, 1)
         self.assertIn("asset does not exist", result.stderr)
         self.assertNotIn("Traceback", result.stderr)

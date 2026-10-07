@@ -72,7 +72,7 @@ Call out shared-account conflicts before proposing a separate identity for that 
 Generate the account review with the bundled Python helper (no dependencies):
 
 ```sh
-python3 scripts/build_review.py --manifest /path/to/group.json --output /path/to/review.html
+python3 <skill-directory>/scripts/build_review.py --manifest /path/to/group.json --output /path/to/review.html
 ```
 
 Use the shared dark-mode presentation and purple ViewPrinter accent; keep artwork colors intact and verify readable contrast and narrow layouts.

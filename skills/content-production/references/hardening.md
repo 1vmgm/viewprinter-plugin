@@ -7,7 +7,7 @@ After a meaningful round, capture what happened and whether the lesson belongs t
 1. Record the raw incident/correction, affected versions, evidence and context in private project history.
 2. Separate the production change (what we did) from the finding (what we concluded). Mark confidence and plausible alternative explanations.
 3. Keep project-specific taste in project.md or the format revision. Add a due condition to carry-forward for unresolved questions, not a fabricated answer.
-4. For a repeatable failure, propose a narrowly scoped change to the project's content skill. A single deterministic bug can warrant a fix; creative correlations usually need more evidence. A lesson that would hold for every project, or a bug in this plugin's helpers, goes to the user to report: the installed plugin is not edited, and an update would replace it.
+4. For a repeatable failure, propose a narrowly scoped change to the project's content skill. A single deterministic bug can warrant a fix; creative correlations usually need more evidence. A lesson that would hold for every project, or a bug in this plugin's helpers, goes to the user to report at https://github.com/1vmgm/viewprinter-plugin/issues: the installed plugin is not edited, and an update would replace it.
 5. Add a realistic example of the failure to the project skill, and check one different format before broadening the rule.
 6. Review the change for conflicts, duplication, unnecessary gates, credentials and private assets, and record the checks actually run. Committing or publishing it needs its own authorization.
 7. Link the finding to the changed rule/test and record what would invalidate it. Supersede old findings explicitly; don't erase history.

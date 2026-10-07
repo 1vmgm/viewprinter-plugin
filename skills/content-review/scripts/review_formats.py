@@ -192,11 +192,17 @@ def shortcut(record):
     if link.exists() and not link.is_symlink(): return
     link.parent.mkdir(parents=True, exist_ok=True)
     temp = link.parent / ('.' + link.name + '-' + uuid.uuid4().hex)
+    # The registry is the record; the shortcut is a convenience. Windows refuses links
+    # without Developer Mode, and won't replace a link to a folder in place.
     try:
-        temp.symlink_to(Path(record['gallery']).parent)
-    except OSError:  # Windows refuses links without Developer Mode; the registry is the record
-        return
-    os.replace(temp, link)
+        temp.symlink_to(Path(record['gallery']).parent, target_is_directory=True)
+        try:
+            os.replace(temp, link)
+        except PermissionError:
+            ws.drop_shortcut(link)
+            os.replace(temp, link)
+    except OSError:
+        ws.drop_shortcut(temp)
 
 
 def register(project, gallery, manifest, identity, name=None, owner=None, groups=None, source_revision=None, revision=None, kind="social-content"):

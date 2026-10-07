@@ -8,16 +8,17 @@ overrides the location for init and locate.
 """
 
 import argparse
+import contextlib
 import json
 import os
 from pathlib import Path
 import re
 import sys
 import tempfile
+import time
 
 
 SCHEMA_VERSION = 1
-SKILL_ROOT = Path(__file__).resolve().parents[1]
 COLLECTIONS = ("feedback", "changes", "findings")
 DIRECTORIES = ("formats", "batches", "state", "history", *("history/" + c for c in COLLECTIONS))
 MEMORY_RELATIVE = Path(".viewprinter") / "content-memory"
@@ -28,6 +29,30 @@ SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 
 class MemoryError(ValueError):
     """An unsafe path, incomplete memory, or conflicting immutable record."""
+
+
+def installed_roots(skill=Path(__file__).resolve().parents[1]):
+    """This skill's folder and the install around it: a skills folder, a package carrying
+    skills, a plugin. An update replaces them, and anything kept there with them."""
+    roots = [skill]
+    for folder in skill.parents:
+        if not (folder.name == "skills" or (folder / "SKILL.md").is_file()
+                or any((folder / marker).exists() for marker in (".claude-plugin", ".codex-plugin", "plugin.json"))):
+            break
+        roots.append(folder)
+    return roots
+
+
+INSTALLED = installed_roots()
+
+
+def broad(folder):
+    """A home folder, a folder above one, or a drive root: too broad to be a project."""
+    try:
+        home = Path.home().resolve()
+    except RuntimeError:  # no home folder at all
+        return folder == folder.parent
+    return folder == folder.parent or folder == home or folder in home.parents
 
 
 def absolute_path(value):
@@ -52,13 +77,16 @@ def memory_path(value):
     path = absolute_path(value)
     if path.parts[-2:] == MEMORY_RELATIVE.parts:
         root = path.parents[1].resolve()
+        if broad(root):
+            raise MemoryError("Keep memory in the project's own folder, not a home folder or a "
+                              "drive root: {}".format(root))
         refuse_link(root / MEMORY_RELATIVE.parts[0])
         path = root / MEMORY_RELATIVE
     else:
         path = path.parent.resolve() / path.name
     refuse_link(path)
-    if within(path, SKILL_ROOT):
-        raise MemoryError("Memory must live outside the installed skill: {}".format(path))
+    if any(within(path, root) for root in INSTALLED):
+        raise MemoryError("Memory must live outside the installed skills: {}".format(path))
     return path
 
 
@@ -193,13 +221,15 @@ def locate(start=None):
     if override is not None:
         return validate_memory(override)
     start = absolute_path(Path.cwd() if start is None else start).resolve()
-    if within(start, SKILL_ROOT):
-        raise MemoryError("Discovery must start outside the installed skill: {}".format(start))
+    if any(within(start, root) for root in INSTALLED):
+        raise MemoryError("Discovery must start outside the installed skills: {}".format(start))
     if not start.exists():
         raise MemoryError("Discovery start does not exist: {}".format(start))
     if start.is_file():
         start = start.parent
     for project in (start, *start.parents):
+        if broad(project):  # a home folder is never a project, even one holding memory
+            break
         candidate = project / MEMORY_RELATIVE
         if candidate.exists() or candidate.is_symlink():
             return validate_memory(candidate)
@@ -226,26 +256,48 @@ def append(memory, collection, record):
             stream.flush()
             os.fsync(stream.fileno())
         try:
-            try:
-                # Linking a fully written file publishes it atomically and exclusively.
-                # Concurrent events never read/modify/write a shared collection file.
-                os.link(temporary, destination)
-            except FileExistsError:
-                raise
-            except OSError:
-                # No hard links on this drive (FAT, exFAT, some network shares). An exclusive
-                # create still never overwrites a record; a reader may briefly see it half written.
-                with open(destination, "xb") as stream:
-                    stream.write(data)
-                    stream.flush()
-                    os.fsync(stream.fileno())
+            publish(temporary, destination)
         except FileExistsError:
             refuse_link(destination)
-            if json_bytes(read_object(destination)) != data:
+            if json_bytes(settled(destination)) != data:
                 raise MemoryError("Conflicting immutable record id: {}".format(identifier))
         return destination
     finally:
-        os.unlink(temporary)
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
+
+
+def publish(temporary, destination):
+    """Put a fully written record in place, never over another one."""
+    try:
+        # Linking a fully written file publishes it atomically and exclusively.
+        # Concurrent events never read/modify/write a shared collection file.
+        os.link(temporary, destination)
+        return
+    except FileExistsError:
+        raise
+    except OSError:
+        pass
+    # No hard links on this drive (FAT, exFAT, some network shares): claim the name with an
+    # empty file, then move the finished record over it. Readers wait out the empty file.
+    with open(destination, "xb"):
+        pass
+    try:
+        os.replace(temporary, destination)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(destination)  # the empty claim this call made
+        raise
+
+
+def settled(path, wait=2.0):
+    """A record another writer may still be moving into place (see publish)."""
+    deadline = time.monotonic() + wait
+    while path.stat().st_size == 0 and time.monotonic() < deadline:
+        time.sleep(0.02)
+    if path.stat().st_size == 0:
+        raise MemoryError("Empty record, left by an interrupted write; delete it to retry: {}".format(path))
+    return read_object(path)
 
 
 def main(argv=None):
@@ -279,5 +331,5 @@ if __name__ == "__main__":
     # Agents read this through a pipe, which on Windows defaults to the system code page.
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8")
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)
     sys.exit(main())
