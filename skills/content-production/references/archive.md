@@ -46,6 +46,14 @@ differ from existing ones only in case are refused, because most disks treat the
 Search before paying for a new generation, and reuse an original when it still tells the
 intended story. Say which assets in a batch are reused and which are new.
 
+Archive presence is not creative approval or performance evidence: rejected and unused
+originals are kept too. Check the asset's latest status, rejection reason and the project's
+feedback before selecting it. When a brief asks for proven footage, link the exact original
+to its published post and dated result; a similar creator, an approved still or an unposted
+take does not establish that link. Preserve the successful hook, performance and demo
+sequence in the evidence, then state what the new edit changes. Follow the project's reuse
+constraints; do not choose a rejected take merely to avoid generation cost.
+
 ```sh
 python3 <skill-directory>/scripts/archive.py find --format <format-id> --text "<words from the prompt>"
 python3 <skill-directory>/scripts/archive.py checkout --id <id> --to <batch folder> --batch <batch> --item <item> --version <n>
