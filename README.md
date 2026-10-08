@@ -61,7 +61,11 @@ accounts you want to use. There is no ViewPrinter API key to copy into a config.
   - **The review server** streams a file a review let go from its ViewPrinter link.
     content-review's `review_media.py restore` downloads it back the same way.
 
-  Uploads to ViewPrinter go through the connector, never through a script.
+  No script uploads anything. To upload a file to ViewPrinter, the connector's
+  `media_upload` gives a 15-minute upload link to ViewPrinter's storage. In a
+  terminal, the assistant sends the file to that link with `curl`, as the publishing
+  skill's media-upload rule describes. In Claude and ChatGPT, the person uses the
+  upload box instead.
 - **The review page.** content-review serves review pages on `127.0.0.1:8765`
   (`VIEWPRINTER_REVIEW_PORT` changes the port), opens one tab in your browser, and checks
   pages in a headless Chrome, Chromium or Edge that, for a local review, resolves no
