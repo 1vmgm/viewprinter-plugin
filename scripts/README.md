@@ -38,7 +38,7 @@ are, and names the command that regenerates them:
 
 The validator checks the portable manifests against pinned official schemas,
 shared identity/versions, marketplace paths, assets and relative documentation
-links. For each of the six skills it checks the name against the folder, the
+links. For each skill it checks the name against the folder, the
 description, an executable preflight, the Codex metadata, the test prompts and
 every link between skills. It does not run model evaluations.
 

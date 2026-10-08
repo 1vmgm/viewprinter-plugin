@@ -1,5 +1,22 @@
 # Compatibility and verification
 
+## October 7, 2026 — version 2.0.1, five skills
+
+`paid-growth` is removed: paid ads are managed outside ViewPrinter. The plugin carries
+five skills. This table records what was checked for 2.0.1.
+
+| Check | Result |
+| --- | --- |
+| Skill set | Validator passes with five skills |
+| Skill helpers | 280 unit tests pass on Python 3.9.6, the version macOS ships, and on 3.12. CI runs them on Linux, macOS and Windows with Python 3.9 and 3.12, and all pass |
+| Release regression suite | 13 tests pass |
+| Preflights | All five pass |
+| Layout, portability, privacy | All three lints pass |
+| Keeping originals in ViewPrinter | The archive's upload flow and `release` ran against the hosted service: originals stored as source material, checked by SHA-256 and by sample downloads, then released locally |
+| Review media kept in ViewPrinter | A local review released files ViewPrinter keeps. Each played through the review server and matched its SHA-256, and the headless check loaded every file on the affected pages |
+| Claude Code, Codex, `npx skills add` | Not repeated for 2.0.1. The install paths are unchanged from 2.0.0, below |
+| Windows | Every skill's tests pass in CI. Not used on a Windows desktop |
+
 ## October 6, 2026 — version 2.0.0, six skills
 
 The plugin now carries six skills. This table records what was checked for 2.0.0;
