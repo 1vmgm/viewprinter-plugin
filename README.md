@@ -42,11 +42,26 @@ accounts you want to use. There is no ViewPrinter API key to copy into a config.
 - **The hosted server.** The ViewPrinter tools run at `https://viewprinter.tech/api/mcp`.
   Your posts, media and account details go there, because publishing them is what the
   service does. You sign in with OAuth.
-- **Local helpers.** The skills' Python scripts run on your machine and call no outside
-  service. They read and write your project's files, including
-  `.viewprinter/content-memory`, and a `ViewPrinter` folder in your home folder: the
-  review registry, the source archive and your answers about tools. content-production's
-  `tools.py` finds the tools you have by running each one's `--version` (never a browser).
+- **Local helpers.** The skills' Python scripts run on your machine. They read and
+  write your project's files, including `.viewprinter/content-memory`. They also use a
+  `ViewPrinter` folder in your home folder, which holds:
+  - the review registry;
+  - the source archive;
+  - the pieces of shelved Tesseract projects;
+  - your answers about tools.
+
+  content-production's `tools.py` finds the tools you have by running each one's
+  `--version`, never a browser. It reads only the variable names in a keys file you
+  point it to, never the values.
+
+  Only two helpers reach an outside service, and only when you use them:
+  - **`describe.py`** sends a small preview of each original to Google's Gemini API to
+    write its description. It uses your own key, estimates the cost first and stops at
+    the cap you set.
+  - **The review server** streams a file a review let go from its ViewPrinter link.
+    content-review's `review_media.py restore` downloads it back the same way.
+
+  Uploads to ViewPrinter go through the connector, never through a script.
 - **The review page.** content-review serves review pages on `127.0.0.1:8765`
   (`VIEWPRINTER_REVIEW_PORT` changes the port), opens one tab in your browser, and checks
   pages in a headless Chrome, Chromium or Edge that, for a local review, resolves no
