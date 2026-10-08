@@ -576,6 +576,22 @@ class ArchiveTests(unittest.TestCase):
         archive.stored(self.root, "brand", [self.row(other, "m-lib", "library"), self.row(other, "m-src")])
         self.assertEqual(archive.show(self.root, "brand", other["id"])["viewprinterMedia"]["mediaId"], "m-src")
 
+    def test_stored_keeps_viewprinters_link_to_each_file(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance())
+        self.keep((take, "m-1"))  # recorded before links were kept: no url
+        link = "https://media.example/media/m-1"
+        answer = archive.stored(self.root, "brand", {"media": [dict(self.row(take, "m-1"), url=link)]})
+        self.assertEqual(answer["recorded"], [{"id": take["id"], "mediaId": "m-1", "purpose": "source", "url": link}])
+        self.assertEqual(archive.show(self.root, "brand", take["id"])["viewprinterMedia"]["url"], link)
+        self.assertEqual(archive.stored(self.root, "brand", {"media": [dict(self.row(take, "m-1"), url=link)]})["recorded"], [])
+        # An answer without a link, such as upload-steps' landed, keeps the one recorded.
+        archive.stored(self.root, "brand", {"landed": [{"id": "m-1", "sha256": take["sha256"]}]})
+        self.assertEqual(archive.show(self.root, "brand", take["id"])["viewprinterMedia"]["url"], link)
+        # Anything that isn't a plain web address is not recorded as a link.
+        other = archive.add(self.root, "brand", self.original("b.mp4", b"take two"), self.provenance())
+        archive.stored(self.root, "brand", {"media": [dict(self.row(other, "m-2"), url="javascript:alert(1)")]})
+        self.assertNotIn("url", archive.show(self.root, "brand", other["id"])["viewprinterMedia"])
+
     def released_take(self):
         take = archive.add(self.root, "brand", self.original(), self.provenance(), format_id="street-interview")
         self.keep((take, "m-1"))

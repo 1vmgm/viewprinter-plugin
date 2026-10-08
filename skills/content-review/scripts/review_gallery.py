@@ -30,6 +30,24 @@ STATUSES = REVIEW_STATUSES | PENDING_STATUSES | {"approved"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif", ".avif"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac"}
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".m4v"}
+KEPT = "kept.json"
+SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+def kept_in_viewprinter(path):
+    """Where a review's kept copy went when it was let go because ViewPrinter keeps the same
+    bytes: the kept.json left beside it in the project's .media store. None otherwise."""
+    path = Path(path)
+    if path.parent.parent.name != ".media" or not SHA256.fullmatch(path.parent.name):
+        return None
+    try:
+        kept = json.loads((path.parent / KEPT).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if (isinstance(kept, dict) and kept.get("name") == path.name and isinstance(kept.get("mediaId"), str)
+            and isinstance(kept.get("url"), str) and re.match(r"https?://[^\s/]+/", kept["url"])):
+        return kept
+    return None
 
 STYLE = """
 :root { color-scheme:dark; --bg:#101014; --panel:#18181e; --ink:#f3f1f8; --muted:#aaa8b7;
@@ -95,6 +113,7 @@ select { font:inherit; color:var(--ink); background:transparent; border:0; max-w
 figure { margin:0; min-width:0; }
 figcaption { display:flex; justify-content:space-between; gap:8px; font-size:11px; padding:8px 4px 10px; color:var(--muted); }
 figcaption a { text-decoration:none; font-weight:600; }
+.kept { display:inline-block; margin-left:6px; padding:1px 5px; border:1px solid #604477; border-radius:3px; background:var(--soft); color:var(--accent); font:10px/1.5 var(--mono); white-space:nowrap; }
 .media { display:flex; align-items:center; justify-content:center; background:#09090f; border-radius:4px; overflow:hidden; }
 .media img,.media video { display:block; width:100%; height:460px; max-height:68vh; min-height:230px; object-fit:contain; }
 .media audio { width:100%; margin:24px 12px; }
@@ -378,7 +397,7 @@ def asset_path(raw, base, context, kind):
     if (urlsplit(raw).scheme and not re.match(r"[A-Za-z]:/", raw)) or raw.startswith("//"):
         raise ValueError(f"{context} must be local; asset URLs are not allowed")
     path = (base / raw).resolve()
-    if not path.is_file():
+    if not path.is_file() and not kept_in_viewprinter(path):  # a copy let go plays from ViewPrinter
         raise ValueError(f"{context}: asset does not exist: {path}")
     allowed = {"video": VIDEO_EXTENSIONS, "image": IMAGE_EXTENSIONS, "audio": AUDIO_EXTENSIONS}[kind]
     if path.suffix.lower() not in allowed:
@@ -503,6 +522,9 @@ def prepare_media(source, destination, base, context):
     destination["src"] = asset_path(source.get("src"), base, f"{context}.src", kind)
     if "poster" in source:
         destination["poster"] = asset_path(source["poster"], base, f"{context}.poster", "image")
+    kept = [key for key in ("src", "poster") if key in destination and not destination[key].is_file()]
+    if kept:
+        destination["keptInViewPrinter"] = kept
 
 
 def local_url(path, output):
@@ -579,7 +601,12 @@ def render_media(media, title, label, output, preload="metadata"):
         preview = f'<audio controls preload="none" aria-label="{escaped(title)} — {escaped(label)}" src="{src}"></audio>'
     else:
         preview = f'<img src="{src}" alt="{escaped(title)} — {escaped(label)}" loading="lazy">'
-    return f'<figure><div class="media">{preview}</div><figcaption><span>{escaped(label)}</span><a href="{src}" target="_blank" rel="noopener noreferrer">Open file ↗</a></figcaption></figure>'
+    kept = media.get("keptInViewPrinter") or []
+    note = ""
+    if kept:
+        text = "Cover kept in ViewPrinter" if kept == ["poster"] else "Kept in ViewPrinter"
+        note = f' <span class="kept" title="Its local copy was let go; the workspace plays it from ViewPrinter">{text}</span>'
+    return f'<figure><div class="media">{preview}</div><figcaption><span>{escaped(label)}{note}</span><a href="{src}" target="_blank" rel="noopener noreferrer">Open file ↗</a></figcaption></figure>'
 
 
 def render_card(item, output):

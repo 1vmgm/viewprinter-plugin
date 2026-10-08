@@ -38,10 +38,13 @@ import mimetypes
 import review_workspace as workspace
 
 try:
-    from review_gallery import PENDING_STATUSES, REVIEW_STATUSES
+    from review_gallery import PENDING_STATUSES, REVIEW_STATUSES, kept_in_viewprinter
 except ImportError:  # copied without its sibling; keep in step with review_gallery.py
     REVIEW_STATUSES = {"new", "draft", "needs-review", "revised", "changes-requested"}
     PENDING_STATUSES = {"planned", "generating", "in-progress", "blocked", "held"}
+
+    def kept_in_viewprinter(path):
+        return None  # without the gallery's helper, a copy let go is simply not found
 
 APP = "viewprinter-review-hub"
 VERSION = 5
@@ -515,14 +518,20 @@ class Handler(BaseHTTPRequestHandler):
     def file(self, path, head, download=False):
         # Check the plain path before touching the file system, then again once resolved, so a
         # link inside a served folder cannot lead out of it.
+        served = None
         try:
             if path is None or not os.path.isabs(path) or not (download or self.server.hub.content_type(path)):
                 raise ValueError("not a served path")
             path = os.path.realpath(path)
             content_type = (mimetypes.guess_type(path)[0] or "application/octet-stream") if download else self.server.hub.content_type(path)
+            served = content_type
             info = os.stat(path) if content_type else None
         except (OSError, ValueError):
             info = None
+        if info is None and served and not download:
+            kept = kept_in_viewprinter(path)
+            if kept:
+                return self.kept(kept, path, served, head)
         if not info or not stat.S_ISREG(info.st_mode):
             return self.reply(404, b"Not found\n", "text/plain; charset=utf-8", head)
         size, etag = info.st_size, '"%x-%x"' % (info.st_size, info.st_mtime_ns)
@@ -580,6 +589,69 @@ class Handler(BaseHTTPRequestHandler):
                     remaining -= len(chunk)
         except OSError:  # players abandon ranges constantly
             self.close_connection = True
+
+    def kept(self, kept, path, content_type, head):
+        """A file a review kept, then let go because ViewPrinter keeps the same bytes: stream it
+        from ViewPrinter, passing the player's range through. Pages and their links stay as they
+        are, and the browser still only talks to this hub."""
+        url = urlsplit(kept["url"])
+        if not (url.scheme == "https" or (url.scheme == "http" and url.hostname in ("127.0.0.1", "localhost", "::1"))):
+            return self.reply(404, b"Not found\n", "text/plain; charset=utf-8", head)
+        etag = '"sha256-' + Path(path).parent.name + '"'  # the folder is named by the file's SHA-256
+        if self.headers.get("If-None-Match") == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.end_headers()
+            return
+        request = urllib.request.Request(kept["url"], headers={"User-Agent": f"{APP}/{VERSION}"})
+        wanted = re.fullmatch(r"bytes=(\d*)-(\d*)", (self.headers.get("Range") or "").strip())
+        if wanted and any(wanted.groups()) and self.headers.get("If-Range", etag) == etag:
+            request.add_header("Range", "bytes={}-{}".format(*wanted.groups()))
+        if head:
+            request.method = "HEAD"
+        try:
+            upstream = _upstream.open(request, timeout=KEPT_TIMEOUT)
+        except urllib.error.HTTPError as error:
+            if error.code == 416:
+                self.send_response(416)
+                self.send_header("Content-Range", error.headers.get("Content-Range") or "bytes */{}".format(kept.get("bytes", "*")))
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            return self.reply(502, b"ViewPrinter did not return this file\n", "text/plain; charset=utf-8", head)
+        except (urllib.error.URLError, OSError, ValueError):
+            return self.reply(502, b"ViewPrinter could not be reached for this file\n", "text/plain; charset=utf-8", head)
+        with upstream:
+            if upstream.status not in (200, 206):
+                return self.reply(502, b"ViewPrinter did not return this file\n", "text/plain; charset=utf-8", head)
+            self.send_response(upstream.status)
+            self.send_header("Content-Type", content_type)
+            length = upstream.headers.get("Content-Length", "")
+            if length.isdigit():
+                self.send_header("Content-Length", length)
+            else:
+                self.close_connection = True  # no length to frame the body: end it by closing
+            self.send_header("Accept-Ranges", "bytes")
+            if upstream.status == 206 and upstream.headers.get("Content-Range"):
+                self.send_header("Content-Range", upstream.headers["Content-Range"])
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+            self.send_header("Content-Security-Policy", "sandbox")
+            self.end_headers()
+            if head:
+                return
+            try:
+                for chunk in iter(lambda: upstream.read(262144), b""):
+                    self.wfile.write(chunk)
+            except OSError:  # the player moved on, or ViewPrinter stopped sending
+                self.close_connection = True
+
+
+# Released review media stream from ViewPrinter through the hub; proxies apply as usual.
+_upstream = urllib.request.build_opener()
+KEPT_TIMEOUT = 30
 
 
 def runtime_signature():

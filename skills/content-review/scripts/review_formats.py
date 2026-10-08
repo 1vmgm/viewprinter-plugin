@@ -15,6 +15,7 @@ import shutil
 import uuid
 
 from review_delivery import iso
+from review_gallery import kept_in_viewprinter
 import review_workspace as ws
 
 # Bump when generated reviews change, so the hub rebuilds the ones older code made.
@@ -56,15 +57,18 @@ def file_hash(path):
     return h.hexdigest()
 
 
-def media_hashes(data, base):
-    """The sha256 of each media file a contribution shows, by resolved path. A missing preview is
-    an error here; the gallery reports any other missing file."""
+def media_hashes(data, base, known=None):
+    """The sha256 of each media file a contribution shows, by resolved path. A file that is gone
+    but was accepted before keeps the hash it was accepted with (known), so a review still
+    builds once its originals are cleaned up. Any other missing preview is an error here; the
+    gallery reports any other missing file."""
     result = {}
     for item in data.get('items', []):
         for media, key in references(item):
             p = (base / media[key]).resolve()
             if p.as_posix() in result: continue
             if p.is_file(): result[p.as_posix()] = file_hash(p)
+            elif (known or {}).get(p.as_posix()): result[p.as_posix()] = known[p.as_posix()]
             elif media is item and key == 'src': raise ValueError('Missing preview: ' + str(p))
     return result
 
@@ -94,7 +98,7 @@ def keep(path, store, sha=None):
     sha = sha or file_hash(path)
     name = sha + '/' + path.name
     dest = store / name
-    if not dest.is_file():
+    if not dest.is_file() and not kept_in_viewprinter(dest):  # a copy let go stays let go
         temp = dest.parent / ('.' + uuid.uuid4().hex + path.suffix)
         try:
             ws.clone(path, temp)
@@ -115,8 +119,13 @@ def keep_source(source, data, base, store):
     for item in data.get('items', []):
         for media, key in references(item):
             p = (base / media[key]).resolve()
-            if p.as_posix() not in kept and p.is_file():
+            if p.as_posix() in kept: continue
+            if p.is_file():
                 kept[p.as_posix()] = keep(p, store, files.get(p.as_posix()))
+            elif files.get(p.as_posix()):
+                # The original is gone, but the store kept these bytes, or let them go to ViewPrinter.
+                name = files[p.as_posix()] + '/' + p.name
+                if (store / name).is_file() or kept_in_viewprinter(store / name): kept[p.as_posix()] = name
     now = version_hashes(data, base, {path: name.split('/')[0] for path, name in kept.items()}, 'src')
     source['frozenMedia'] = kept
     source['replacedMedia'] = sorted(k for k, sha in now.items() if source.get('mediaHashes', {}).get(k, sha) != sha)
@@ -131,7 +140,8 @@ def contribution(manifest, gallery, owner=None, previous=None, expected=None):
     comparable = copy.deepcopy(data)
     comparable.get('reviewHub', {}).pop('sourceRevision', None)
     signature = digest(comparable)
-    files = media_hashes(data, manifest.parent)
+    known = {path: name.split('/')[0] for path, name in ((previous or {}).get('frozenMedia') or {}).items()}
+    files = media_hashes(data, manifest.parent, known)
     hashes = version_hashes(data, manifest.parent, files, 'src')
     covers = version_hashes(data, manifest.parent, files, 'poster')
     changed = True
@@ -170,6 +180,8 @@ def rebase_media(item, base, kept=None, store=None):
         # Forward slashes: the gallery reads manifest paths the same way on every system.
         path = (base / media[key]).resolve().as_posix()
         media[key] = (store / kept[path]).as_posix() if kept and path in kept else path
+        if kept and path in kept and not Path(media[key]).is_file() and kept_in_viewprinter(media[key]):
+            media['keptInViewPrinter'] = True  # its local copy was let go; it plays from ViewPrinter
     return result
 
 

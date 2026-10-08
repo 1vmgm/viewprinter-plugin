@@ -1,13 +1,17 @@
 """Run: python -m unittest discover -s scripts -p 'test_review_hub.py'."""
 
+import hashlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 import urllib.error
@@ -168,6 +172,82 @@ class ReviewHubTests(unittest.TestCase):
         request = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}", headers=headers, method="HEAD")
         with DIRECT.open(request, timeout=5) as response:
             return response.headers
+
+    def media_link(self, data):
+        """A stand-in for ViewPrinter's media link: serves data with byte ranges, as its CDN does."""
+        hits = []
+
+        class Media(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_HEAD(self):
+                self.answer(head=True)
+
+            def do_GET(self):
+                self.answer(head=False)
+
+            def answer(self, head):
+                hits.append(self.headers.get("Range"))
+                wanted = re.fullmatch(r"bytes=(\d*)-(\d*)", self.headers.get("Range") or "")
+                start, end, status = 0, len(data) - 1, 200
+                if wanted:
+                    start = int(wanted.group(1)) if wanted.group(1) else len(data) - int(wanted.group(2))
+                    end = min(int(wanted.group(2)), len(data) - 1) if wanted.group(1) and wanted.group(2) else len(data) - 1
+                    if start >= len(data):
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{len(data)}")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    status = 206
+                body = data[start:end + 1]
+                self.send_response(status)
+                self.send_header("Content-Type", "binary/octet-stream")
+                self.send_header("Content-Length", str(len(body)))
+                if status == 206:
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{len(data)}")
+                self.end_headers()
+                if not head:
+                    self.wfile.write(body)
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Media)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return f"http://127.0.0.1:{server.server_address[1]}/media/m-1", hits
+
+    def test_a_copy_let_go_to_viewprinter_streams_through_the_hub(self):
+        self.hub("add", str(self.batch), "--no-server")
+        data = bytes(range(64))
+        kept = self.project / ".viewprinter/content-memory/reviews/.media" / hashlib.sha256(data).hexdigest() / "clip.mp4"
+        self.assertTrue(kept.is_file())
+        url, hits = self.media_link(data)
+        note = {"mediaId": "m-1", "url": url, "name": "clip.mp4", "bytes": 64}
+        (kept.parent / "kept.json").write_text(json.dumps(note), encoding="utf-8")
+        kept.unlink()
+        self.start_server()
+        link = file_url(kept)
+        self.assertEqual(self.get(link, Range="bytes=2-5"), (206, bytes([2, 3, 4, 5])))
+        self.assertEqual(self.get(link), (200, data))
+        self.assertEqual(hits[-2:], ["bytes=2-5", None])  # the player's range went through
+        headers = self.head(link)
+        # Served like any review file: its own type, this hub's protections and a stable tag.
+        self.assertEqual((headers["Content-Type"], headers["Content-Security-Policy"],
+                          headers["Cross-Origin-Resource-Policy"], headers["Content-Length"]),
+                         ("video/mp4", "sandbox", "same-origin", "64"))
+        self.assertEqual(self.get(link, **{"If-None-Match": headers["ETag"]})[0], 304)
+        self.assertEqual(self.get(link, Range="bytes=99-")[0], 416)
+        # Only a secure link is followed (plain http only on this machine); a dead one is a gateway error.
+        (kept.parent / "kept.json").write_text(json.dumps(dict(note, url="http://example.com/media/m-1")), encoding="utf-8")
+        self.assertEqual(self.get(link)[0], 404)
+        (kept.parent / "kept.json").write_text(json.dumps(dict(note, url="http://127.0.0.1:9/media/m-1")), encoding="utf-8")
+        self.assertEqual(self.get(link)[0], 502)
+        # Without ViewPrinter's note, or with a note naming another file, the copy is simply gone.
+        (kept.parent / "kept.json").write_text(json.dumps(dict(note, name="other.mp4")), encoding="utf-8")
+        self.assertEqual(self.get(link)[0], 404)
+        (kept.parent / "kept.json").unlink()
+        self.assertEqual(self.get(link)[0], 404)
 
     def test_other_sites_cannot_embed_or_script_what_the_hub_serves(self):
         self.hub("add", str(self.batch), "--no-server")
