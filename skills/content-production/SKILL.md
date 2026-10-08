@@ -95,4 +95,6 @@ Inspect final exports, not just source previews. Verify content, readable timing
 
 Update memory before handing off. Separate production changes from conclusions about results. Record a finding with evidence, scope, confidence and what would change the conclusion. Promote repeated lessons into the project's content skill; one batch's taste stays in project memory. A lesson that would hold for every project goes to the user to report; the installed plugin is not edited. See [hardening](references/hardening.md).
 
+Once a batch's videos are approved or scheduled, shelve its Tesseract projects, so their copies of the same footage stop filling the disk, and unshelve a project before working on it again. See [shelving](references/shelving.md).
+
 For uploads and reusable campaign assets, scheduling, captions, label choices, publishing, and delivery or performance checks, use [content publishing](../content-publishing/SKILL.md). To learn which formats worked and decide what to make next, use [content learning](../content-learning/SKILL.md): it links each publication to its item and version and compares results with each account's normal. An approved creative is not automatically authorized for every account, and views alone do not prove conversion. Preserve already authorized choices rather than asking again.
