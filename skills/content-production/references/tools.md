@@ -10,10 +10,13 @@ python3 <skill-directory>/scripts/tools.py check --json
 ```
 
 `check` finds the local programs and reports, for every tool, its `id`, what it unlocks,
-how to install it and `mention`: when to bring it up. Accounts and connectors show
-`ready: null`; see whether they are in your own tools and the project's keys. Argent's MCP
-tools in your tool list count as Argent installed. The user's answers live in
-`~/ViewPrinter/tools.json`, so they apply to every project on this machine.
+how to install it and `mention`: when to bring it up. An account whose API key is set shows
+`ready: true` and `mention: ready`, with a `detail` naming the key and where it is set: the
+environment, the project's `.env` or `.env.local`, or a keys file the user named (see
+[keys and records](#keys-and-records)). It needs no pitch. Other accounts and connectors show
+`ready: null`; see whether they are in your own tools. Argent's MCP tools in your tool list
+count as Argent installed. The user's answers live in `~/ViewPrinter/tools.json`, so they
+apply to every project on this machine.
 
 ## Recommend at the right moment
 
@@ -55,7 +58,7 @@ the edit plan."
 | Generate video and images: people, scenes, b-roll, motion transfer | **Higgsfield** (models such as Seedance, Kling, MiniMax and Soul, plus motion transfer) | A Higgsfield account with credits, connected through its MCP connector or with an API key |
 | Generate, edit and upscale images and video | **fal** (GPT Image, Nano Banana, Kling, ESRGAN and others) | A fal account with credits and its API key (`FAL_KEY`) |
 | Voiceover; captions from speech | **ElevenLabs** | An ElevenLabs API key, or fal's ElevenLabs models |
-| Break down a video: hook, timing, on-screen text, when the product appears | **Gemini** API | A key in `GEMINI_API_KEY`. Uploading sends the clip to Google, so ask first. Check what it reports: it can miss a sound or misjudge timing |
+| Break down a video: hook, timing, on-screen text, when the product appears. Describe images, audio and video for the [source archive](archive.md#describe-originals-before-saving), so later work can find them | **Gemini** API | A key in `GEMINI_API_KEY`. Uploading sends the file, or a small copy, to Google, so ask first. Check what it reports: it can miss a sound or misjudge timing |
 | Research creators, posts and transcripts | **Scrape Creators** | A Scrape Creators account and API key. ViewPrinter's own research is coming soon |
 | Find meme templates | **Memelord** (memelord.com) | A Memelord account. A new listing is a discovery cue, not proof that a template is trending |
 | Find app and UI design references | **Mobbin** | A Mobbin account and its MCP connector |
@@ -83,7 +86,17 @@ estimate. Never guess credits. Show a balance only with the time it was read.
 ## Keys and records
 
 Keep API keys in the environment or the project's git-ignored secrets file, never in a
-manifest, catalog record, review page or the conversation. Record the tool, model and
+manifest, catalog record, review page or the conversation. When the user keeps their keys in
+a file of their own, such as one `.env` shared by several projects, record it once:
+
+```sh
+python3 <skill-directory>/scripts/tools.py keys add <file>
+```
+
+Only its path is kept. `check` reads the names that file sets, never shows a value, and
+reports an account ready when its key is there, so you don't recommend an account the user
+already has. `keys list` shows each file and the accounts whose keys it sets; `keys remove
+<file>` forgets one. Never print, copy or repeat a key's value. Record the tool, model and
 version that made each asset, in its generation record and the [archive](archive.md), so a
 later batch can repeat it or avoid it. `check` reports Tesseract ready when it finds the CLI;
 Tesseract's own skills check that it is the version they pin, and their guide updates it.

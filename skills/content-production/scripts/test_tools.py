@@ -163,6 +163,54 @@ class ToolsTests(unittest.TestCase):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             tools.main(["remember", "light-reel", "never"])
 
+    def test_an_account_with_its_key_set_is_ready_and_its_value_is_never_shown(self):
+        _, found = self.check(env={"GEMINI_API_KEY": "gm-secret-value", "FAL_KEY": "  "})
+        self.assertEqual((found["gemini"]["ready"], found["gemini"]["mention"], found["gemini"]["install"]),
+                         (True, "ready", ""))
+        self.assertEqual(found["gemini"]["detail"], "GEMINI_API_KEY in the environment")
+        self.assertIsNone(found["fal"]["ready"])  # a blank value sets nothing
+        self.assertNotIn("gm-secret-value", json.dumps(self.check(env={"GEMINI_API_KEY": "gm-secret-value"})[0]))
+
+    def test_a_keys_file_the_user_named_is_read_for_names_only(self):
+        secrets = self.home / "keys/.env"
+        secrets.parent.mkdir()
+        secrets.write_text("# ELEVENLABS_API_KEY=commented-out\nexport FAL_KEY='fal-secret'\n"
+                           "SCRAPE_CREATOR_API_KEY=sc-secret # their spelling\nHIGGSFIELD_API_KEY=\n"
+                           "UNRELATED_TOKEN=other-secret\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(tools.main(["--state", str(self.state), "keys", "add", str(secrets)]), 0)
+        listed = json.loads(output.getvalue())
+        self.assertEqual(listed["keyFiles"], [str(secrets.resolve())])
+        named = next(f for f in listed["files"] if f["named"])
+        self.assertEqual((named["accounts"], named["keys"]), (["fal", "scrape-creators"],
+                                                             ["FAL_KEY", "SCRAPE_CREATOR_API_KEY"]))
+        report, found = self.check()
+        self.assertEqual((found["fal"]["ready"], found["fal"]["detail"]), (True, "FAL_KEY in " + str(secrets.resolve())))
+        self.assertTrue(found["scrape-creators"]["ready"])
+        for account in ("elevenlabs", "higgsfield", "memelord", "mobbin"):
+            self.assertIsNone(found[account]["ready"], account)
+        shown = output.getvalue() + json.dumps(report)
+        for secret in ("fal-secret", "sc-secret", "other-secret", "commented-out", "UNRELATED_TOKEN"):
+            self.assertNotIn(secret, shown)
+        self.assertEqual(tools.key_value(["SCRAPE_CREATORS_API_KEY", "SCRAPE_CREATOR_API_KEY"], {}, [secrets]),
+                         ("SCRAPE_CREATOR_API_KEY", "sc-secret"))
+        self.assertEqual(tools.key_value(["FAL_KEY"], {}, [secrets]), ("FAL_KEY", "fal-secret"))
+        self.assertIsNone(tools.key_value(["HIGGSFIELD_API_KEY"], {}, [secrets]))
+        tools.keys("remove", secrets, self.state)
+        self.assertIsNone(self.check()[1]["fal"]["ready"])
+        with self.assertRaises(ValueError):
+            tools.keys("add", self.home / "missing.env", self.state)
+
+    def test_the_projects_own_env_files_count_from_anywhere_inside_it(self):
+        project = self.home / "project"
+        (project / ".git").mkdir(parents=True)
+        (project / "app/screens").mkdir(parents=True)
+        (project / ".env.local").write_text("HIGGSFIELD_KEY=hf-secret\n", encoding="utf-8")
+        _, found = self.check(cwd=project / "app/screens")
+        self.assertEqual(found["higgsfield"]["detail"], "HIGGSFIELD_KEY in " + str(project.resolve() / ".env.local"))
+        self.assertNotIn("hf-secret", json.dumps(found))
+
     def test_the_reference_page_names_every_tool(self):
         page = (Path(tools.__file__).resolve().parents[1] / "references/tools.md").read_text(encoding="utf-8")
         for tool in tools.TOOLS:
