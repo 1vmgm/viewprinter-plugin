@@ -14,7 +14,7 @@ description: >-
   — do NOT use them to schedule anything anywhere else, or for a platform ViewPrinter does
   not support.
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
 license: MIT
 allowed-tools: >-
   ViewPrinter MCP (platforms, accounts, groups, media, posts), and local Python helpers
