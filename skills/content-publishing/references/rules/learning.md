@@ -79,6 +79,9 @@ One viral post is a reason to vary around it, not proof of a format.
 
 ## Inspect the creative behind the numbers
 
+For the extraction record and production handoff, read content-learning's
+[creative anatomy](../../../content-learning/references/creative-anatomy.md).
+
 Match the published media to its source export before diagnosing why it worked. Post
 captions are not on-screen hooks, and a current preferred generator is not evidence of
 which model made an older winner: use the source requests or mark it unknown.

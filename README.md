@@ -6,7 +6,7 @@ Instagram, Facebook, YouTube and X**, and learn which ones worked.
 ### Install
 
 ```bash
-npx skills add 1vmgm/viewprinter-plugin    # the six skills, from this repo — any agent
+npx skills add 1vmgm/viewprinter-plugin    # the five skills, from this repo — any agent
 npx skills add https://viewprinter.tech    # the same, as one combined skill
 ```
 
@@ -16,7 +16,7 @@ Neither installs the MCP server, because the skills CLI has no MCP handling. For
 plugin in Claude Code or Codex (below).
 
 This plugin connects your assistant to [ViewPrinter](https://viewprinter.tech)
-and carries everything for making social content with it, as six skills that
+and carries everything for making social content with it, as five skills that
 work together. The hosted MCP service provides the tools.
 
 | Skill | Use it for |
@@ -26,7 +26,6 @@ work together. The hosted MCP service provides the tools.
 | `content-review` | One review per project and format, in one local workspace, up to verified scheduling |
 | `content-learning` | Which posts and formats worked, and what to make next |
 | `account-profiles` | Profile copy, images, links and feature eligibility across a group of accounts |
-| `paid-growth` | Testing and scaling winning posts as TikTok ads — early access, still being refined |
 
 Your brand and formats live in a content skill inside your own project, which
 `content-production` helps you set up; account briefs are files in your project
@@ -144,7 +143,6 @@ the same namespaced skills in its selector.
 | Posts | Hold drafts, schedule, amend pending posts, cancel, check each destination |
 | Platforms | Read media requirements, caption limits, and posting options |
 | Learning | Tie each post to the format that made it; double down on, vary or retire formats |
-| Paid growth | Choose which posts get ad spend, cut losers and scale winners (early access) |
 
 In Claude and ChatGPT, `media_upload` shows an upload box for the person's files;
 elsewhere it gives an `upload_page` link, or an agent that holds the file PUTs it to a

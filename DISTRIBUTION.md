@@ -30,10 +30,10 @@ repository edits and builds do not replace it.
 - `.claude-plugin/plugin.json` and `.mcp.json`: Claude metadata.
 - `.claude-plugin/marketplace.json`: makes this repository a Claude Code marketplace.
 - `.agents/plugins/marketplace.json`: marketplace for the root package.
-- `skills/`: the six skills. `content-publishing` is the entry point: its
+- `skills/`: the five skills. `content-publishing` is the entry point: its
   `SKILL.md` routes and `references/rules/` holds one file per mistake worth
-  preventing. `content-production`, `content-review`, `content-learning`,
-  `account-profiles` and `paid-growth` ship beside it and link to each other.
+  preventing. `content-production`, `content-review`, `content-learning` and
+  `account-profiles` ship beside it and link to each other.
 - `clawhub/frontmatter.md`: the ClawHub listing's frontmatter. `node clawhub/build.mjs`
   generates `clawhub/entry.md` and `clawhub/dist/` from it and `skills/`.
 - `skills/<name>/evals/evals.json`: each skill's test prompts; definitions are

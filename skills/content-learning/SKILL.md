@@ -12,7 +12,7 @@ of just more of it.
 
 It judges organic creative performance: reach, retention and engagement relative to
 what the same account normally gets. It does not judge installs, sales or ad returns;
-those need attribution and belong to the paid-growth skill or the user's own analytics.
+those need attribution and belong to a paid-ads skill or the user's own analytics.
 Reading and reporting never authorize posting, editing posts or changing campaigns.
 
 ## 1. Link every publication when it goes out
@@ -75,7 +75,9 @@ counts toward baselines, linked or not; promoted posts never do. A post boosted 
 was linked, or one never linked at all, is only known to be promoted if you say so: pass
 `--promoted <file.json>`, a list of post IDs (or `{postId, accountId}` objects) taken from
 the ad platform's record of which posts it ran. It then summarizes each
-format and suggests a decision. Posts that are pending, failed, missing from the saves or
+format and suggests a decision. Manual and auto-share Instagram trials are currently
+pooled by the helper; separate those cohorts when diagnosing trial settings, as described
+in the method reference. Posts that are pending, failed, missing from the saves or
 not yet measured are listed separately.
 
 Default rules (override with `--rules <file.json>`): a baseline needs 5 peers; a
@@ -84,7 +86,16 @@ median of 1.5× baseline with two thirds above it; "retire" needs 5 publications
 below 0.5× views and 0.8× engagement. Read [method](references/method.md) before
 interpreting the numbers.
 
-## 4. Decide per format
+## 4. Inspect the creative when explaining or extending a result
+
+Before saying why a post worked, recommending its creative recipe, or calling queued
+items similar winners, read [creative anatomy](references/creative-anatomy.md). Inspect
+the exact published exports of strong examples and relevant counterexamples. Save the
+hook, ordered screens, visible proof, narration, emphasis and timing with provenance.
+`learn.py` compares metrics; it does not extract this creative evidence. A numerical
+format suggestion alone is not a recipe for the next batch.
+
+## 5. Decide per format
 
 The report suggests; the user decides. Present the suggestion with its evidence and
 what it would take to change it.
@@ -100,7 +111,7 @@ A single viral post is a reason to vary around it, not proof of a format. A form
 wins on reach but not engagement, or the reverse, is not a clean double down; say which
 job it does.
 
-## 5. Record and carry forward
+## 6. Record and carry forward
 
 - Write a finding event in content memory for each decision: the question, the report
   and saved responses used as evidence, the verdict, confidence, scope, and what would
@@ -111,6 +122,8 @@ job it does.
   testing or vary get re-read when their posts reach the next age bucket.
 - A conclusion that reaches beyond one batch (a platform pattern, a competitor, an
   audience shift) goes into the project's research notes with its date.
+- Link the relevant anatomy from the finding and name what the next production should
+  preserve or test. Cross-format reuse needs its own proof mapping and explicit scope.
 - Promote a lesson into a project skill only when it changes a repeatable decision.
   Project taste stays in project memory; this skill stays general.
 

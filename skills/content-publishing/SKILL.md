@@ -25,7 +25,6 @@ ship with it:
 | [content-review](../content-review/SKILL.md) | The local review workspace: one review per project and format, up to verified scheduling |
 | [content-learning](../content-learning/SKILL.md) | Which posts and formats worked, and what to make next |
 | [account-profiles](../account-profiles/SKILL.md) | Profile copy, images, links and feature eligibility across a group of accounts, including partial groups and shared accounts |
-| [paid-growth](../paid-growth/SKILL.md) | Testing and scaling winning posts as TikTok ads (early access) |
 
 A project keeps one content skill of its own — shared guidance plus one
 reference per format — and content-production helps build and extend it rather

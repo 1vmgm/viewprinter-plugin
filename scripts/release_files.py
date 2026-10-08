@@ -13,7 +13,7 @@ from pathlib import Path, PurePosixPath
 # The plugin's skills. The first is the entry point a single-skill package opens
 # on; the others ship beside it, in their own folders.
 SKILLS = ('content-publishing', 'content-production', 'content-review',
-          'content-learning', 'account-profiles', 'paid-growth')
+          'content-learning', 'account-profiles')
 ENTRY_SKILL = SKILLS[0]
 CLAWHUB_PACKAGE = 'viewprinter-social-manager'
 
@@ -51,6 +51,7 @@ SKILL_FILES = (
     'skills/content-learning/agents/openai.yaml',
     'skills/content-learning/evals/evals.json',
     'skills/content-learning/references/method.md',
+    'skills/content-learning/references/creative-anatomy.md',
     'skills/content-learning/scripts/learn.py',
     'skills/content-learning/scripts/preflight.sh',
     'skills/content-learning/scripts/test_learn.py',
@@ -117,21 +118,6 @@ SKILL_FILES = (
     'skills/content-review/scripts/test_review_hub.py',
     'skills/content-review/scripts/test_review_readiness.py',
     'skills/content-review/scripts/test_review_workspace.py',
-    'skills/paid-growth/SKILL.md',
-    'skills/paid-growth/agents/openai.yaml',
-    'skills/paid-growth/evals/evals.json',
-    'skills/paid-growth/references/connections.md',
-    'skills/paid-growth/references/creative-pipeline.md',
-    'skills/paid-growth/references/decision-rules.md',
-    'skills/paid-growth/references/economics.md',
-    'skills/paid-growth/references/evaluator.md',
-    'skills/paid-growth/references/measurement.md',
-    'skills/paid-growth/references/memory.md',
-    'skills/paid-growth/references/structure.md',
-    'skills/paid-growth/references/tiktok.md',
-    'skills/paid-growth/scripts/arena.py',
-    'skills/paid-growth/scripts/preflight.sh',
-    'skills/paid-growth/scripts/test_arena.py',
 )
 
 PLUGIN_FILES = REPO_FILES + SKILL_FILES
