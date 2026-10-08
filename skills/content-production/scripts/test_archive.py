@@ -464,6 +464,19 @@ class ArchiveTests(unittest.TestCase):
         """ViewPrinter's media_save answer for these (asset, media id) pairs, recorded."""
         return archive.stored(self.root, "brand", {"saved": [self.row(a, m, purpose) for a, m in pairs]})
 
+    def test_tags_take_the_one_shape_viewprinter_accepts(self):
+        # One tag in any other shape makes ViewPrinter refuse a whole media_save call.
+        for given, wanted in (("R&B", "r-and-b"), ("  Lo-Fi  Beats ", "lo-fi-beats"), ("Drum & Bass!", "drum-and-bass"),
+                              ("***", None), ("x" * 50, "x" * 40)):
+            self.assertEqual(archive.tag(given), wanted, given)
+
+    def test_a_summary_becomes_the_description_media_save_gets(self):
+        added = archive.add(self.root, "brand", self.original("still.png", b"still"), {"origin": "generated"})
+        archive.note(self.root, "brand", added["id"], {"summary": "Image: a kitchen counter at night.", "tags": ["R&B"]})
+        listed = archive.upload_list(self.root, "brand")["items"][0]["describe"]
+        self.assertEqual(listed["description"], "Image: a kitchen counter at night.")
+        self.assertIn("r-and-b", listed["tags"])
+
     def test_upload_list_gives_media_upload_items_and_what_to_save_about_each(self):
         still = archive.add(self.root, "brand", self.original("still.png", b"still"), {"origin": "generated"},
                             format_id="street-interview")
