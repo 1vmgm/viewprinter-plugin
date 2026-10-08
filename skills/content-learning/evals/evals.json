@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Which of our video formats is working? Tell me what to make more of.",
-      "context": "ViewPrinter is connected. Project content memory has three formats and publication links for 14 posts across two Instagram accounts; most posts are 4–10 days old; two were promoted.",
+      "context": "ViewPrinter is connected. Project content memory has three formats and publication links for 14 posts across two Instagram accounts; most posts are 4\u201310 days old; two were promoted.",
       "expected_output": "Collects a complete posts_list census for the linked accounts and window, runs the report, compares each post only with its own account's posts of similar age and mode, excludes the promoted posts, and presents per-format suggestions with evidence for the user to decide.",
       "files": [],
       "expectations": [
@@ -49,6 +49,34 @@
         "Treats missing metrics as unmeasured, not zero",
         "Makes no retire decision on unmeasured or young posts",
         "Records the next read in carry-forward"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Our best videos use the product. Which exact demo should we repeat, and which queued clips look promising?",
+      "context": "The census and published media are available. One strong clip scrolls within Home to a summary; another cuts to a dedicated report. An extractor calls both analytics. A current local file is a different edit from the published media. Queue records have format labels but no creative inspection.",
+      "expected_output": "Verifies published media provenance, inspects strong and weaker examples, distinguishes actual screens and editorial cuts, records ordered proof with text and timing, and treats uninspected queue potential as provisional.",
+      "files": [],
+      "expectations": [
+        "Uses the published version rather than silently borrowing the newer timeline",
+        "Corrects the extractor from visible UI and separates embedded summary from a report page",
+        "Records hook, screen order, visible facts, narration and emphasis",
+        "Does not turn format labels into verified queue potential",
+        "Does not infer causal lift or retention events from aggregate counts"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Those circles and connecting lines seem to work. Save what we learned so our other formats can use it.",
+      "context": "Some strong posts show native UI markers; others use added highlight circles and no native pattern. No controlled test isolates the motif. Project memory and a project content skill exist.",
+      "expected_output": "Separates native UI from editorial annotation, user preference from performance association, saves private evidence and a scoped transfer plan in project memory, and routes future production to it.",
+      "files": [],
+      "expectations": [
+        "Verifies marker meaning rather than assuming what circles prove",
+        "Includes a counterexample and labels the visual-appeal claim a hypothesis",
+        "Transfers the story mechanism with a new proof mapping rather than mandating the same route",
+        "Keeps private strategy and identifiers out of the generic plugin",
+        "Does not imply saving guidance automatically schedules a test"
       ]
     }
   ]

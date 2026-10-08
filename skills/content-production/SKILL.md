@@ -46,6 +46,12 @@ Use existing authorization and decisions from the conversation. These phases are
 
 For new formats or reusable project recipes, read [develop project formats](references/formats.md). This general skill helps build and improve the project’s one content-creation skill: shared rules plus many unique format references. Extend that existing structure; a new format can be reviewed before its recipe is documented. Use the [generic creator hook/demo starter](references/formats/hook-demo.md) when appropriate, adapting its structure and capability map to the project. Keep shared review behavior in content review and brand-specific creative decisions in the project.
 
+When making more of a published success, read its project finding and exact creative
+anatomy before defining the new item. If missing, use content-learning's
+[creative inspection](../content-learning/references/creative-anatomy.md). Preserve the
+hook-to-proof mechanism, not merely the feature or format name. State what carries
+forward and what is a new test; a transfer to another format needs a fresh proof mapping.
+
 Use the supplied research, reference content, brand facts and audience. Ask only for missing decisions that materially affect production; continue independent preparation while waiting. Tactical lookups for music, tools or a missing factual claim are allowed. Don't rerun the whole audience/competitor study by default.
 
 Write a short format specification with:
@@ -69,7 +75,7 @@ Inspect available tools and assets: `scripts/tools.py check --json` reports what
 
 Choose the smallest prototype that answers the open question: a layout for typography, a short motion test for physical plausibility, or a complete video for hook-to-proof timing. Check the actual result at the intended viewing size. A good still does not establish that motion or audio works.
 
-Keep generation requests, job IDs, selected assets, source timings and editable projects. Check an existing job before retrying a paid request whose response was lost. Save every original into the project's [source archive](references/archive.md) with `scripts/archive.py add` as it arrives, rejected attempts included, and search it with `archive.py find` before paying for a new generation. When the project keeps originals in ViewPrinter too (ask once; see [the archive](references/archive.md#keep-originals-in-viewprinter-too)), store them there as well and search its source material before generating. Read [audio](references/audio.md) before sourcing or editing sound. When a batch creates or acquires new reusable audio, include its library decision in the handoff: ask whether to add the selected clips unless that action is already authorized.
+Keep generation requests, job IDs, selected assets, source timings and editable projects. Check an existing job before retrying a paid request whose response was lost. Save every original into the project's [source archive](references/archive.md) with `scripts/archive.py add` as it arrives, rejected attempts included, and search it with `archive.py find` before paying for a new generation. When the project keeps originals in ViewPrinter too (ask once; see [the archive](references/archive.md#keep-originals-in-viewprinter-too)), store them there as well, described with `scripts/describe.py` when Gemini is set up, and search its source material before generating. Read [audio](references/audio.md) before sourcing or editing sound. When a batch creates or acquires new reusable audio, include its library decision in the handoff: ask whether to add the selected clips unless that action is already authorized.
 
 ## 3. Produce the batch
 
@@ -91,8 +97,10 @@ Record the user's words plus an actionable interpretation: targets, versions, ch
 
 ## 5. Finish and learn
 
-Inspect final exports, not just source previews. Verify content, readable timing, framing, continuity and product proof; check audio levels and playback boundaries where audio exists. For a trending/looping brief, verify current sound evidence, hook-to-payoff energy and the final end-to-start audition described in [audio](references/audio.md). Missing listening or trend evidence remains an explicit unresolved check; encoding success does not satisfy it. Distinguish measured checks from listening and from user review. Deliver playable/viewable outputs, editable sources when supported, approval status, unresolved limitations and the current gallery.
+Inspect final exports, not just source previews. For video, compare the finished file with its source using the [export-quality check](references/production.md#export-quality-check) before marking it ready. Verify content, readable timing, framing, continuity and product proof; check audio levels and playback boundaries where audio exists. For a trending/looping brief, verify current sound evidence, hook-to-payoff energy and the final end-to-start audition described in [audio](references/audio.md). Missing listening or trend evidence remains an explicit unresolved check; encoding success does not satisfy it. Distinguish measured checks from listening and from user review. Deliver playable/viewable outputs, editable sources when supported, approval status, unresolved limitations and the current gallery.
 
 Update memory before handing off. Separate production changes from conclusions about results. Record a finding with evidence, scope, confidence and what would change the conclusion. Promote repeated lessons into the project's content skill; one batch's taste stays in project memory. A lesson that would hold for every project goes to the user to report; the installed plugin is not edited. See [hardening](references/hardening.md).
+
+Once a batch's videos are approved or scheduled, shelve its Tesseract projects, so their copies of the same footage stop filling the disk, and unshelve a project before working on it again. See [shelving](references/shelving.md).
 
 For uploads and reusable campaign assets, scheduling, captions, label choices, publishing, and delivery or performance checks, use [content publishing](../content-publishing/SKILL.md). To learn which formats worked and decide what to make next, use [content learning](../content-learning/SKILL.md): it links each publication to its item and version and compares results with each account's normal. An approved creative is not automatically authorized for every account, and views alone do not prove conversion. Preserve already authorized choices rather than asking again.

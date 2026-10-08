@@ -103,6 +103,16 @@ python3 <skill-directory>/scripts/review_media.py restore --project <project-roo
 
 Space comes back only where nothing else shares the bytes. A review's copy is usually a clone of a batch folder's file, so releasing frees space once those batch files are cleaned up too. Offer this when work is scheduled or archived, or when the user asks to free space. Report the counts, the gigabytes and any cost of describing the files, and never release without the user's words.
 
+## Populate an existing project
+
+Inventory the project's current review manifests, batch records and publication links before registering older work. Resolve each format's current sheet and superseded rounds explicitly; a newer gallery title or filename is not evidence of a newer creative version. Keep original galleries and receipts immutable, and register contributor-owned import manifests with the existing format IDs.
+
+- Match scheduling evidence by project, format, batch, item and version. Legacy batches may reuse short item IDs; scope receipt snapshots to their contribution and resolve collisions before aggregation. Never match receipts by caption or ID alone.
+- Reconcile stale gallery copy against dated accepted receipts, preserving observation times. A scheduling receipt does not grant creative approval or authorize another placement.
+- Check every main preview, cover, previous version and input reference. Missing files may reflect disk cleanup rather than unfinished production. Recover from an existing stored-media record when the original path or hash establishes the association; verify bytes and any retained hash. Do not regenerate or substitute a different version to fill a missing preview.
+- Keep an unrecoverable current item in the inventory with its missing-preview reason and original decision evidence. Record unavailable supporting references in provenance rather than emitting broken players. Report coverage and unresolved evidence separately.
+- Link the project's content skill in config, attach known recipe references, retain named batches and run the all-current HTTP check before reporting the workspace populated.
+
 ## Archive, restore and migration
 
 Archive/Restore controls and CLI preserve IDs and schedules. Archiving freezes the HTML, manifest and referenced media into a content-addressed local snapshot (copy-on-write where supported; never mutable hardlinks). Originals stay put. Archive may take time for a large format. Do not add it as a routine approval gate.

@@ -799,8 +799,10 @@ def fit(text, limit):
 
 
 def tag(value):
-    """A ViewPrinter tag: lower-case words joined by hyphens, at most 40 characters."""
-    text = re.sub(r"[^a-z0-9]+", "-", str(value).lower()).strip("-")[:40].strip("-")
+    """A ViewPrinter tag: lower-case words joined by hyphens, at most 40 characters. An
+    ampersand reads as "and", so R&B is r-and-b. ViewPrinter refuses a whole media_save call
+    for one tag in any other shape."""
+    text = re.sub(r"[^a-z0-9]+", "-", str(value).lower().replace("&", " and ")).strip("-")[:40].strip("-")
     return text if TAG.fullmatch(text) else None
 
 
@@ -850,8 +852,12 @@ def pending_inputs(asset, state):
 
 
 def upload_description(asset):
-    """A first draft of the asset summary from the record. Say what the file actually shows
-    when you know it: who or what is on screen, the setting and the action."""
+    """The original's summary from describe.py when it has one; else a first draft from the
+    record. Say what the file actually shows when you know it: who or what is on screen, the
+    setting and the action."""
+    summary = asset.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        return fit(summary, 8000)
     origin = str(asset.get("origin") or "original").capitalize()
     text = "{} {}".format(origin, asset.get("kind"))
     if asset.get("format") not in (None, UNFILED):

@@ -22,7 +22,12 @@ as one. Revisit a batch at similar ages (about 24 hours, 72 hours and 7 days).
 ## Compare like with like
 
 - **Trial and regular.** Instagram trial reels go to non-followers first. Compare trials
-  with trials.
+  with trials. For a diagnosis about trial settings, also separate `MANUAL` from
+  `SS_PERFORMANCE` and inspect the creative mix in each. The current report helper
+  pools both as `trial`; supplement it with separate cohorts before attributing a
+  difference to the setting. Keep initial mode distinct from any later sharing state.
+  A field named promotion is not evidence of paid support without its documented
+  meaning and an ad record.
 - **Promoted and organic.** Promoted posts count ad impressions as views. Mark them and
   keep them out.
 - **Platforms.** Never pool platforms. Watch time is not comparable either: Facebook
@@ -34,6 +39,11 @@ as one. Revisit a batch at similar ages (about 24 hours, 72 hours and 7 days).
 - Establish a counter's definition before combining anything with it. Facebook replays
   are reported separately; whether the view counter already includes them has changed
   over time, so check before adding, and label any derived total.
+- Grouping lifetime views by publication date gives the accumulated results of that
+  posting cohort, not views earned on that day. Daily traffic needs dated counter
+  differences over aligned observation windows. To compare an earlier breakout with
+  recent posts, use archived observations at similar ages when available; retain
+  exact capture times and state the remaining creative and calendar-time confounds.
 - A null is "not reported", not zero. A name in `unavailable` means the platform refused
   this time. A destination with no measurement is unmeasured, not a zero-view post.
 - Retention (who kept watching) and interaction timing (when people liked or shared) are
