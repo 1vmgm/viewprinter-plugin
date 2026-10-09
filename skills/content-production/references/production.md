@@ -22,6 +22,23 @@ A compact format record can contain:
 
 The fields organize a decision; they are not a rigid creative template. Static posters, carousels, screen recordings, interviews and animations need different sequence/timing details. When exploring formats, make alternatives meaningfully different. When scaling one, preserve its distinguishing choices. Label an exploratory exception instead of letting it silently replace the baseline.
 
+## Check the brief against the actual result
+
+Before editing, resolve the applicable project/format references and the latest feedback
+into a short set of criteria in the existing batch record. Separate the intended outcome,
+permitted treatments and prohibitions. Permission to overlap an element, for example,
+does not make that overlap the composition's target. A new correction does not silently
+waive the other requirements. Preserve choices the user did not ask to change.
+
+Check a representative composition before propagating it. At handoff, tie each applicable
+criterion to the exact output version/hash and observed evidence; for video, include the
+relevant timestamps. Keep technical decoding, visual hierarchy, destination visibility,
+product proof and listening results distinct. Pass, fail and unverified mean different
+things: technical success cannot resolve a creative failure or a missing overlay check.
+Recheck the requested change and the constraints it could displace. Known failures stay
+changes-requested; missing evidence stays explicit. These are internal production checks,
+not new user approval steps, and they do not prevent showing an honestly labeled draft.
+
 ## Prototype selection
 
 Resolve the largest uncertainty early. Examples: one still for hierarchy; several motion seconds for a difficult interaction; one complete piece for audio and reveal pacing; a few slides for a carousel narrative. Do not call a still an approved video or create a paid large batch before a requested prototype review. If the user authorized an unattended run, select the strongest reference-supported direction, record assumptions and continue within scope.
