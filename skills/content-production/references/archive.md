@@ -192,6 +192,20 @@ or a review's copy keeps it.
 for byte. A review keeps its own copies of what it shows, so releasing an original never
 changes one.
 
+#### Let originals go once ViewPrinter keeps them
+
+A project that wants no second copy on this computer records the user's standing agreement,
+in their words, as `archive.releaseAfterStore` in the project memory's `config.json`. From
+then on `stored`, run inside that project, releases each original ViewPrinter's answer shows
+as source material with the original's sha256, through the same checks as `release`. Only
+that project's archive is affected, and a file kept to post still never stands in. Without
+the setting, `stored` only records, as before.
+
+```json
+"archive": {"project": "<project>", "keepInViewPrinter": true,
+            "releaseAfterStore": "<the user's words agreeing to keep no local copy>"}
+```
+
 Finished reviews can keep their copies in ViewPrinter too. The content review skill's
 `review_media.py save` adds a finished review's files to this archive, tagged `review-media`,
 for this same upload flow; see its [workspace](../../content-review/references/workspace.md#media-kept-in-viewprinter).

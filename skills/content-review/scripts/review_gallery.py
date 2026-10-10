@@ -31,7 +31,17 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif", ".avif"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac"}
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".m4v"}
 KEPT = "kept.json"
+DROPPED = "dropped.json"
 SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+def note_names(note):
+    """Every file name a kept.json or dropped.json covers. One folder holds one set of bytes,
+    which reviews may show under several names; older notes name only one."""
+    if not isinstance(note, dict):
+        return set()
+    names = {note.get("name")} | set(note.get("names") or [])
+    return {name for name in names if isinstance(name, str) and name}
 
 
 def kept_in_viewprinter(path):
@@ -44,10 +54,66 @@ def kept_in_viewprinter(path):
         kept = json.loads((path.parent / KEPT).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if (isinstance(kept, dict) and kept.get("name") == path.name and isinstance(kept.get("mediaId"), str)
+    if (path.name in note_names(kept) and isinstance(kept.get("mediaId"), str)
             and isinstance(kept.get("url"), str) and re.match(r"https?://[^\s/]+/", kept["url"])):
         return kept
     return None
+
+
+def dropped_after_review(path):
+    """Where a review's copy went when the project keeps no copy of it once the work is
+    finished (an earlier version, a cover, a preview of the final, excluded work): the
+    dropped.json left beside it in the project's .media store. None otherwise."""
+    path = Path(path)
+    if path.parent.parent.name != ".media" or not SHA256.fullmatch(path.parent.name):
+        return None
+    try:
+        note = json.loads((path.parent / DROPPED).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return note if path.name in note_names(note) else None
+
+
+def let_go(path):
+    """A review's copy that is gone on purpose: kept in ViewPrinter, or dropped after review."""
+    return bool(kept_in_viewprinter(path) or dropped_after_review(path))
+
+
+_registered = None  # (the manifest being built, every registered copy by batch path)
+
+
+def registered_copy(path):
+    """The workspace's own copy of a file a registered review accepted, in the project's
+    .media store, which outlives the batch file it came from. The copy the review being built
+    accepted comes first, since an archived snapshot can hold older bytes at the same path;
+    without one, only a copy every registration agrees on. None otherwise, so the build fails
+    rather than show the wrong version."""
+    global _registered
+    building, index = _registered or (None, None)
+    if index is None:
+        index = {}
+        try:
+            import review_workspace as ws
+            records = ws.records()
+        except (ImportError, OSError):  # no workspace on this machine: nothing was registered
+            records = []
+        for record in records:
+            if not record.get("projectRoot"):
+                continue
+            store = Path(record["projectRoot"]) / ".viewprinter/content-memory/reviews/.media"
+            active = record.get("lifecycle", "active") == "active"
+            for source in record.get("sources") or []:
+                manifest = str(Path(source["manifest"]).resolve()) if isinstance(source.get("manifest"), str) else None
+                for raw, name in (source.get("frozenMedia") or {}).items():
+                    if isinstance(raw, str) and isinstance(name, str):
+                        index.setdefault(Path(raw).as_posix(), []).append((manifest, active, store / name))
+        _registered = (building, index)
+    found = index.get(Path(path).as_posix(), [])
+    own = ([copy for manifest, active, copy in found if manifest == building and active]
+           or [copy for manifest, _, copy in found if manifest == building])
+    choices = set(own) if own else {copy for _, _, copy in found}
+    return choices.pop() if len(choices) == 1 else None
+
 
 STYLE = """
 :root { color-scheme:dark; --bg:#101014; --panel:#18181e; --ink:#f3f1f8; --muted:#aaa8b7;
@@ -113,6 +179,7 @@ select { font:inherit; color:var(--ink); background:transparent; border:0; max-w
 figure { margin:0; min-width:0; }
 figcaption { display:flex; justify-content:space-between; gap:8px; font-size:11px; padding:8px 4px 10px; color:var(--muted); }
 figcaption a { text-decoration:none; font-weight:600; }
+.dropped { display:grid; place-items:center; min-height:120px; padding:16px; border:1px dashed var(--line); border-radius:6px; color:var(--muted); font:12px/1.4 var(--mono); text-align:center; }
 .kept { display:inline-block; margin-left:6px; padding:1px 5px; border:1px solid #604477; border-radius:3px; background:var(--soft); color:var(--accent); font:10px/1.5 var(--mono); white-space:nowrap; }
 .media { display:flex; align-items:center; justify-content:center; background:#09090f; border-radius:4px; overflow:hidden; }
 .media img,.media video { display:block; width:100%; height:460px; max-height:68vh; min-height:230px; object-fit:contain; }
@@ -397,8 +464,12 @@ def asset_path(raw, base, context, kind):
     if (urlsplit(raw).scheme and not re.match(r"[A-Za-z]:/", raw)) or raw.startswith("//"):
         raise ValueError(f"{context} must be local; asset URLs are not allowed")
     path = (base / raw).resolve()
-    if not path.is_file() and not kept_in_viewprinter(path):  # a copy let go plays from ViewPrinter
-        raise ValueError(f"{context}: asset does not exist: {path}")
+    if not path.is_file() and not let_go(path):  # a copy let go plays from ViewPrinter, or was dropped
+        # A batch file cleaned up after a registered review accepted it: show the workspace's copy.
+        stored = registered_copy(path)
+        if stored is None or not (stored.is_file() or let_go(stored)):
+            raise ValueError(f"{context}: asset does not exist: {path}")
+        path = stored
     allowed = {"video": VIDEO_EXTENSIONS, "image": IMAGE_EXTENSIONS, "audio": AUDIO_EXTENSIONS}[kind]
     if path.suffix.lower() not in allowed:
         raise ValueError(f"{context}: unsupported {kind} extension {path.suffix!r}")
@@ -522,9 +593,13 @@ def prepare_media(source, destination, base, context):
     destination["src"] = asset_path(source.get("src"), base, f"{context}.src", kind)
     if "poster" in source:
         destination["poster"] = asset_path(source["poster"], base, f"{context}.poster", "image")
-    kept = [key for key in ("src", "poster") if key in destination and not destination[key].is_file()]
+    gone = [key for key in ("src", "poster") if key in destination and not destination[key].is_file()]
+    dropped = [key for key in gone if dropped_after_review(destination[key])]
+    kept = [key for key in gone if key not in dropped]
     if kept:
         destination["keptInViewPrinter"] = kept
+    if dropped:
+        destination["droppedAfterReview"] = dropped
 
 
 def local_url(path, output):
@@ -594,8 +669,14 @@ def disclosure(title, body, hint="", cls=""):
 def render_media(media, title, label, output, preload="metadata"):
     src = local_url(media["src"], output)
     kind = media["kind"]
+    dropped = media.get("droppedAfterReview") or []
+    if "src" in dropped:
+        # Deleted on purpose once the work finished; the project kept no copy of it anywhere.
+        return (f'<figure><div class="media"><div class="dropped">Removed after review</div></div>'
+                f'<figcaption><span>{escaped(label)}</span></figcaption></figure>')
     if kind == "video":
-        poster = f' poster="{local_url(media["poster"], output)}"' if media.get("poster") else ""
+        poster = (f' poster="{local_url(media["poster"], output)}"'
+                  if media.get("poster") and "poster" not in dropped else "")
         preview = f'<video controls playsinline preload="{preload}" aria-label="{escaped(title)} — {escaped(label)}"{poster}><source src="{src}">Use the file link to play this video.</video>'
     elif kind == "audio":
         preview = f'<audio controls preload="none" aria-label="{escaped(title)} — {escaped(label)}" src="{src}"></audio>'
@@ -703,7 +784,9 @@ def render_card(item, output):
 
 
 def build_gallery(manifest_path, output_path):
+    global _registered
     manifest_path = Path(manifest_path).resolve()
+    _registered = (str(manifest_path), None)  # registrations change between builds
     output = Path(output_path).resolve()
     if output.suffix.lower() not in (".html", ".htm"):
         raise ValueError("output must have an .html or .htm extension")

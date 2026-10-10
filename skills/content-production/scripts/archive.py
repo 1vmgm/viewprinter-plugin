@@ -1010,6 +1010,23 @@ def media_link(value):
     return None
 
 
+def release_after_store(project, start=None):
+    """The user's standing approval, in their own words, to let an original go as soon as
+    ViewPrinter keeps it as source material: archive.releaseAfterStore in the project memory's
+    config.json, for this archive project only. None when the project keeps local copies."""
+    try:
+        found = project_memory.locate(start)
+        settings = project_memory.read_object(found / "config.json")
+    except project_memory.MemoryError:
+        return None
+    config = settings.get("archive") if isinstance(settings.get("archive"), dict) else {}
+    name = settings.get("projectName")
+    if (config.get("project") or (slugify(name) if name else None)) != project:
+        return None
+    value = config.get("releaseAfterStore")
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
 def stored(root, project, answer):
     """Record the originals ViewPrinter's answers show it holds. A row's sha256 is the
     digest ViewPrinter read from the bytes it holds, so it names the original itself:
@@ -1307,7 +1324,13 @@ def main(argv=None):
         elif arguments.command == "upload-steps":
             result = upload_steps(read_json(arguments.list), read_json(arguments.answers))
         elif arguments.command == "stored":
-            result = stored(root, project, read_json(arguments.listed))
+            answer = read_json(arguments.listed)
+            result = stored(root, project, answer)
+            approval = release_after_store(project)
+            kept = [r["id"] for r in result["recorded"] if r.get("purpose") == "source"]
+            if approval and kept:
+                # The project keeps no second copy: what ViewPrinter now keeps as source material goes.
+                result["released"] = release_originals(root, project, answer, approval, ids=kept)
         elif arguments.command == "release":
             result = release_originals(root, project, read_json(arguments.listed), arguments.approval, arguments.id,
                                        arguments.format, arguments.all_stored, arguments.dry_run)

@@ -15,7 +15,7 @@ import shutil
 import uuid
 
 from review_delivery import iso
-from review_gallery import kept_in_viewprinter
+from review_gallery import dropped_after_review, kept_in_viewprinter, let_go
 import review_workspace as ws
 
 # Bump when generated reviews change, so the hub rebuilds the ones older code made.
@@ -98,7 +98,7 @@ def keep(path, store, sha=None):
     sha = sha or file_hash(path)
     name = sha + '/' + path.name
     dest = store / name
-    if not dest.is_file() and not kept_in_viewprinter(dest):  # a copy let go stays let go
+    if not dest.is_file() and not let_go(dest):  # a copy let go stays let go
         temp = dest.parent / ('.' + uuid.uuid4().hex + path.suffix)
         try:
             ws.clone(path, temp)
@@ -123,9 +123,10 @@ def keep_source(source, data, base, store):
             if p.is_file():
                 kept[p.as_posix()] = keep(p, store, files.get(p.as_posix()))
             elif files.get(p.as_posix()):
-                # The original is gone, but the store kept these bytes, or let them go to ViewPrinter.
+                # The original is gone, but the store kept these bytes, let them go to ViewPrinter,
+                # or dropped them once the work finished.
                 name = files[p.as_posix()] + '/' + p.name
-                if (store / name).is_file() or kept_in_viewprinter(store / name): kept[p.as_posix()] = name
+                if (store / name).is_file() or let_go(store / name): kept[p.as_posix()] = name
     now = version_hashes(data, base, {path: name.split('/')[0] for path, name in kept.items()}, 'src')
     source['frozenMedia'] = kept
     source['replacedMedia'] = sorted(k for k, sha in now.items() if source.get('mediaHashes', {}).get(k, sha) != sha)
@@ -182,6 +183,8 @@ def rebase_media(item, base, kept=None, store=None):
         media[key] = (store / kept[path]).as_posix() if kept and path in kept else path
         if kept and path in kept and not Path(media[key]).is_file() and kept_in_viewprinter(media[key]):
             media['keptInViewPrinter'] = True  # its local copy was let go; it plays from ViewPrinter
+        elif kept and path in kept and not Path(media[key]).is_file() and dropped_after_review(media[key]):
+            media['droppedAfterReview'] = True  # deleted once the work finished; nothing plays
     return result
 
 

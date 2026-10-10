@@ -185,6 +185,132 @@ class ReviewMediaTests(unittest.TestCase):
         self.assertEqual((released["released"], released["skipped"]["changed since it was kept"]), (3, 1))
         self.assertEqual(path.read_bytes(), b"edited by hand")
 
+    def second_review(self):
+        """A finished item with a final, its cover, an earlier version, a raw take and a preview of the final."""
+        second = self.project / "second"
+        second.mkdir()
+        content = {"cut.mp4": b"second cut", "poster.png": b"poster", "rough.mp4": b"rough cut",
+                   "take.mp4": b"raw take", "frames.png": b"frames of the cut"}
+        for name, data in content.items():
+            (second / name).write_bytes(data)
+        item = {"id": "C", "version": 2, "title": "Done", "format": "Demo", "kind": "video", "status": "approved",
+                "stage": "final", "src": "cut.mp4", "poster": "poster.png", "batch": "b2",
+                "previous": {"version": 1, "kind": "video", "src": "rough.mp4"},
+                "inputs": [{"label": "Raw take", "kind": "video", "src": "take.mp4"},
+                           {"label": "Final frames · v2", "kind": "image", "src": "frames.png"}],
+                "captionStatus": "approved", "captions": {"instagram": {"caption": "Hi"}},
+                "distribution": {"targets": [{"organizationId": "o", "accountId": "a", "platform": "instagram"}]}}
+        ws.atomic(second / "review.json", {
+            "title": "Second", "round": 1, "batches": [{"id": "b2", "label": "Two"}],
+            "reviewHub": {"kind": "social-content", "formatId": "second", "owner": "test"},
+            "delivery": {"snapshot": "delivery.json"}, "items": [item]})
+        ws.atomic(second / "delivery.json", {"placements": [{
+            "itemId": "C", "version": 2, "postId": "p2", "accountId": "a", "organizationId": "o", "platform": "instagram",
+            "caption": "Hi", "status": "scheduled", "checkedAt": "2026-10-06T12:00:00Z"}]})
+        build_gallery(second / "review.json", second / "review.html")
+        return second, ws.register(second)
+
+    def test_a_project_drops_what_it_keeps_no_copy_of_and_cleans_its_batch_files(self):
+        second, entry = self.second_review()
+        with self.assertRaisesRegex(media.MediaError, "dropWhenFinished"):
+            media.drop(self.project, "yes")
+        self.assertEqual(media.status(self.project)["dropNow"]["files"], 0)  # without a policy nothing drops
+        config = self.project / ".viewprinter/content-memory/config.json"
+        ws.atomic(config, dict(ws.read(config), reviewMedia={"dropWhenFinished": ["previous", "cover", "preview"]}))
+        status = media.status(self.project)
+        self.assertEqual((status["dropPolicy"], status["dropNow"]["files"]), (["cover", "preview", "previous"], 5))
+        saved = media.save(self.project)  # only what the project keeps goes to ViewPrinter
+        self.assertEqual((saved["added"], saved["skipped"]["dropped"]), (4, 5))
+        archived = {a["sha256"] for a in archive.assets(self.base / "archive" / "brand").values()}
+        self.assertEqual(archived, {hashlib.sha256(b).hexdigest()
+                                    for b in (b"final cut", b"generated still", b"second cut", b"raw take")})
+        with self.assertRaisesRegex(media.MediaError, "approval"):
+            media.drop(self.project)
+        self.assertEqual(media.drop(self.project, dry_run=True)["wouldDrop"], 5)
+        dropped = media.drop(self.project, "we dont keep covers or old versions")
+        self.assertEqual((dropped["dropped"], dropped["skipped"]), (5, {}))
+        self.assertEqual(sorted(dropped["reviewsUpdated"]), sorted([self.entry, entry]))
+        store = self.project / ".viewprinter/content-memory/reviews/.media"
+        poster = store / hashlib.sha256(b"poster").hexdigest() / "poster.png"
+        self.assertFalse(poster.exists())
+        note = json.loads((poster.parent / "dropped.json").read_text(encoding="utf-8"))
+        self.assertEqual((note["reason"], note["approval"]), ("cover", "we dont keep covers or old versions"))
+        self.assertIn("Removed after review", Path(ws.get(entry)["gallery"]).read_text(encoding="utf-8"))
+        self.assertEqual(media.status(self.project)["dropped"]["files"], 5)
+        restored = media.restore(self.project, item="C", version=2)
+        self.assertEqual(restored["skipped"]["dropped after review; no copy kept"], 3)
+
+        with self.assertRaisesRegex(media.MediaError, "approval"):
+            media.clean_sources(self.project)
+        self.assertEqual(media.clean_sources(self.project, dry_run=True)["wouldDelete"], 9)
+        cleaned = media.clean_sources(self.project, "yes, delete the batch copies")
+        self.assertEqual(cleaned["deleted"], 9)
+        for name in ("cut.mp4", "poster.png", "rough.mp4", "take.mp4", "frames.png"):
+            self.assertFalse((second / name).exists(), name)
+        for name in ("final.mp4", "cover.png", "draft.mp4", "still.png"):
+            self.assertFalse((self.batch / name).exists(), name)
+        for name in ("music.wav", "other.png"):  # work still in review keeps its files
+            self.assertTrue((self.batch / name).is_file(), name)
+        # Both reviews still build from their source manifests once the batch files are gone.
+        build_gallery(second / "review.json", second / "review.html")
+        built = (second / "review.html").read_text(encoding="utf-8")
+        self.assertIn("Removed after review", built)
+        self.assertIn(hashlib.sha256(b"second cut").hexdigest(), built)  # the final plays from the workspace's copy
+        build_gallery(self.batch / "review.json", self.batch / "review.html")
+
+    def test_a_rebuild_without_its_batch_file_shows_the_copy_its_own_review_accepted(self):
+        import review_gallery
+        manifest, raw = self.batch / "review.json", (self.batch / "final.mp4").as_posix()
+        store = self.project / ".viewprinter/content-memory/reviews/.media"
+        older = hashlib.sha256(b"older cut").hexdigest()
+        (store / older).mkdir()
+        (store / older / "final.mp4").write_bytes(b"older cut")
+        # An archived snapshot of an earlier round accepted other bytes at the same batch path,
+        # listed before the live review.
+        ws.atomic(ws.registry() / "0-snapshot.json", {
+            "id": "snapshot", "lifecycle": "archived", "projectRoot": str(self.project),
+            "sources": [{"manifest": str(manifest), "frozenMedia": {raw: older + "/final.mp4"}}]})
+        (self.batch / "final.mp4").unlink()
+        build_gallery(manifest, self.batch / "review.html")
+        page = (self.batch / "review.html").read_text(encoding="utf-8")
+        self.assertIn(self.sha("final.mp4"), page)
+        self.assertNotIn(older, page)
+        review_gallery._registered = None  # built for no registered review, the two copies disagree: no guess
+        self.assertIsNone(review_gallery.registered_copy(raw))
+
+    def test_one_set_of_bytes_under_two_names_is_let_go_and_restored_under_both(self):
+        third = self.project / "third"
+        third.mkdir()
+        for name in ("a.mp4", "b.mp4"):
+            (third / name).write_bytes(b"same cut")
+        target = {"targets": [{"organizationId": "o", "accountId": "a", "platform": "instagram"}]}
+        items = [{"id": ident, "version": 1, "title": ident, "format": "Demo", "kind": "video", "status": "approved",
+                  "stage": "final", "src": name, "batch": "b3", "captionStatus": "approved",
+                  "captions": {"instagram": {"caption": "Hi"}}, "distribution": target}
+                 for ident, name in (("D", "a.mp4"), ("E", "b.mp4"))]
+        ws.atomic(third / "review.json", {
+            "title": "Third", "round": 1, "batches": [{"id": "b3", "label": "Three"}],
+            "reviewHub": {"kind": "social-content", "formatId": "third", "owner": "test"},
+            "delivery": {"snapshot": "delivery.json"}, "items": items})
+        ws.atomic(third / "delivery.json", {"placements": [{
+            "itemId": ident, "version": 1, "postId": "p-" + ident, "accountId": "a", "organizationId": "o",
+            "platform": "instagram", "caption": "Hi", "status": "scheduled", "checkedAt": "2026-10-06T12:00:00Z"}
+            for ident in ("D", "E")]})
+        build_gallery(third / "review.json", third / "review.html")
+        ws.register(third)
+        media.save(self.project)
+        media.release(self.project, self.listing(), "yes")
+        sha = hashlib.sha256(b"same cut").hexdigest()
+        folder = self.project / ".viewprinter/content-memory/reviews/.media" / sha
+        note = json.loads((folder / "kept.json").read_text(encoding="utf-8"))
+        self.assertEqual(note["names"], ["a.mp4", "b.mp4"])
+        self.assertFalse((folder / "a.mp4").exists() or (folder / "b.mp4").exists())
+        for name in ("a.mp4", "b.mp4"):
+            (third / name).unlink()  # cleaned up: both names still resolve to ViewPrinter's copy
+        build_gallery(third / "review.json", third / "review.html")
+        media.restore(self.project, sha=sha)
+        self.assertEqual([(folder / n).read_bytes() for n in ("a.mp4", "b.mp4")], [b"same cut", b"same cut"])
+
     def test_command_line(self):
         result = subprocess.run([sys.executable, str(Path(media.__file__)), "status", "--project", str(self.project)],
                                 capture_output=True, text=True, timeout=60, encoding="utf-8")

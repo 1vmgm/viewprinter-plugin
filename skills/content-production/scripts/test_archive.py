@@ -703,6 +703,31 @@ class ArchiveTests(unittest.TestCase):
             archive.note(self.root, "brand", take["id"], {"status": "selected"})
         self.assertEqual(archive.show(self.root, "brand", take["id"])["status"], "selected")
 
+    def test_a_project_that_keeps_no_second_copy_lets_originals_go_once_stored(self):
+        take = archive.add(self.root, "brand", self.original(), self.provenance())
+        posted = archive.add(self.root, "brand", self.original("b.mp4", b"take two"), self.provenance())
+        base = ("--root", self.root, "--project", "brand")
+        listing = json.dumps({"media": [self.row(take, "m-1"), self.row(posted, "m-2", "library")]})
+        memory.initialize(self.work, "Brand")
+        config = self.work / ".viewprinter/content-memory/config.json"
+        settings = json.loads(config.read_text(encoding="utf-8"))
+        approval = "originals can go once ViewPrinter has them"
+        settings["archive"] = {"project": "other", "releaseAfterStore": approval}
+        config.write_text(json.dumps(settings), encoding="utf-8")
+        recorded = json.loads(self.cli("stored", *base, "--listed", "-", stdin=listing).stdout)
+        self.assertNotIn("released", recorded)  # another project's approval never applies here
+        self.assertTrue(Path(take["file"]).exists())
+        settings["archive"]["project"] = "brand"
+        config.write_text(json.dumps(settings), encoding="utf-8")
+        listing = json.dumps({"media": [dict(self.row(take, "m-1"), url="https://media.example/m-1"),
+                                        self.row(posted, "m-2", "library")]})
+        answer = self.cli("stored", *base, "--listed", "-", stdin=listing)
+        released = json.loads(answer.stdout)["released"]
+        self.assertEqual(released["released"], [take["id"]], answer.stderr)  # a file to post never stands in
+        self.assertFalse(Path(take["file"]).exists())
+        self.assertTrue(Path(posted["file"]).exists())
+        self.assertEqual(archive.show(self.root, "brand", take["id"])["releasedLocally"]["approval"], approval)
+
     def test_command_line_upload_steps_stored_release_and_restore(self):
         take = archive.add(self.root, "brand", self.original(), self.provenance(), format_id="street-interview")
         base = ("--root", self.root, "--project", "brand")

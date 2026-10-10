@@ -103,6 +103,27 @@ python3 <skill-directory>/scripts/review_media.py restore --project <project-roo
 
 Space comes back only where nothing else shares the bytes. A review's copy is usually a clone of a batch folder's file, so releasing frees space once those batch files are cleaned up too. Offer this when work is scheduled or archived, or when the user asks to free space. Report the counts, the gigabytes and any cost of describing the files, and never release without the user's words.
 
+### What a project keeps no copy of
+
+Some finished files need no copy anywhere: an earlier version the user replaced, a cover, an input that only shows the final again (frames, a filmstrip, a contact sheet, repeated plays), or work the user excluded. A project that agrees lists them in its project memory's `config.json`, and `save` then skips them, so ViewPrinter keeps only the finals and the raw material:
+
+```json
+"reviewMedia": {"dropWhenFinished": ["previous", "cover", "preview", "excluded"]}
+```
+
+```sh
+python3 <skill-directory>/scripts/review_media.py drop --project <project-root> --dry-run
+python3 <skill-directory>/scripts/review_media.py drop --project <project-root> --approval "<the user's words>"
+python3 <skill-directory>/scripts/review_media.py clean-sources --project <project-root> --dry-run
+python3 <skill-directory>/scripts/review_media.py clean-sources --project <project-root> --approval "<the user's words>"
+```
+
+- `drop` deletes a finished file only when every review using it is finished and every use is one the project drops. A `dropped.json` stays in its place, the review shows **Removed after review**, and nothing can bring it back. Without the setting it refuses.
+- `clean-sources` deletes the batch-folder files of finished work once the workspace holds them: its own copy, ViewPrinter's, or a drop. Only files inside the project with exactly the accepted bytes go; work still in review keeps its files.
+- A source manifest still builds after its batch files are gone: `review_gallery.py` shows the copy the registered review accepted. Ask the user before the first `drop` and `clean-sources` in a project; both take their words.
+
+Together with the archive's [release after store](../../content-production/references/archive.md#let-originals-go-once-viewprinter-keeps-them), this keeps finished work in one place: raw material and finals in ViewPrinter, and only work in progress on this computer.
+
 ## Populate an existing project
 
 Inventory the project's current review manifests, batch records and publication links before registering older work. Resolve each format's current sheet and superseded rounds explicitly; a newer gallery title or filename is not evidence of a newer creative version. Keep original galleries and receipts immutable, and register contributor-owned import manifests with the existing format IDs.
