@@ -21,7 +21,7 @@ ship with it:
 
 | Skill | Use it for |
 |---|---|
-| [content-production](../content-production/SKILL.md) | Developing formats and the project's own content skill, making batches, recurring influencers, the source archive |
+| [content-production](../content-production/SKILL.md) | Developing formats and the project's own content skill, making batches, recurring influencers, the source archive, and CC sound or music when the work asks for it |
 | [content-review](../content-review/SKILL.md) | The local review workspace: one review per project and format, up to verified scheduling |
 | [content-learning](../content-learning/SKILL.md) | Which posts and formats worked, and what to make next |
 | [account-profiles](../account-profiles/SKILL.md) | Profile copy, images, links and feature eligibility across a group of accounts, including partial groups and shared accounts |
