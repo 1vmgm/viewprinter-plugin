@@ -1,5 +1,27 @@
 # Compatibility and verification
 
+## October 17, 2026 — version 2.1.0, five skills
+
+Content production adds Remotion for 3D device shots, HyperFrames for HTML motion
+graphics, slideshows and templated batches, and Openverse for CC sound effects, ambience
+and music beds. The review hub shows PDF items, releases hidden tabs' connections, caches
+unchanged summaries and scopes media cleanup to one batch. Publishing adds priority
+cascades under posting caps and exclusive account transfers. This table records what was
+checked for 2.1.0.
+
+| Check | Result |
+| --- | --- |
+| Skill set | Validator passes with five skills, 11 publishing rules and 67 evaluation case definitions |
+| Skill helpers | 302 unit tests pass on Python 3.9.6, the version macOS ships. CI runs them on Linux, macOS and Windows with Python 3.9 and 3.12, and all pass; the first Windows run caught stale cached reads after a same-size rewrite, fixed before release |
+| Release regression suite | 13 tests pass |
+| Preflights | All five pass |
+| Layout, portability, privacy | All three lints pass |
+| Claude Code 2.1.301 | `claude plugin validate` passes, with the expected warning that the contributor CLAUDE.md at the root is not plugin context |
+| Openverse | Searches run against the live API: effects on Freesound, the license and `license_type` filters, the rate-limit headers, and an archived download found again by its Openverse id. `category=music` holds only whole CC BY-family songs, so the guidance searches `license=by` at `length=medium`, or CC0 loops on Freesound |
+| HyperFrames, Remotion | Commands, flags and requirements checked against each project's published CLI and documentation. Neither was installed or rendered here |
+| Claude Code, Codex, `npx skills add` installs | Not repeated for 2.1.0. The install paths are unchanged from 2.0.0, below |
+| Windows | Every skill's tests pass in CI. Not used on a Windows desktop |
+
 ## October 7, 2026 — version 2.0.1, five skills
 
 `paid-growth` is removed: paid ads are managed outside ViewPrinter. The plugin carries
