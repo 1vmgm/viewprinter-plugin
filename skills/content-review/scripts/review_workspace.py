@@ -1,5 +1,7 @@
 """Typed local review registry, reversible lifecycle and manifest summaries."""
 from contextlib import contextmanager
+from functools import lru_cache
+import copy
 from datetime import datetime, timezone
 import hashlib
 import html
@@ -323,16 +325,40 @@ def lifecycle(entry, action, revision=None, reason='', actor='local-user', batch
     return r
 
 
-_cache={}
+# On Windows st_ctime is the creation time, so a same-size rewrite can leave every stat field
+# as it was; the stamp also carries a digest of the bytes there.
+STAT_MISSES_REWRITES=os.name=='nt'
+
+
+def file_stamp(path):
+    """Detect replacement, in-place edits and deletion, including same-size writes."""
+    if not path:return None
+    try:
+        info=Path(path).stat()
+        stamp=(info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
+        if STAT_MISSES_REWRITES:
+            stamp+=(hashlib.blake2b(Path(path).read_bytes(),digest_size=16).hexdigest(),)
+        return stamp
+    except OSError:
+        return None
+
+
+@lru_cache(maxsize=512)
+def _read_version(path, stamp):
+    return read(path) if stamp is not None else None
+
+
 def cached_read(path):
     if not path:return None
-    p=Path(path)
-    try:key=(str(p),p.stat().st_mtime_ns,p.stat().st_size)
-    except OSError:return None
-    if key not in _cache:
-        _cache.clear() if len(_cache)>256 else None
-        _cache[key]=read(p)
-    return _cache[key]
+    return _read_version(str(path),file_stamp(path))
+
+
+@lru_cache(maxsize=256)
+def _summaries(manifest, manifest_stamp, receipt, receipt_stamp):
+    from review_readiness import summarize as review_summary
+    data=_read_version(manifest,manifest_stamp) or {}
+    rows=(_read_version(receipt,receipt_stamp) or {}).get('placements',[])
+    return summarize(data,rows),review_summary(data,rows)
 
 def describe(record):
     record=dict(record)
@@ -363,11 +389,12 @@ def describe(record):
         'batches':[],'downloads':[],'sourceErrors':source_errors,'guidance':guidance(record),'influencer':influencer_profile(record)}
     entry['sources']=[{k:s.get(k) for k in ('id','manifest','owner','revision','batchIds')} for s in record.get('sources',[])]
     if record['kind'] in CONTENT_KINDS:
-        config=data.get('delivery') or {};snap=cached_read(base/config.get('snapshot','delivery.json')) or {'placements':[]}
+        config=data.get('delivery') or {}
         if config.get('snapshot') and (base/config['snapshot']).exists():entry['updated']=max(entry['updated'],(base/config['snapshot']).stat().st_mtime)
-        progress=summarize(data,snap.get('placements',[]));entry['progress']=progress
-        from review_readiness import summarize as review_summary
-        entry['readiness']=review_summary(data,snap.get('placements',[]))
+        receipt=str(base/config.get('snapshot','delivery.json'))
+        progress,readiness=copy.deepcopy(_summaries(str(mf),file_stamp(mf),receipt,file_stamp(receipt)))
+        entry['progress']=progress
+        entry['readiness']=readiness
         from review_gallery import REVIEW_STATUSES,PENDING_STATUSES
         statuses=progress['creative'];entry['summary']={'items':progress['items'],'review':sum(n for s,n in statuses.items() if s in REVIEW_STATUSES),'progress':sum(n for s,n in statuses.items() if s in PENDING_STATUSES),'approved':statuses.get('approved',0)}
         entry['batches']=[{'id':b['id'],'label':b['label'],'lifecycle':b.get('lifecycle','active'),'count':sum(i.get('batch')==b['id'] for i in data.get('items',[]))} for b in data.get('batches',[])]
@@ -384,7 +411,6 @@ def describe(record):
         entry['platforms']=sorted({t.get('platform') for t in accounts if t.get('platform')})
         entry['search']=' '.join([label,*[str(i.get(k,'')) for i in active for k in ('id','title','format')],*[b['label'] for b in entry['batches']],*[str(t.get('accountName') or t.get('accountId')) for t in accounts]]).lower()
     elif record['kind']=='account-group':
-        import copy
         data=copy.deepcopy(data)
         for account in data.get('accounts',[]):
             if account.get('identityRef'):

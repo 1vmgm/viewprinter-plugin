@@ -13,6 +13,10 @@ comparison is against the same account's median, never a cross-account number.
 
 ## Compare at the same age
 
+For cached counters, calculate age at `capturedAt`, not the time of the report. A stale
+observation can fall in an earlier age bucket even after the post itself passes a
+comparison threshold. Preserve both timestamps when using results to prioritize a queue.
+
 Lifetime counters keep growing, so a two-day-old post always looks worse than a
 two-week-old one. The report compares only within age buckets: under 1 day, 1–3 days,
 3–7 days, 7–30 days, and older. Nothing is decided on posts under 72 hours old. A
@@ -51,6 +55,45 @@ as one. Revisit a batch at similar ages (about 24 hours, 72 hours and 7 days).
 - Average watch time divided by length is not a completion rate.
 - Engagement per view counts only the counters the platform reports. Instagram reports
   saves; Facebook does not. Compare engagement within a platform.
+
+## Reading comment intent
+
+A keyword mention is a candidate, not a classified request. Read its meaning before
+counting it: “send me the app” expresses interest; “I do not need an app” does not.
+Separate requests, product questions, lived situations, objections and unrelated debate;
+exclude the connected account’s replies using author identity as well as `authorKind`.
+State whether comments were paged to completion or sampled, preserve their observation
+time, and distinguish comment count from unique requesters when identities are available.
+Keep requests and follows as interest signals; paid conversion needs attributable events.
+Compare the CTA and its placement before attributing a request-rate difference to a story.
+
+## Research query scope
+
+When using `research_ask`, pass the intended `fit`, `medium`, `language`, `since`
+and `include_ads` on result reads as well as the initial question: a thread-only read
+can lose the initial filters, and an omitted `include_ads` has returned paid rows. Pass
+`include_ads: false` explicitly for an organic sample and inspect the returned rows. The
+`limit` maximum is 50. Keep the request and response when the rows don't match the filters.
+A terminal timeout may return no posts even after completed searches; an indexed read
+is available, but label it as indexed evidence. Retry a failed question more narrowly
+when useful; do not restart a working paid search or hide a failed run.
+
+## Organic acquisition timing
+
+When the user asks how organic views relate to downloads or trial starts, use
+those analytics alongside dated view observations. Missing per-post attribution
+is a reason to label the result as a timing association, not to substitute a
+paid-ad ranking. Keep channel-tagged conversions, unassigned organic conversions
+and all-source totals distinct; never allocate a shared channel total to each
+post in a breakout cluster.
+
+Use actual event dates for a question about when trials started. Install-cohort
+trial totals answer a different question. Align source timezones, preserve nulls,
+and check whether link tracking began during the analysis window before treating
+earlier missing source rows as a baseline. If only sparse snapshots are available,
+lead with observed counter-change windows. Describe interpolation and coverage
+before showing daily correlations; publication dates and lifetime counters do not
+recover daily exposure.
 
 ## Small samples and outliers
 

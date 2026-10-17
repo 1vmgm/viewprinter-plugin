@@ -311,6 +311,24 @@ class ReviewMediaTests(unittest.TestCase):
         media.restore(self.project, sha=sha)
         self.assertEqual([(folder / n).read_bytes() for n in ("a.mp4", "b.mp4")], [b"same cut", b"same cut"])
 
+    def test_batch_scope_preserves_other_finished_and_shared_active_files(self):
+        second, _ = self.second_review()
+        config = self.project / ".viewprinter/content-memory/config.json"
+        ws.atomic(config, dict(ws.read(config), reviewMedia={"dropWhenFinished": ["previous", "cover", "preview", "excluded"]}))
+        self.assertEqual(media.save(self.project, dry_run=True, batch="missing")["wouldAdd"], 0)
+        self.assertEqual(media.save(self.project, batch="b2")["added"], 2)
+        listed = self.listing()
+        self.assertEqual(media.release(self.project, listed, "yes", batch="b1")["released"], 0)
+        self.assertEqual(media.release(self.project, listed, "yes", batch="b2")["released"], 2)
+        self.assertTrue(self.kept("final.mp4").is_file())
+        self.assertTrue(self.kept("music.wav").is_file())
+        self.assertEqual(media.drop(self.project, "yes", batch="b2")["dropped"], 3)
+        self.assertTrue(self.kept("cover.png").is_file())
+        self.assertEqual(media.clean_sources(self.project, "yes", batch="b2")["deleted"], 5)
+        self.assertTrue((self.batch / "final.mp4").is_file())
+        self.assertTrue((self.batch / "music.wav").is_file())
+        self.assertFalse((second / "cut.mp4").exists())
+
     def test_command_line(self):
         result = subprocess.run([sys.executable, str(Path(media.__file__)), "status", "--project", str(self.project)],
                                 capture_output=True, text=True, timeout=60, encoding="utf-8")

@@ -39,8 +39,8 @@ apply to every project on this machine.
   `tools.py remember <id> reset`.
 
 Recommend the tool for the task, not every tool on the list: video editing means Tesseract
-unless the user or project memory names another editor, and an account the user already
-has in your tools needs no pitch.
+unless the user or project memory names another editor, a 3D device shot means Remotion,
+and an account the user already has in your tools needs no pitch.
 
 Keep it light: the benefit first, one short paragraph, no urgency, never blocking other
 work, and never installing anything without the user's OK. For example: "This edit needs
@@ -53,13 +53,16 @@ the edit plan."
 | Task | Tool | Setup |
 |---|---|---|
 | Edit footage into finished videos, with motion graphics and sound design | **Tesseract** by Mirage: the `tsrct` CLI and its `tesseract-video` and `tesseract-motion` skills | `npx skills add mirage-hq/Tesseract` (needs Node.js), or Tesseract's ChatGPT/Codex plugin. Its installation guide then sets up the CLI version the skills pin, on macOS, 64-bit Windows or Linux x86_64. Not `brew install tesseract`: that installs an unrelated text-recognition (OCR) program |
+| 3D device shots, openers and motion graphics written as code: a lit 3D device with the real recording as its screen, UI layers lifted in depth, a camera move that lands on the edit's first frame | **Remotion** with `@remotion/three` (three.js), and Remotion's own agent skills | `npx skills add remotion-dev/skills` (needs Node.js); each video project installs `remotion` and `@remotion/three` with npm. See [3D shots](#3d-shots). Free for individuals and companies of up to 3 people; larger companies need a company licence from remotion.pro |
 | Convert, trim and inspect media; pull covers and frames; check an audio loop | **ffmpeg** and ffprobe | macOS `brew install ffmpeg`; Windows `winget install Gyan.FFmpeg`; Linux the package manager, such as `sudo apt install ffmpeg` |
 | Record app demos and screen captures | **Argent**: drives an iOS Simulator, an Android emulator or a Chromium app, records the screen and replays recorded flows | `npx @swmansion/argent@latest init -y`. iOS needs Xcode; Android needs an emulator from Android Studio. Frame a recording with a [phone mount](phone-mounting.md) |
 | Generate video and images: people, scenes, b-roll, motion transfer | **Higgsfield** (models such as Seedance, Kling, MiniMax and Soul, plus motion transfer) | A Higgsfield account with credits, connected through its MCP connector or with an API key |
 | Generate, edit and upscale images and video | **fal** (GPT Image, Nano Banana, Kling, ESRGAN and others) | A fal account with credits and its API key (`FAL_KEY`) |
 | Voiceover; captions from speech | **ElevenLabs** | An ElevenLabs API key, or fal's ElevenLabs models |
 | Break down a video: hook, timing, on-screen text, when the product appears. Describe images, audio and video for the [source archive](archive.md#describe-originals-before-saving), so later work can find them | **Gemini** API | A key in `GEMINI_API_KEY`. Uploading sends the file, or a small copy, to Google, so ask first. Check what it reports: it can miss a sound or misjudge timing |
-| Research creators, posts and transcripts | **Scrape Creators** | A Scrape Creators account and API key. ViewPrinter's own research is coming soon |
+| Find relevant social posts and examples | **ViewPrinter** `research_ask`, when exposed by the connected server | Use the live schema; see [research requests](#research-requests) |
+| Research social videos and Meta ads, including video inspection | **Lightreel** connector | Connected account with research credits; save the conversation ID and poll the existing request |
+| Retrieve creator posts and transcripts | **Scrape Creators** | A Scrape Creators account and API key |
 | Find meme templates | **Memelord** (memelord.com) | A Memelord account. A new listing is a discovery cue, not proof that a template is trending |
 | Find app and UI design references | **Mobbin** | A Mobbin account and its MCP connector |
 | Check that review media plays | **Chrome**, Chromium or Microsoft Edge | Any one, installed as usual |
@@ -68,6 +71,66 @@ the edit plan."
 Providers change their models often; read a provider's current list before planning
 around one. A tool isn't a substitute for another: don't switch tools or reach for a hosted
 service without asking, and don't describe an edit, render or check that didn't happen.
+
+A provider's MCP connector and direct API can expose different model IDs, availability
+and billing. Before paid submission, apply any saved route or wallet preference and
+verify the requested model and mode on that route. An available connector does not
+override an API-first preference; record why a fallback is needed. A model-not-found
+response applies to the endpoint tried, not to the whole
+provider: check the chosen route's live catalog before declaring it unavailable or
+proposing a different provider. Keep the user's provider choice and recover any accepted
+job before submitting a replacement. Record the route, workspace or wallet, and quoted
+units; don't transfer subscription discounts or credit balances to API-dollar estimates.
+If a preflight rounds credits differently from its exact value, preserve both as an
+estimate and reconcile against the completed job or transaction before reporting spend.
+
+## 3D shots
+
+Tesseract tilts flat layers in 3D but has no camera, lights or device body. For a real 3D
+moment, such as a device floating in a lit studio, UI lifting off the screen or a fly-in, build
+it in Remotion and import the render into the Tesseract edit as a clip:
+
+- Keep the screen real: the device's screen is the actual recording, mapped as a texture
+  with tone mapping off so the UI colours stay exact. Never generate or repaint UI.
+- Land on the edit: the last frame matches the next shot's framing exactly, so the cut to the
+  flat walkthrough is invisible. Render opaque on the edit's background, or ProRes 4444 with
+  alpha when the edit composites it.
+- On Remotion 4, render with `--gl=angle` (`--gl=swangle` on a machine without a GPU); its
+  default renderer draws three.js scenes blank.
+  Check stills with `npx remotion still --frame=N` before a full render.
+- Mind the platform's device rules. Apple's marketing guidelines forbid 3D renders and
+  simulations of Apple products and tilting, animating, or graphics that appear to come out
+  of their screens, and ask for Apple's own bezels used as is. A 3D shot therefore uses a
+  generic device with no maker's details, or the user decides that risk knowingly.
+
+## Research requests
+
+When the user asks for outside research, check the connected tools' live schemas.
+For ViewPrinter `research_ask`, get the product ID from `products_list`, submit the
+question once, save the returned thread ID, and poll that ID while it is working.
+Include ads explicitly when researching paid creative; the default excludes posts
+marked as ads. Use an explicit date window for historical examples. A broad format
+study may need `fit: all` so product relevance does not hide cross-category examples.
+
+Verify platform coverage from returned post URLs. A request for Instagram can return
+TikTok examples; label them as adjacent evidence and obtain Instagram sources before
+claiming Instagram research is complete. Preserve the provider’s metric names: video
+views, plays, reach and impressions are not interchangeable. Retain retrieval dates
+and distinguish sampled keyword comments from totals or conversion evidence.
+
+Treat generated hooks, structures and explanations as leads to inspect, not measured
+causes of performance. Views and outperformance do not establish conversion; an
+unflagged post does not establish the absence of all paid support. Inspect the media
+before publishing a timed breakdown, check times against its measured runtime, and
+keep missing conversion data explicit. A schema description and populated response
+fields can disagree: record the discrepancy rather than silently treating either as
+verified creative evidence.
+
+For technical video breakdowns, distinguish visible controls and demonstrated steps from
+model-inferred explanations. Cross-check important model names, settings and timings
+against legible source frames or the chosen route’s current schema. A plausible video
+analysis is not proof of an exact workflow; label proposed prompts as untested until
+they work on the intended footage.
 
 ## Keep the user informed on spending
 

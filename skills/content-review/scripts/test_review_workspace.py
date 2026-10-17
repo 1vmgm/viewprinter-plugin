@@ -70,6 +70,45 @@ class WorkspaceTests(unittest.TestCase):
             'items':[{'id':x,'version':1,'title':x,'format':'ugc','kind':'image','status':'needs-review','src':'preview.png','batch':b} for x,b in [('A','new'),('B','old')]]}
         self.mf=self.folder/'review.json';self.mf.write_text(json.dumps(self.data), encoding='utf-8');self.gallery=self.folder/'review.html';build_gallery(self.mf,self.gallery)
     def register(self):return ws.register(self.gallery,name='example--product-demo')
+    def test_summary_cache_invalidates_for_edits_replacements_and_deletion(self):
+        entry=self.register();record=ws.get(entry)
+        mf=Path(record['manifest']);receipt=mf.parent/'delivery.json'
+        ws._summaries.cache_clear()
+        with patch.object(ws,'summarize',wraps=ws.summarize) as summarize_spy:
+            first=ws.describe(record)
+            ws.describe(record)
+            self.assertEqual(summarize_spy.call_count,1)
+            # A caller changing its response cannot poison the shared cache.
+            first['progress']['items']=999
+            self.assertEqual(ws.describe(record)['progress']['items'],2)
+            data=ws.read(mf);data['items'][0]['status']='approved';ws.atomic(mf,data)
+            self.assertEqual(ws.describe(record)['summary']['approved'],1)
+            self.assertEqual(summarize_spy.call_count,2)
+            ws.atomic(receipt,{'placements':[{'itemId':'A','version':1,'status':'unknown'}]})
+            ws.describe(record)
+            self.assertEqual(summarize_spy.call_count,3)
+            receipt.unlink();ws.describe(record)
+            self.assertEqual(summarize_spy.call_count,4)
+
+    def test_cached_json_not_stale_after_same_size_write_or_recreation(self):
+        path=self.root/'cache.json';path.write_text('{"value":1}',encoding='utf-8')
+        stamp=path.stat();self.assertEqual(ws.cached_read(path),{'value':1})
+        path.write_text('{"value":2}',encoding='utf-8')
+        os.utime(path,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+        self.assertEqual(ws.cached_read(path),{'value':2})
+        path.unlink();self.assertIsNone(ws.cached_read(path))
+        path.write_text('{"value":3}',encoding='utf-8')
+        self.assertEqual(ws.cached_read(path),{'value':3})
+
+    def test_the_byte_digest_catches_a_rewrite_that_keeps_every_stat_field(self):
+        # Windows reports creation time as st_ctime; stand in for it by holding the stat fields.
+        path=self.root/'held.json';path.write_text('{"value":1}',encoding='utf-8')
+        held=os.stat(path)
+        with patch.object(ws,'STAT_MISSES_REWRITES',True), patch.object(ws.Path,'stat',return_value=held):
+            self.assertEqual(ws.cached_read(path),{'value':1})
+            path.write_text('{"value":2}',encoding='utf-8')
+            self.assertEqual(ws.cached_read(path),{'value':2})
+
     def test_scope_rejection_and_atomic_collision(self):
         self.data.pop('reviewHub');self.mf.write_text(json.dumps(self.data), encoding='utf-8')
         with self.assertRaises(ValueError):self.register()

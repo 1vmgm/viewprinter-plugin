@@ -75,6 +75,8 @@ Inspect available tools and assets: `scripts/tools.py check --json` reports what
 
 Choose the smallest prototype that answers the open question: a layout for typography, a short motion test for physical plausibility, or a complete video for hook-to-proof timing. Check the actual result at the intended viewing size. A good still does not establish that motion or audio works.
 
+Match the generation mode to the comparison: independent creative exploration uses fresh generations from a concise directional brief; a shared image tests editing or identity preservation. Do not silently substitute one for the other. See [prototype selection](references/production.md#compare-the-generation-mode-the-user-wants).
+
 Keep generation requests, job IDs, selected assets, source timings and editable projects. Check an existing job before retrying a paid request whose response was lost. Save every original into the project's [source archive](references/archive.md) with `scripts/archive.py add` as it arrives, rejected attempts included, and search it with `archive.py find` before paying for a new generation. When the project keeps originals in ViewPrinter too (ask once; see [the archive](references/archive.md#keep-originals-in-viewprinter-too)), store them there as well, described with `scripts/describe.py` when Gemini is set up, and search its source material before generating. Read [audio](references/audio.md) before sourcing or editing sound. Open [openverse audio](references/openverse.md) only when that page's cases apply, and send no Openverse request when the user said not to call external services. When a batch creates or acquires new reusable audio, include its library decision in the handoff: ask whether to add the selected clips unless that action is already authorized.
 
 ## 3. Produce the batch
@@ -87,6 +89,12 @@ For a phone-mounted demo, read [phone mounting](references/phone-mounting.md) an
 
 For product demonstrations, every screen or artifact must substantiate the claim. Inspect the capture route for unrelated invite/referral CTAs, onboarding, promotions and empty placeholders before recording; resolve them through the real UI or prepare a suitable demo state. See [product captures](references/production.md#product-captures). Check names, dates, totals, avatars, navigation, device masking and feature truth. Generated scenery must not fabricate product UI. Use actual exports when the claim is about an export. A mockup can explore layout if clearly identified as a mockup during review.
 
+When a story graphic should resemble a familiar interface, inspect an actual visual reference before recreating it. Match its internal alignment, spacing, type hierarchy, icon proportions and material treatment; a generic rounded card is not evidence of fidelity. Keep the reference and inspect the rendered graphic at phone size. Distinguish an authored story prop from genuine product UI or proof, and do not promise a quality level from render success alone.
+
+For voice-led work, verify the current model and cast the voice on the actual script. Compare short, dry takes at similar loudness before building a dependent edit; a stock voice name, naturalness claim, transcript match or loudness pass does not establish a believable performance. Record who listened and what they approved. When preset changes keep failing, compare a genuinely different voice or a performance-led method instead of treating another preset as a proven fix.
+
+For a narrated story, establish how the thought reads with sound off. A message card or other story prop communicates only its own text; it does not replace on-screen narration. Honor requested narration or caption coverage in the representative edit, time it to the actual delivery, and inspect every phrase alongside existing story graphics at phone size.
+
 Match copy length to a comfortable first read and dialogue to its real speaking time. Music supports that timing; it does not justify an unreadable hook. Don't stretch short footage with frozen expressions, obvious gesture repeats or unintended slow motion. Avoid imposing one duration, caption style, model, phone frame, visual motif or CTA on every format.
 
 ## 4. Review and revise
@@ -94,6 +102,8 @@ Match copy length to a comfortable first read and dialogue to its real speaking 
 Hand each prototype and batch to [content review](../content-review/SKILL.md), registered under the same project and format ID as the work before it, with stable item IDs and versions, the production stage, and each asset's generation platform, model, prompt and cost. The user reviews visually and gives feedback in conversation.
 
 Record the user's words plus an actionable interpretation: targets, versions, changes, scope and exceptions. Apply shared feedback across its actual scope. Approval belongs to an exact version, not an item forever. Changed approved files become new versions needing review unless the user already authorized finalizing that revision. Clarify consequential ambiguous targets; do not block unrelated clear edits.
+
+When a user rejects a set for audience or character fit, inspect their approved visual references alongside the rejected outputs before another model comparison. Separate specified casting and setting constraints from an aesthetic you inferred; record the remaining uncertainty. Correct the visual brief with the smallest useful source test, and exclude takes that still miss it. A demographic age in a prompt or a technically clean image does not establish audience fit. Keep the particular people, wardrobe and home preferences in project memory.
 
 ## 5. Finish and learn
 

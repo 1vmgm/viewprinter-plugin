@@ -38,6 +38,20 @@ non-follower audience differs from an ordinary Reel's audience.
 - Not every platform reports every metric. A metric a platform does not return
   is absent, not zero — the same rule as an unmeasured account.
 
+## Public cadence versus private and unlisted uploads
+
+Before assessing posting frequency or crowded time slots, establish each
+YouTube destination's visibility. Unlisted advertising assets can share the
+same channel and appear in `posts_list` alongside public uploads; they do not
+represent the same organic feed schedule. A video URL, published status or
+missing privacy field does not establish that it is public.
+
+Join the exact post/account to its accepted request or an exposed saved setting.
+Keep public organic, unlisted/private and unknown visibility separate in counts
+and comparisons. If the read tool omits visibility, record the evidence used to
+classify each exception. Do not call clustered ad-asset
+uploads a public posting collision or move them merely to improve organic spacing.
+
 ## Comment authorship
 
 When separating audience comments from the account's own replies, cross-check
@@ -86,3 +100,19 @@ Keep one canonical handoff path, update its downloadable bundle too, and refresh
 the existing review tab after rewriting a static HTML file. Verify the rendered
 heading and counts, because an open file tab can still show the old document.
 A correct file on disk does not establish that the user is seeing the correction.
+
+## Link to the exact ViewPrinter result
+
+When a user wants ViewPrinter links, link the dashboard post dialog, using IDs
+from `posts_list`: `https://viewprinter.tech/dashboard?post=<post.id>`. For a
+specific account/platform result, add `&delivery=<target.id>` from that same
+post. `delivery` is the target ID, not the social account ID or platform post ID.
+The link opens inside the signed-in workspace; it is not a public share page.
+
+Keep social `externalUrl` values as provenance. Do not substitute a similar
+clip or guess a dashboard ID for an unmatched external/ad-platform post. Mark
+that row as having no matched ViewPrinter post. Update saved report links as
+well as the chat handoff.
+
+`posts_list` returns external social URLs but no dashboard URL, so build the
+dashboard link from the IDs as above rather than reusing an external URL.

@@ -14,6 +14,13 @@ Add each original as soon as it downloads or a capture finishes, before trimming
 grading or conversion. Rejected and unused attempts go in too: they show what failed,
 and a take wrong for one story can be right for another.
 
+When resuming a timed-out generation, carry its original project, format, batch/item,
+reference IDs and quoted cost through to archival. Verify those fields on the returned
+archive record; a completed provider job does not prove its provenance survived the
+resume. If they were dropped or the original was filed as `unfiled`, restore the
+permitted metadata with an append-only note. Do not regenerate, duplicate the original,
+or try to change the archive-owned format/path through `note`.
+
 ```sh
 python3 <skill-directory>/scripts/archive.py add --file <original> --format <format-id> --record - <<'JSON'
 {"origin": "generated", "tool": "<provider>", "model": "<model>", "requestId": "<job id>",
@@ -59,6 +66,8 @@ python3 <skill-directory>/scripts/archive.py find --format <format-id> --text "<
 python3 <skill-directory>/scripts/archive.py checkout --id <id> --to <batch folder> --batch <batch> --item <item> --version <n>
 python3 <skill-directory>/scripts/archive.py note --id <id> --status rejected --reason "<what was wrong>"
 ```
+
+The text output of `find` prefixes an asset ID with its project (for example, `brand/audio-abc123`). Every `--id` option takes that form or the bare `id` (`audio-abc123`); a prefix naming another project is refused, so pass that project with `--project`. `find --json` gives the project and `id` as separate fields.
 
 `find` also filters by `--kind`, `--status`, `--tag`, `--identity` and `--allowed-use`, and
 `--all-projects` searches every project. `checkout` puts a working copy in the batch (a
