@@ -6,6 +6,7 @@ one atomic registry record. No remote services are involved.
 """
 import copy
 from datetime import timezone
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -321,9 +322,15 @@ def upgrade(skip=()):
     return rebuilt, failed
 
 
+@lru_cache(maxsize=512)
+def receipt_digest(path, stamp):
+    """Hash a receipt only after its file changes; never memoize a failed rebuild."""
+    return digest(ws.read(path))
+
+
 def refresh_receipts(record):
     if record.get('lifecycle') != 'active' or not record.get('sources'): return record
-    changed = any(digest(ws.read(p)) != sha for p, sha in record.get('receiptSignatures', {}).items())
+    changed = any(receipt_digest(p, ws.file_stamp(p)) != sha for p, sha in record.get('receiptSignatures', {}).items())
     if not changed: return record
     with ws.lock():
         fresh = ws.get(record['id'])

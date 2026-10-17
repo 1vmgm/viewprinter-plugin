@@ -53,6 +53,37 @@ class GalleryTests(unittest.TestCase):
         self.text = self.output.read_text(encoding="utf-8")
         return Document(self.text)
 
+    def test_pdf_is_one_full_width_document_with_open_and_download_links(self):
+        (self.assets / "full story.pdf").write_bytes(b"%PDF-1.4\nfixture")
+        self.item.update(kind="pdf", src="assets/full story.pdf", stage="concept")
+        doc = self.build()
+        self.assertEqual(len(doc.attributes("article")), 1)
+        self.assertEqual(doc.attributes("article")[0]["data-kind"], "pdf")
+        self.assertFalse(doc.attributes("object"))
+        attachment = next(a for a in doc.attributes("a") if "data-review-pdf" in a)
+        self.assertIn("full%20story.pdf", attachment["href"])
+        csp = next(a["content"] for a in doc.attributes("meta") if a.get("http-equiv") == "Content-Security-Policy")
+        self.assertIn("default-src 'none'", csp)
+        self.assertNotIn("object-src", csp)
+        self.assertNotIn("connect-src", csp)
+        self.assertTrue(any("download" in a for a in doc.attributes("a")))
+        self.assertFalse(doc.attributes("img"))
+        self.assertFalse(doc.attributes("video"))
+        self.assertNotIn('id="speed-control"', self.text)
+
+    def test_pdf_cover_is_visible_without_an_embedded_object(self):
+        (self.assets / "story.pdf").write_bytes(b"%PDF-1.4")
+        self.item.update(kind="pdf", src="assets/story.pdf", poster="assets/first.png")
+        doc = self.build()
+        self.assertEqual(len(doc.attributes("img")), 1)
+        self.assertIn("PDF cover", doc.attributes("img")[0]["alt"])
+        self.assertFalse(doc.attributes("object"))
+
+    def test_pdf_rejects_non_pdf_file(self):
+        self.item.update(kind="pdf", src="assets/first.png")
+        with self.assertRaisesRegex(ValueError, "unsupported pdf extension"):
+            self.build()
+
     def test_batches_lead_with_latest_without_renumbering_items(self):
         self.item.update(batch="older", status="revised")
         newest = dict(self.item, id="P02", batch="latest", status="new", changes=[])
