@@ -22,6 +22,83 @@ the destination list entirely.
 
 Changing `scheduled_at` re-aims delivery. There is no separate publish step.
 
+## Replacing a slot without losing the displaced post
+
+When making room for new content, preserve the displaced approved post's
+publishing commitment. A held draft, cancellation, saved media file or backlog
+note is not a reschedule. Choose a concrete future date that fits the queue and
+campaign reservations, then change the original post's time. Preserve its media,
+caption, destinations and accepted platform settings.
+
+If the user says displaced posts must be rescheduled, treat that as an invariant
+across every replacement in the task. Do not substitute a hold because the next
+few days are full; find the next valid slot. A move is complete only after both
+the new placement and the displaced original read back with their intended
+accounts and future times. Reconcile the full before/after inventory, recording
+old and new times beside exact post IDs. Say "rescheduled" only for those verified
+moves. Retiring or replacing the content itself is a distinct decision and must
+be covered by the user's instruction.
+
+When auditing a suspected missed post, distinguish approved displaced content
+from original review drafts, platform-native drafts, explicitly paused content,
+failed deliveries and cancelled copies whose replacements are already queued or
+published. Match by post/account and media or recorded version identity, not by
+caption alone. Recover confirmed omissions under the existing authorization;
+keep uncertain cases explicit instead of silently publishing duplicates.
+
+## Planning a queue reflow
+
+When the user wants a plan before changes, prepare exact new placements and old/new
+post times locally; do not save live drafts or reschedule posts merely to validate the
+proposal. Count active campaign reservations once, including slots not generated yet.
+An account-filtered queue can hide other targets, so read each proposed moved post in
+full before deciding its scope.
+
+Preserve the user's priority and seasonal constraints through the entire cascade.
+Give every displaced post a concrete later slot, check spacing and capacity there,
+and retain weekday-sensitive wording when selecting its date. Rank measured creatives
+through content-learning; label young or unmeasured editorial choices rather than
+calling them failed. Before an authorized execution, refresh the queue and move the
+cascade's tail first so a weaker post does not consume the next stronger one's slot.
+
+## Priority cascades under account caps
+
+Use this workflow when adding stronger content would exceed a user's posting cap.
+Load the project's current caps, timezone, spacing, protected campaigns or tests,
+and account roles. These are project strategy, not product defaults. A one-run
+secondary-account instruction stays in that run's plan unless the user makes it
+standing policy.
+
+Inventory the requested day and enough later days to give every displaced item a
+valid destination. Reconcile paginated posts with campaign reservations, counting
+already generated campaign posts only once. If returned ordering differs from the
+requested sort, sort the complete local inventory by its timestamps; do not infer
+empty days from a partial page.
+
+For a priority cascade, use evidence from each creative or its verified published
+cross-post, with the account, age, trial mode and measurement time attached. Do not
+call a whole format weak or treat unmeasured work as zero. Compare within account
+and age cohorts before using another platform's results as a planning signal.
+A moved item takes the first suitable later slot occupied by a clearly weaker item;
+continue until the remaining item has an open slot. Do not push a stronger item to
+the queue's end while weaker work stays ahead. Preserve seasonal deadlines,
+date-sensitive copy and protected tests throughout; do not create extra moves when
+an open slot or inconclusive evidence makes them unnecessary.
+
+The reviewable plan names each creative/version and media identity, complete account
+list, old and new local time with timezone, UTC time, native caption/settings changes,
+capacity and spacing before/after, and why each displacement is warranted. Distinguish
+measured evidence from an editorial prediction. A plan-only request creates no remote
+drafts or queue mutations. Existing authorization remains valid; do not add a new
+approval gate when the user already authorized execution.
+
+Execute an authorized plan from the tail, rereading the affected posts and their
+slots immediately before each write. Pause the dependent chain on a refusal, race
+or uncertain result. Verify every move before advancing; record confirmed moves
+so a retry resumes without duplication. Finish with a complete inventory
+reconciliation: every displaced creative has a scheduled replacement, every new
+placement is verified, and no affected account-day exceeds its cap.
+
 ## Moving existing posts to another account
 
 Re-read each post without account filters, then replace its complete destination list.
@@ -30,6 +107,27 @@ platform settings. Resolve the replacement account's queue and campaign reservat
 state any necessary time adjustment before saving. Existing approval of disclosure
 choices carries forward for the same posts. Do not recreate posts merely to change
 accounts, and do not release older held copies of the same creative.
+
+When a project forbids duplicate content across its accounts, an account transfer
+must leave exactly one intended placement for that creative. Check the source and
+destination accounts' published, publishing, scheduled, draft and relevant failed
+or cancelled history, following every page. Match media IDs, checksums and recorded
+creative/version aliases, not captions alone: changing a caption, cover, filename
+or upload ID does not make the video new. A prior publication on either account
+cannot be undone by moving its queued twin. Do not transfer that creative to the
+other account; select another eligible item. Keep unresolved identity checks explicit.
+
+Prefer amending the complete destination list on the original pending post. If the
+intended transfer also changes an immutable platform option, such as trial versus
+regular mode, a replacement may be necessary. Make that exception and the exact
+mode explicit in the plan. Under authorization, create and verify its future
+replacement first, then remove only the superseded pending destination, preserving
+other destinations. Never withdraw the original before its replacement is confirmed.
+Before either can publish, verify the original destination is absent or cancelled
+and there is exactly one active intended placement. If removal fails, stop the
+incoming cascade and resolve the conflicting copies before their delivery times;
+do not claim the transfer complete. Record the old-to-new post mapping so queue
+counts and delivery history treat this as a preserved commitment, not extra content.
 
 Checkpoint the removed account as `canceled`, checkpoint and link the new account, and
 verify the full returned destination list. The current API removes dropped target rows.

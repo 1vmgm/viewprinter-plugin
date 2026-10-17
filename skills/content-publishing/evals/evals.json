@@ -74,7 +74,7 @@
       "rules": [
         "scheduling"
       ],
-      "prompt": "That timed out \u2014 try again.",
+      "prompt": "That timed out — try again.",
       "expected_output": "reuses the original idempotency_key rather than calling again bare",
       "assertions": [
         "reuses the original idempotency_key rather than calling again bare, or checks posts_list first to see whether the post already exists",
@@ -233,7 +233,7 @@
         "asks separately about own-brand promotion and AI-generated labels before sending",
         "does not treat a business account, generated media, or approval to post as permission to enable disclosure flags",
         "explains any applicable platform requirement rather than silently choosing",
-        "waits for the user\u2019s answer before publishing or scheduling"
+        "waits for the user’s answer before publishing or scheduling"
       ],
       "files": []
     },
@@ -244,9 +244,9 @@
         "scheduling"
       ],
       "prompt": "Schedule the approved batch on TikTok and Instagram. I explicitly decline optional promotional-content and AI labels for this batch. The current platform rules do not require them for these clips.",
-      "expected_output": "preserves the user\u2019s explicit choices without asking again",
+      "expected_output": "preserves the user’s explicit choices without asking again",
       "assertions": [
-        "preserves the user\u2019s explicit choices without asking again",
+        "preserves the user’s explicit choices without asking again",
         "omits declined optional flags, including true values inherited from templates",
         "does not add disclosure text to captions or overlays",
         "does not promise that the platform itself will never apply a label"
@@ -403,6 +403,58 @@
         "checks posts_list for scheduled and draft posts that use each named file and names them",
         "deletes only the files the user confirmed by name",
         "reports exactly which files were deleted"
+      ],
+      "files": []
+    },
+    {
+      "id": 26,
+      "name": "capacity-cascade-plan-only",
+      "rules": [
+        "amend-and-cancel",
+        "scheduling"
+      ],
+      "prompt": "Plan the new approved video for Monday on all four platforms. The queues are full. Move weaker content later, never drop it. Give me the plan to approve.",
+      "expected_output": "Reads current caps, spacing, campaign reservations and all queue pages before choosing slots",
+      "assertions": [
+        "Reads current caps, spacing, campaign reservations and all queue pages before choosing slots",
+        "Names concrete old and new times and complete destinations for every displaced post",
+        "Uses creative-level evidence with cohort and age caveats; preserves protected and seasonal work",
+        "Keeps the proposal local; calls no posts_save including draft creation"
+      ],
+      "files": []
+    },
+    {
+      "id": 27,
+      "name": "exclusive-account-transfer",
+      "rules": [
+        "amend-and-cancel",
+        "scheduling"
+      ],
+      "prompt": "For this cascade only, move a weaker video to our secondary Instagram account. Never post the same exact content on both accounts.",
+      "expected_output": "Checks both accounts across publication and queue states by media/checksum and creative aliases, not captions",
+      "assertions": [
+        "Checks both accounts across publication and queue states by media/checksum and creative aliases, not captions",
+        "Rejects a transfer when the creative already published on either account",
+        "Treats the move as one placement, preserving all unrelated targets",
+        "Does not persist the one-run secondary-account preference as a universal rule",
+        "States any trial-to-regular replacement requirement and verifies the replacement before removing the original"
+      ],
+      "files": []
+    },
+    {
+      "id": 28,
+      "name": "cascade-execution-partial-failure",
+      "rules": [
+        "amend-and-cancel",
+        "scheduling"
+      ],
+      "prompt": "Execute the approved cascade. After the last item moves, another agent fills the next slot.",
+      "expected_output": "Refreshes the affected queue before each write and stops the dependent chain on the conflict",
+      "assertions": [
+        "Refreshes the affected queue before each write and stops the dependent chain on the conflict",
+        "Retains the confirmed tail move and original publishing commitments",
+        "Does not duplicate successful moves on retry or strand displaced posts as drafts",
+        "Reports only verified moves and reconciles exact final placements before claiming completion"
       ],
       "files": []
     }
