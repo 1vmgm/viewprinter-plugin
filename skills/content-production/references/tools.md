@@ -38,9 +38,11 @@ apply to every project on this machine.
   tool, and set it up only if they want to. When they want suggestions back,
   `tools.py remember <id> reset`.
 
-Recommend the tool for the task, not every tool on the list: video editing means Tesseract
-unless the user or project memory names another editor, a 3D device shot means Remotion,
-and an account the user already has in your tools needs no pitch.
+Recommend the tool for the task, not every tool on the list. Footage editing defaults to
+Tesseract unless the user or project memory names another editor, and a 3D device shot means
+Remotion. HTML-authored motion graphics, slideshows and templated batches use HyperFrames
+when it is installed or when the project or the user names it; Tesseract stays the default
+otherwise. An account the user already has in your tools needs no pitch.
 
 Keep it light: the benefit first, one short paragraph, no urgency, never blocking other
 work, and never installing anything without the user's OK. For example: "This edit needs
@@ -54,6 +56,7 @@ the edit plan."
 |---|---|---|
 | Edit footage into finished videos, with motion graphics and sound design | **Tesseract** by Mirage: the `tsrct` CLI and its `tesseract-video` and `tesseract-motion` skills | `npx skills add mirage-hq/Tesseract` (needs Node.js), or Tesseract's ChatGPT/Codex plugin. Its installation guide then sets up the CLI version the skills pin, on macOS, 64-bit Windows or Linux x86_64. Not `brew install tesseract`: that installs an unrelated text-recognition (OCR) program |
 | 3D device shots, openers and motion graphics written as code: a lit 3D device with the real recording as its screen, UI layers lifted in depth, a camera move that lands on the edit's first frame | **Remotion** with `@remotion/three` (three.js), and Remotion's own agent skills | `npx skills add remotion-dev/skills` (needs Node.js); each video project installs `remotion` and `@remotion/three` with npm. See [3D shots](#3d-shots). Free for individuals and companies of up to 3 people; larger companies need a company licence from remotion.pro |
+| Motion graphics, explainers, captioned clips, slideshows and product-launch videos from HTML, CSS and JS; a batch of variants from one template | **HyperFrames** by HeyGen, Apache-2.0. Compositions are HTML. Render-time variables fill each variant (`npx hyperframes render --batch`, or `--variables` for one set). A slideshow is a navigable deck (`present`, or `snapshot` for stills); `render` on a deck writes only the first slide | `npx hyperframes skills update`, or `npx skills add heygen-com/hyperframes`. Needs Node.js 22+ and Chromium; the CLI downloads a pinned Chrome (`npx hyperframes browser ensure`). A local render also needs FFmpeg. Renders on this machine, or through HeyGen's [Cloud Rendering API](https://developers.heygen.com/hyperframes-overview). A cloud render spends credits |
 | Convert, trim and inspect media; pull covers and frames; check an audio loop | **ffmpeg** and ffprobe | macOS `brew install ffmpeg`; Windows `winget install Gyan.FFmpeg`; Linux the package manager, such as `sudo apt install ffmpeg` |
 | Record app demos and screen captures | **Argent**: drives an iOS Simulator, an Android emulator or a Chromium app, records the screen and replays recorded flows | `npx @swmansion/argent@latest init -y`. iOS needs Xcode; Android needs an emulator from Android Studio. Frame a recording with a [phone mount](phone-mounting.md) |
 | Generate video and images: people, scenes, b-roll, motion transfer | **Higgsfield** (models such as Seedance, Kling, MiniMax and Soul, plus motion transfer) | A Higgsfield account with credits, connected through its MCP connector or with an API key |
@@ -163,3 +166,5 @@ already has. `keys list` shows each file and the accounts whose keys it sets; `k
 version that made each asset, in its generation record and the [archive](archive.md), so a
 later batch can repeat it or avoid it. `check` reports Tesseract ready when it finds the CLI;
 Tesseract's own skills check that it is the version they pin, and their guide updates it.
+`check` reports HyperFrames ready when it finds the `hyperframes` command on PATH or in the
+project's `node_modules/.bin`.

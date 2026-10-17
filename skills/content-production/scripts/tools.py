@@ -44,6 +44,12 @@ TOOLS = [
                 "screen, as clips the video editor imports",
      "install": "npx skills add remotion-dev/skills (needs Node.js); each video project then installs remotion and "
                 "@remotion/three with npm"},
+    {"id": "hyperframes", "task": "HTML motion graphics, explainers, slideshows and templated batches",
+     "tool": "HyperFrames by HeyGen", "local": True,
+     "unlocks": "renders motion graphics, explainers, captioned clips, slideshows and product-launch videos from HTML, "
+                "and fills a template's variables for a batch",
+     "install": "npx hyperframes skills update, or npx skills add heygen-com/hyperframes "
+                "(needs Node.js 22+ and Chromium; a local render also needs FFmpeg)"},
     {"id": "ffmpeg", "task": "Converting and trimming media; covers and frames", "tool": "ffmpeg and ffprobe",
      "local": True, "unlocks": "converts, trims and inspects media and pulls covers and frames", "install": None},
     {"id": "argent", "task": "App demos and screen recordings", "tool": "Argent", "local": True,
@@ -51,8 +57,10 @@ TOOLS = [
      "install": "npx @swmansion/argent@latest init -y (iOS needs Xcode; Android needs an emulator from Android Studio)"},
     {"id": "browser", "task": "Checking that review media plays", "tool": "Chrome, Chromium or Microsoft Edge",
      "local": True, "unlocks": "plays every review file before handoff", "install": "install Google Chrome, Chromium or Microsoft Edge"},
-    {"id": "node", "task": "Installing Tesseract's and Remotion's skills, and Argent", "tool": "Node.js (npx)",
-     "local": True, "unlocks": "runs the installers for Tesseract, Remotion and Argent, and renders Remotion projects",
+    {"id": "node", "task": "Installing the Tesseract, Remotion and HyperFrames skills, and Argent",
+     "tool": "Node.js (npx)", "local": True,
+     "unlocks": "runs the installers for Tesseract, Remotion, HyperFrames and Argent, and renders Remotion "
+                "and HyperFrames projects",
      "install": "install Node.js from https://nodejs.org"},
     {"id": "higgsfield", "task": "Generating video and images", "tool": "Higgsfield", "local": False,
      "unlocks": "generates people, scenes, b-roll and motion transfer",
@@ -168,6 +176,12 @@ def argent_paths(cwd, platform=sys.platform):
     return [Path(cwd) / "node_modules/.bin" / name]
 
 
+def hyperframes_paths(cwd, platform=sys.platform):
+    """A project-local HyperFrames CLI. The npm package `hyperframes` installs this command."""
+    name = "hyperframes.cmd" if platform.startswith("win") else "hyperframes"
+    return [Path(cwd) / "node_modules/.bin" / name]
+
+
 def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
     """Each local program: (path or None, detail, note). A browser is located but never run:
     on Windows its --version can open a window."""
@@ -177,7 +191,8 @@ def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
     browser = found(browser_paths(platform, env, home),
                     ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"])
     remotion = next((str(path) for path in remotion_skill_paths(cwd or Path.cwd(), home) if path.is_file()), None)
-    places = {"tesseract": tsrct, "remotion": remotion, "ffmpeg": ffmpeg,
+    hyperframes = found(hyperframes_paths(cwd or Path.cwd(), platform), ["hyperframes"])
+    places = {"tesseract": tsrct, "remotion": remotion, "ffmpeg": ffmpeg, "hyperframes": hyperframes,
               "argent": found(argent_paths(cwd or Path.cwd(), platform), ["argent"]),
               "browser": browser, "node": shutil.which("npx")}
     notes = {"tesseract": "The tesseract on PATH is an unrelated OCR engine, not the video editor." if ocr else "",
