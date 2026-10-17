@@ -454,6 +454,18 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(missing.returncode, 1)
         self.assertIn("No file", missing.stderr)
 
+    def test_the_id_find_prints_works_wherever_an_id_is_taken(self):
+        identifier = archive.add(self.root, "brand", self.original(), self.provenance())["id"]
+        printed = self.cli("find", "--root", self.root, "--project", "brand").stdout.split()[0]
+        self.assertEqual(printed, "brand/" + identifier)
+        noted = self.cli("note", "--root", self.root, "--project", "brand", "--id", printed, "--status", "selected")
+        self.assertEqual(noted.returncode, 0, noted.stderr)
+        self.assertEqual(json.loads(noted.stdout)["status"], "selected")
+        other = self.cli("note", "--root", self.root, "--project", "brand", "--id", "other/" + identifier,
+                         "--status", "rejected")
+        self.assertEqual(other.returncode, 1)
+        self.assertIn("pass --project other", other.stderr)
+
     # -- ViewPrinter keeps the originals too ---------------------------------------
 
     def row(self, asset, media_id, purpose="source"):
