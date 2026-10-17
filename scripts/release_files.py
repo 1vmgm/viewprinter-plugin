@@ -65,6 +65,7 @@ SKILL_FILES = (
     'skills/content-production/references/hardening.md',
     'skills/content-production/references/influencers.md',
     'skills/content-production/references/memory.md',
+    'skills/content-production/references/openverse.md',
     'skills/content-production/references/phone-mounting.md',
     'skills/content-production/references/production.md',
     'skills/content-production/references/shelving.md',

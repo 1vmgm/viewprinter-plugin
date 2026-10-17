@@ -218,6 +218,44 @@
         "Never uses media_delete or deletes files outside the archive to free space",
         "Explains how to bring one back: its media_list url, a download, then archive.py restore --id <id> --file <download>"
       ]
+    },
+    {
+      "id": 18,
+      "prompt": "Cut this 20-second product demo. It has picture and no audio. Add tasteful sound design: a soft UI tap, a short whoosh on the reveal, and a quiet room tone under the clip. Do not generate audio, do not use a trending platform sound, and do not publish. Show the search, the pick, and what you record.",
+      "expected_output": "Searches Openverse for these three cues. Effects use source=freesound or a search without category, because category=sound_effect misses unlabeled Freesound recordings. Each search sets q, length, and a license filter, then checks duration in milliseconds. Downloads the result url, archives the file, and records the Openverse id, license, and attribution. Does not generate audio or publish.",
+      "files": [],
+      "expectations": [
+        "Reads references/openverse.md and searches https://api.openverse.org/v1/audio/",
+        "Uses q plus length, and source=freesound or no category; an empty category=sound_effect result is searched again without that filter",
+        "Checks each result's duration in milliseconds and its license before picking",
+        "Downloads the result url, then archives the file with archive.py add, storing openverseId, license, and the attribution string",
+        "Does not generate audio, does not substitute a trending platform sound, and does not publish"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "This 15-second vertical ad needs a music bed. Nothing is in the library or the archive. It will run as a paid ad, and the track will be cut to the picture. Prefer something I can use commercially. Explain the search and what you refuse. Do not publish.",
+      "expected_output": "Knows category=music on Openverse holds no CC0 or PDM tracks, so searches category=music with license=by and keeps the attribution string, or looks for a CC0 loop on Freesound without a category when the ad cannot carry a credit. Refuses NC and ND. Records the license with the clip.",
+      "files": [],
+      "expectations": [
+        "Searches category=music on the Openverse audio endpoint with length=medium or no length band, because its tracks are whole songs, and cuts the 15-second excerpt from one",
+        "Does not expect CC0 or PDM results under category=music, and searches license=by there, or CC0 loops on source=freesound without a category",
+        "Does not pass license and license_type together as if they were alternatives",
+        "A by result is usable only when its attribution string is copied verbatim into the archive record and flagged to ship with the ad",
+        "Does not select a license containing nc or nd, or a sampling+ license, for this ad, and does not publish"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "Revise the three furniture stills from last round: bigger headlines, same photos. Separately, the fitness batch still wants energetic trending audio with replay potential; a generic generated bed is available. Do not download anything or call external services. Say what you would do for each.",
+      "expected_output": "The stills get no audio search. The fitness batch follows the trending-audio path and does not switch to Openverse. No request is made.",
+      "files": [],
+      "expectations": [
+        "Does not search Openverse for the furniture stills",
+        "Keeps the fitness batch on the trending-audio procedure: current sound evidence, excerpt, and loop check",
+        "Does not replace that trending sound with an Openverse track or a generated bed",
+        "Makes no Openverse request and downloads nothing, because the prompt forbids external calls"
+      ]
     }
   ]
 }
