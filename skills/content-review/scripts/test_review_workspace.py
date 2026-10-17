@@ -100,6 +100,15 @@ class WorkspaceTests(unittest.TestCase):
         path.write_text('{"value":3}',encoding='utf-8')
         self.assertEqual(ws.cached_read(path),{'value':3})
 
+    def test_the_byte_digest_catches_a_rewrite_that_keeps_every_stat_field(self):
+        # Windows reports creation time as st_ctime; stand in for it by holding the stat fields.
+        path=self.root/'held.json';path.write_text('{"value":1}',encoding='utf-8')
+        held=os.stat(path)
+        with patch.object(ws,'STAT_MISSES_REWRITES',True), patch.object(ws.Path,'stat',return_value=held):
+            self.assertEqual(ws.cached_read(path),{'value':1})
+            path.write_text('{"value":2}',encoding='utf-8')
+            self.assertEqual(ws.cached_read(path),{'value':2})
+
     def test_scope_rejection_and_atomic_collision(self):
         self.data.pop('reviewHub');self.mf.write_text(json.dumps(self.data), encoding='utf-8')
         with self.assertRaises(ValueError):self.register()

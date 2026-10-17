@@ -325,12 +325,20 @@ def lifecycle(entry, action, revision=None, reason='', actor='local-user', batch
     return r
 
 
+# On Windows st_ctime is the creation time, so a same-size rewrite can leave every stat field
+# as it was; the stamp also carries a digest of the bytes there.
+STAT_MISSES_REWRITES=os.name=='nt'
+
+
 def file_stamp(path):
     """Detect replacement, in-place edits and deletion, including same-size writes."""
     if not path:return None
     try:
         info=Path(path).stat()
-        return (info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
+        stamp=(info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
+        if STAT_MISSES_REWRITES:
+            stamp+=(hashlib.blake2b(Path(path).read_bytes(),digest_size=16).hexdigest(),)
+        return stamp
     except OSError:
         return None
 
