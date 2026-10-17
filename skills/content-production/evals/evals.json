@@ -235,12 +235,12 @@
     {
       "id": 19,
       "prompt": "This 15-second vertical ad needs a music bed. Nothing is in the library or the archive. It will run as a paid ad, and the track will be cut to the picture. Prefer something I can use commercially. Explain the search and what you refuse. Do not publish.",
-      "expected_output": "Searches Openverse category=music, starting with license=cc0,pdm. Widens to license_type=commercial,modification only if that page has nothing that fits, and uses a CC BY track only with its attribution string kept. Refuses NC and ND. Records the license with the clip.",
+      "expected_output": "Knows category=music on Openverse holds no CC0 or PDM tracks, so searches category=music with license=by and keeps the attribution string, or looks for a CC0 loop on Freesound without a category when the ad cannot carry a credit. Refuses NC and ND. Records the license with the clip.",
       "files": [],
       "expectations": [
-        "Searches category=music on the Openverse audio endpoint, with a length band that can cover about 15 seconds",
-        "Starts from license=cc0,pdm and prefers those results",
-        "Widens with license_type=commercial,modification only when CC0 and PDM do not fit, and does not pass license and license_type together as if they were alternatives",
+        "Searches category=music on the Openverse audio endpoint with length=medium or no length band, because its tracks are whole songs, and cuts the 15-second excerpt from one",
+        "Does not expect CC0 or PDM results under category=music, and searches license=by there, or CC0 loops on source=freesound without a category",
+        "Does not pass license and license_type together as if they were alternatives",
         "A by result is usable only when its attribution string is copied verbatim into the archive record and flagged to ship with the ad",
         "Does not select a license containing nc or nd, or a sampling+ license, for this ad, and does not publish"
       ]

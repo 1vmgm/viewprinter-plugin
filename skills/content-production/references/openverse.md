@@ -36,7 +36,7 @@ curl -fsSL -H "Accept: application/json" \
 
 ```sh
 curl -fsSL -H "Accept: application/json" \
-  "https://api.openverse.org/v1/audio/?q=acoustic&category=music&license=cc0,pdm&length=short&page_size=10"
+  "https://api.openverse.org/v1/audio/?q=acoustic&category=music&license=by&length=medium&page_size=10"
 ```
 
 Pass either `license` or `license_type`. Passing both keeps only licenses that sit in both sets. Anonymous responses report `x-ratelimit-limit-anon_burst`, `x-ratelimit-limit-anon_sustained`, and the matching `x-ratelimit-available-*` counts. A recent ceiling is 20 requests a minute and 200 a day; the headers are the limit that applies. A few searches per batch is the shape. On HTTP 429, or when the sustained remaining count is nearly spent, stop and say so. Do not register an Openverse application, and do not ask for a token, unless the user already has one. A token the user already supplied is `Authorization: Bearer`; it never goes into project memory or the archive record.
@@ -45,11 +45,15 @@ Pass either `license` or `license_type`. Passing both keeps only licenses that s
 
 Read `title`, `tags`, `creator`, `source`, `category`, `duration`, `license`, `license_version`, and `attribution` before choosing. A title match is not a fit. Listen to the file. If it cannot be played here, say the pick is unlistened and leave it uncommitted. Prefer a clean effect over a clip that already mixes speech. One clip per cue. The mix judgment stays on the audio page: not every action needs a sound.
 
-For a paid ad or any commercial use, start with `license=cc0,pdm`. Widen to `license_type=commercial,modification` only when that page has nothing that fits, and then prefer `by` over `by-sa`. Refuse a license that contains `nc` (no commercial use) or `nd` (no derivatives) once the track will be cut, mixed, or synced to picture. `by-sa` allows commercial use and edits, and it also requires the adaptation to stay share-alike: tell the user before it goes into an ad. Skip `sampling+` and `nc-sampling+` unless the user asks for that license.
+For a paid ad or any commercial use, start an effect or ambience search with `license=cc0,pdm`. Widen to `license_type=commercial,modification` only when that page has nothing that fits, and then prefer `by` over `by-sa`.
+
+Music is different. Everything under `category=music` comes from Jamendo under a CC BY-family license, so `category=music&license=cc0,pdm` returns nothing, and its tracks are whole songs: `length=short` or `shortest` usually returns nothing too, so search `medium` and cut the excerpt (checked against the live API in October 2026; `GET /v1/audio/stats/` lists the sources). A commercial bed from Openverse is therefore `license=by`, with its attribution shipped, or `by-sa` once the user has heard what share-alike asks. When the ad cannot carry a credit, look for a CC0 loop or bed on Freesound instead (`source=freesound&license=cc0`, no `category`, words such as `loop`, `ambient` or `beat`), or use a supplied or licensed track.
+
+For any of these, refuse a license that contains `nc` (no commercial use) or `nd` (no derivatives) once the track will be cut, mixed, or synced to picture. `by-sa` allows commercial use and edits, and it also requires the adaptation to stay share-alike: tell the user before it goes into an ad. Skip `sampling+` and `nc-sampling+` unless the user asks for that license.
 
 ## Download
 
-Download the result's `url`. If that request fails, try a URL in `alt_files`, then the next result. Do not scrape the landing page for a different file. Name the file with the Openverse id plus the result's `filetype`. A Wikimedia title can contain HTML, so the title is not a filename. Jamendo's `mp32` is that provider's mp3 download; keep the bytes as returned and record the filetype, without transcoding at this step.
+Download the result's `url`. If that request fails, take the next result. For Freesound, `url` is its high-quality MP3 preview, and the original file in `alt_files` needs a Freesound login (anonymous requests get HTTP 401), so use `alt_files` only with a Freesound token the user already has. Do not scrape the landing page for a different file. Name the file with the Openverse id plus the result's `filetype`. A Wikimedia title can contain HTML, so the title is not a filename. Jamendo's `mp32` is that provider's mp3 download; keep the bytes as returned and record the filetype, without transcoding at this step.
 
 Search the archive before downloading. `archive.py find --text` matches the Openverse id once a record stores it. A hit is checked out, not downloaded again.
 
