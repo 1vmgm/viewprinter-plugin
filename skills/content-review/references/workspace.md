@@ -30,6 +30,8 @@ Declare this in each contributor-owned social review manifest; use unique batch 
 
 `review_gallery.py --manifest review.json --output review.html` registers only a declared `social-content` review inside a project with `.viewprinter/content-memory`. `VIEWPRINTER_REVIEW_HUB=0` renders standalone; `VIEWPRINTER_REVIEW_AUTOSTART=0` registers without starting. Registrations with the same project + format ID join one review automatically. Alternate entry names become aliases. The generator exits with an error if hub registration fails, and says so when the gallery is outside a project, where nothing is registered; a standalone HTML success is not a completed social handoff.
 
+**Renderer compatibility.** An existing shared review may contain media kinds added after the installed helper shipped (for example, PDF cards). If registration rejects another contribution’s already accepted media kind, preserve that contribution and inspect the renderer version before changing any manifest. Use the project’s authorized, compatible canonical helper when available; otherwise update through the normal plugin workflow. Record the version mismatch and exact error. Do not drop or relabel other contributors’ cards to make an older renderer accept the batch.
+
 For an update, first read the source revision from the registry or `/api/queue`, reread the source manifest, and change only owned work. Pass that observed value with `--source-revision N` to `review_gallery.py` or `review_hub.py add`. Alternatively set `reviewHub.sourceRevision` to N+1 in the edited source. New sources need no revision. A stale update fails without replacing the accepted review; refresh and reconcile rather than blindly incrementing. Repeating an unchanged source adds no duplicate items. A changed preview or cover for the same item/version is rejected: make a new version. Conflicting item or batch IDs from different sources require resolution.
 
 A registered review shows the files it accepted. Registration keeps a copy of every preview, cover, previous version and input under the project's `.viewprinter/content-memory/reviews/.media` (git-ignored; a copy-on-write clone where the file system supports it, otherwise a full copy, so budget the disk on such systems). Replacing or deleting a source file afterwards does not change an accepted version. Don't edit or delete files in `.media` by hand: it holds the only copy of anything replaced since. Finished work can let its copies go to ViewPrinter instead; see [media kept in ViewPrinter](#media-kept-in-viewprinter).
@@ -95,9 +97,13 @@ python3 <skill-directory>/scripts/review_media.py release --project <project-roo
 python3 <skill-directory>/scripts/review_media.py restore --project <project-root> --item <ID> --version <N>
 ```
 
+When finishing one batch in a shared project, pass `--batch <batch-id>` to `save`, `release`, `drop` and `clean-sources`. The scope narrows candidates while still checking every review that shares the bytes; another batch still in review protects its files.
+
 1. `status` shows what the reviews keep, what is finished, what ViewPrinter already keeps as source material, and what releasing would free now and once the batch files are gone.
 2. `save` hands finished files ViewPrinter doesn't keep yet to the project's archive, recording the review, item, version and role (final, cover, previous version, input) with each. Upload them through the archive's flow (`upload-list --tag review-media`, `media_upload`, `upload-steps`, `media_save`, `stored`) and describe each file as that flow says.
 3. `release` lets the local copies go, only with the user's agreement in their words and only on ViewPrinter's fresh word: a `media_list` answer (`purpose: source`, every page) showing the same sha256. A file kept to post never counts, since `media_delete` can remove it. Each file is hashed first; a `kept.json` with ViewPrinter's link stays in its place, and the reviews that show it are rebuilt.
+If an older upload has a null API checksum, retain the unchanged fresh API response and verify its exact returned download URL in full against the local SHA-256 and byte count before releasing anything. Keep a separate derived verification file that labels the computed hash and its provenance; never present it as an unchanged API readback. A PUT receipt or metadata match alone is insufficient. The posting copy must remain untouched.
+
 4. The workspace streams a released file from ViewPrinter when a review plays it, so pages, links and archived snapshots stay as they are. The review labels it **Kept in ViewPrinter** (**Cover kept in ViewPrinter** when only its cover went). Those files need an internet connection.
 5. To get a file back, for editing or for reviewing offline, ask the agent: `restore` downloads it and checks it byte for byte.
 
@@ -121,6 +127,7 @@ python3 <skill-directory>/scripts/review_media.py clean-sources --project <proje
 - `drop` deletes a finished file only when every review using it is finished and every use is one the project drops. A `dropped.json` stays in its place, the review shows **Removed after review**, and nothing can bring it back. Without the setting it refuses.
 - `clean-sources` deletes the batch-folder files of finished work once the workspace holds them: its own copy, ViewPrinter's, or a drop. Only files inside the project with exactly the accepted bytes go; work still in review keeps its files.
 - A source manifest still builds after its batch files are gone: `review_gallery.py` shows the copy the registered review accepted. Ask the user before the first `drop` and `clean-sources` in a project; both take their words.
+- After storage cleanup, verify the rebuilt canonical registered gallery. A contributor-owned HTML file generated before `clean-sources` may still point at deleted batch-folder paths; rebuild it from its source manifest before checking that file directly. Do not mistake a stale contributor preview for broken remote media, restore local copies just to satisfy that stale page, or report playback verified without checking the current registered review.
 
 Together with the archive's [release after store](../../content-production/references/archive.md#let-originals-go-once-viewprinter-keeps-them), this keeps finished work in one place: raw material and finals in ViewPrinter, and only work in progress on this computer.
 
@@ -155,6 +162,31 @@ For legacy path-based registrations, use an explicit JSON mapping: `{"formats":[
 
 ## Served files and handoff checks
 
+The hub reuses unchanged review summaries and receipt checks. It checks for updates
+between active-view intervals of two seconds, or fifteen seconds with no connected
+viewers; reconnecting a viewer wakes that check immediately. Hidden workspace tabs
+close their event stream and pause media, then refresh when brought forward. Short
+presence requests let `open` recognize those tabs without keeping streaming
+connections open. An unresponsive or crashed tab stops counting after three minutes
+without a presence request. Reload an existing workspace tab after updating its
+helpers to pick up browser-side behavior changes.
+
+For a specific batch handoff, use the stable workspace link with
+`#<entry>?batch=<batch-id>` and verify that the loaded gallery selects that batch.
+Wait for the gallery controls and scripts to initialize, then assert the requested
+batch is selected and its expected item is visible. An iframe can display its default
+batch while older media is still loading; do not wait for every media resource before
+applying the requested batch. A successful direct-gallery playback check alone does
+not verify the workspace deep link. Bring the existing
+workspace tab forward. A generated revision's HTML URL is useful for diagnostics,
+not a replacement for the stable handoff link.
+
 The server binds loopback and permits only review HTML/CSS/scripts inside registered review folders, plus supported media in their project roots. Project JSON, credentials and arbitrary documents remain blocked. `/guidance/<entry>/project` and `/guidance/<entry>/format` expose only explicitly linked Markdown inside that project; links are revalidated on each request. A manifest may explicitly list public artifacts in `downloads: [{id, title, path}]`; contained JSON/CSV/ZIP/Markdown/PDF artifacts are available through `/downloads/<entry>/<id>`. Do not list files with secrets.
 
+Download paths must resolve inside the contributor manifest's own directory, not merely inside the project root. Stage a shareable artifact in a contained subdirectory; a path that climbs to a sibling media folder is omitted from registration. Verify every expected download ID in `/api/queue` and fetch each `/downloads/<entry>/<id>` endpoint before handoff. A successful gallery/media check does not check these artifacts.
+
+The workspace API exposes declared downloads, but the viewer shows no download controls: include the verified direct `/downloads/<entry>/<id>` links in the handoff rather than pointing the user to a Downloads panel. Registration leaves out a download path that escapes the manifest's directory without an error, which is why every expected ID is checked in `/api/queue`. Fix the path; do not widen what the hub serves.
+
 Verify the served overview, exact format link, current media, controls and downloads. Use `review_hub.py check <entry> --all-current --seconds 2` for media decoding; separately listen when audio quality is in scope. Check desktop and narrow layout without opening extra user-facing tabs. Name the format and direct `http://127.0.0.1:8765/#entry` link in the handoff. Do not change publishing, profile assets or campaign membership merely to make a dashboard status look complete.
+
+If `check` reports that headless Chrome did not start, distinguish browser startup from media failure. Record the chosen executable and startup evidence; an already installed compatible browser can be selected with `VIEWPRINTER_CHROME`. Do not install or reconfigure the user’s browser just for this check. If startup remains unavailable, verify the exact asset URLs from the served gallery (which may point to retained review copies), including the current final’s full checksum and byte-range response, and record browser playback as unverified. HTTP checks and local decoding do not establish browser playback.

@@ -59,7 +59,7 @@ MEDIA_TYPES = {
     ".ogg": "audio/ogg", ".flac": "audio/flac", ".png": "image/png", ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".avif": "image/avif",
     ".svg": "image/svg+xml", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf",
-    ".otf": "font/otf", ".vtt": "text/vtt",
+    ".otf": "font/otf", ".vtt": "text/vtt", ".pdf": "application/pdf",
 }
 # Pages, styles and scripts are served only from inside an entry's own folder. Media may also
 # come from elsewhere in the same project (a combined gallery points at sibling batches).
@@ -293,7 +293,7 @@ def open_hub():
     """Open the hub only when no tab has it open; returns (url, opened)."""
     url = ensure_server()
     state = ping()
-    if isinstance(state, dict) and state.get("clients"):
+    if isinstance(state, dict) and (state.get("tabs") or state.get("clients")):
         return url, False
     browser = os.environ.get("VIEWPRINTER_REVIEW_BROWSER", "Google Chrome")
     if sys.platform == "darwin":
@@ -320,6 +320,8 @@ class Hub:
     def __init__(self):
         self.lock = threading.Lock()
         self.listeners = []
+        self.wake = threading.Event()
+        self.tabs = {}
         self.token = secrets.token_urlsafe(32)
         self.snapshot, self.own_roots, self.project_roots = scan()
 
@@ -331,7 +333,8 @@ class Hub:
             upgrade = None
         failed = {}
         while True:
-            time.sleep(1.0)
+            self.wake.wait(self.poll_interval())
+            self.wake.clear()
             # Reviews that older code generated are rebuilt here rather than at startup, so a
             # large rebuild never delays the hub answering ensure.
             if upgrade:
@@ -353,11 +356,27 @@ class Hub:
                 if text != last:
                     self.snapshot, last = snapshot, text
                     for listener in self.listeners:
-                        listener.put(text)
+                        self.offer(listener, text)
+
+    def poll_interval(self):
+        return 2.0 if self.clients() else 15.0
+
+    @staticmethod
+    def offer(listener, text):
+        # Slow tabs need the newest state, not an unbounded backlog of full snapshots.
+        try:
+            listener.put_nowait(text)
+        except queue.Full:
+            try:
+                listener.get_nowait()
+            except queue.Empty:
+                pass
+            listener.put_nowait(text)
 
     def join(self, listener):
         with self.lock:
             self.listeners.append(listener)
+        self.wake.set()
 
     def leave(self, listener):
         with self.lock:
@@ -367,6 +386,21 @@ class Hub:
     def clients(self):
         with self.lock:
             return len(self.listeners)
+
+    def presence(self, tab, opened=True):
+        with self.lock:
+            if opened:
+                self.tabs[tab] = time.monotonic()
+            else:
+                self.tabs.pop(tab, None)
+
+    def tab_count(self):
+        # Heartbeats use short requests, so background tabs occupy no streaming socket.
+        # Expire crashed/closed browsers even when their final request never arrived.
+        with self.lock:
+            cutoff = time.monotonic() - 180
+            self.tabs = {tab: seen for tab, seen in self.tabs.items() if seen > cutoff}
+            return len(self.tabs)
 
     def content_type(self, path):
         """The type to serve path as, or None when it must not be served."""
@@ -382,6 +416,17 @@ class Hub:
             if within(self.project_roots):
                 return MEDIA_TYPES.get(extension)
         return None
+
+
+def find_download(entry, identifier):
+    """Keep an old unqualified link working after sources join, only when unambiguous."""
+    downloads = (entry or {}).get("downloads", [])
+    exact = next((d for d in downloads if d["id"] == identifier), None)
+    if exact:
+        return exact
+    matches = [d for d in downloads
+               if re.sub(r"^source-[0-9a-f]{12}-", "", d["id"]) == identifier]
+    return matches[0] if len(matches) == 1 else None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -404,12 +449,19 @@ class Handler(BaseHTTPRequestHandler):
                 or not secrets.compare_digest(self.headers.get("X-ViewPrinter-Token", ""), self.server.hub.token)):
             self.close_connection = True
             return self.reply(403, b"Forbidden local write", "text/plain", False)
-        if self.path != "/api/lifecycle":
+        if self.path not in ("/api/lifecycle", "/api/presence"):
             return self.reply(404, b"Not found", "text/plain", False)
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if not 0 < length <= 8192: raise ValueError("Invalid request size")
             data = json.loads(self.rfile.read(length))
+            if self.path == "/api/presence":
+                if (not isinstance(data, dict) or not isinstance(data.get("tab"), str)
+                        or not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", data["tab"])
+                        or not isinstance(data.get("open"), bool)):
+                    raise ValueError("Tab ID and open state required")
+                self.server.hub.presence(data["tab"], data["open"])
+                return self.reply_json({"ok": True}, False)
             if not isinstance(data, dict) or not isinstance(data.get("entry"), str): raise ValueError("Entry required")
             if not isinstance(data.get("revision"), int): raise ValueError("Review revision required")
             if not isinstance(data.get("reason", ""), str): raise ValueError("Reason must be text")
@@ -431,7 +483,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(200, PAGE.replace("__TOKEN__", hub.token).replace("__VERSION__", str(VERSION)).encode("utf-8"), "text/html; charset=utf-8", head)
         if path == "/api/ping":
             return self.reply_json({"app": APP, "version": VERSION, "runtime": runtime_signature(), "pid": os.getpid(), "port": port(),
-                                    "root": str(review_root()), "clients": hub.clients(),
+                                    "root": str(review_root()), "clients": hub.clients(), "tabs": hub.tab_count(),
                                     "inReview": len(hub.snapshot["entries"])}, head)
         if path == "/api/queue":
             return self.reply_json(dict(hub.snapshot, clients=hub.clients()), head)
@@ -454,11 +506,11 @@ class Handler(BaseHTTPRequestHandler):
             parts = path.split("/")
             if len(parts) != 4: return self.reply(404, b"Not found", "text/plain", head)
             entry = next((e for e in hub.snapshot["entries"]+hub.snapshot["archived"] if e["id"]==parts[2]), None)
-            download = next((d for d in (entry or {}).get("downloads",[]) if d["id"]==parts[3]), None)
+            download = find_download(entry, parts[3])
             if not download: return self.reply(404, b"Not found", "text/plain", head)
             # Re-resolve the manifest allowlist on each request (symlinks can change).
             fresh = workspace.describe(workspace.get(entry["id"]))
-            download = next((d for d in fresh["downloads"] if d["id"]==parts[3]), None)
+            download = find_download(fresh, parts[3])
             if not download: return self.reply(404, b"Not found", "text/plain", head)
             return self.file(download["path"], head, download=True)
         if path.startswith("/files/"):
@@ -492,7 +544,7 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, json.dumps(data).encode("utf-8"), "application/json", head)
 
     def events(self):
-        hub, listener = self.server.hub, queue.Queue()
+        hub, listener = self.server.hub, queue.Queue(maxsize=1)
         hub.join(listener)
         try:
             self.send_response(200)
@@ -789,6 +841,8 @@ PROBE = r"""async ({seconds, allCurrent}) => {
   for (const task of tasks) {if(!cache.has(task.src))cache.set(task.src,await load(task.src));loaded.push(cache.get(task.src))}
   const images=[];
   for (const img of document.images) {img.loading='eager';await img.decode().catch(()=>{});images.push({src:name(img.currentSrc||img.src||''),ok:img.complete&&img.naturalWidth>0})}
+  // Inspect declared attachments; the CLI verifies bytes without weakening the gallery CSP.
+  const documents=[...document.querySelectorAll('a[data-review-pdf]')].map(el=>({src:name(el.href),url:el.href}));
   if(allCurrent)document.querySelector('[data-batch-view=""]')?.click();
   const playbacks=[];
   for(const video of candidates) {
@@ -809,7 +863,7 @@ PROBE = r"""async ({seconds, allCurrent}) => {
   }
   player.removeAttribute('src');player.load();player.remove();
   const buttons=[...document.querySelectorAll('button')].map(b=>b.textContent.trim());
-  return {title:document.title,media:loaded,images,playback:playbacks[0]||null,playbacks,currentPreviews:current.length,initialVisibleReferences,copyIds:buttons.filter(t=>/copy id/i.test(t)).length,speeds:buttons.filter(t=>/^\d+(\.\d+)?×$/.test(t)).length};
+  return {title:document.title,media:loaded,images,documents,playback:playbacks[0]||null,playbacks,currentPreviews:current.length,initialVisibleReferences,copyIds:buttons.filter(t=>/copy id/i.test(t)).length,speeds:buttons.filter(t=>/^\d+(\.\d+)?×$/.test(t)).length};
 }"""
 
 
@@ -850,6 +904,24 @@ def gallery_url(reference):
     return gallery.as_uri()
 
 
+def check_pdf_attachment(document, gallery):
+    """Verify same-origin attachments without enabling page scripts or embedded objects."""
+    result = dict(document, ok=False)
+    address = urlsplit(document["url"])
+    origin = urlsplit(gallery)
+    if address.scheme not in {"http", "https", "file"} or (address.scheme, address.netloc) != (origin.scheme, origin.netloc):
+        result["error"] = "PDF attachment must share the gallery origin"
+        return result
+    try:
+        with _direct.open(document["url"], timeout=15) as response:
+            content_type = response.headers.get("Content-Type", "")
+            result.update(ok=response.read(5) == b"%PDF-" and content_type.startswith("application/pdf"),
+                          contentType=content_type, bytes=int(response.headers.get("Content-Length", "0")))
+    except (OSError, ValueError) as error:
+        result["error"] = str(error)
+    return result
+
+
 def check_gallery(reference, seconds=20, all_current=False):
     """Check registered galleries over HTTP; optionally play every current preview."""
     if seconds <= 0:
@@ -882,10 +954,12 @@ def check_gallery(reference, seconds=20, all_current=False):
             session = tools.call("Target.attachToTarget", {"targetId": target, "flatten": True})["sessionId"]
             tools.call("Page.navigate", {"url": url}, session)
             for _ in range(150):
-                ready = tools.call("Runtime.evaluate", {"expression": "document.readyState", "returnByValue": True}, session)
-                if ready["result"].get("value") == "complete":
+                ready = tools.call("Runtime.evaluate", {"expression": "location.href === " + json.dumps(url) + " && document.readyState === 'complete'", "returnByValue": True}, session)
+                if ready["result"].get("value") is True:
                     break
                 time.sleep(0.1)
+            else:
+                raise RuntimeError("the review page did not finish navigating")
             outcome = tools.call("Runtime.evaluate", {"expression": f"({PROBE})({json.dumps({'seconds': seconds, 'allCurrent': all_current})})",
                                                       "awaitPromise": True, "returnByValue": True}, session)
         finally:
@@ -898,9 +972,11 @@ def check_gallery(reference, seconds=20, all_current=False):
         raise RuntimeError(outcome["exceptionDetails"].get("text", "the page probe failed"))
     report = outcome["result"]["value"]
     report["url"] = url
+    report["documents"] = [check_pdf_attachment(item, url) for item in report.get("documents", [])]
     playback = report["playback"]
     report["problems"] = ([f"{item['src']} did not load" for item in report["media"] if not item["ok"]]
                           + [f"{item['src']} did not decode" for item in report["images"] if not item["ok"]]
+                          + [f"{item['src']} did not load as a PDF" for item in report.get("documents", []) if not item["ok"]]
                           + [f"{item['src']} did not play: {item.get('error') or item.get('end')}"
                              for item in report["playbacks"] if not item["ok"]])
     report["servedOverHttp"] = url.startswith(("http://", "https://"))
@@ -912,6 +988,7 @@ def print_check(report):
     print(f"checked {report['title'] or report['url']} in headless Chrome")
     print(f"  media {sum(item['ok'] for item in report['media'])}/{len(report['media'])} loaded, "
           f"images {sum(item['ok'] for item in report['images'])}/{len(report['images'])} decoded, "
+          f"PDFs {sum(item['ok'] for item in report.get('documents', []))}/{len(report.get('documents', []))} served, "
           f"Copy ID buttons {report['copyIds']}, speed controls {report['speeds']}")
     playback = report["playback"]
     if playback and not playback.get("error"):

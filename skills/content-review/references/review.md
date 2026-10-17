@@ -18,6 +18,12 @@ Resolve the format's existing review sheet from project memory, the active batch
 
 Add new items and update the current versions in your contributor-owned source manifest while retaining the earlier items, stable IDs, exact-version approval states and previous-version links. Use named batches to make the latest work immediately findable; within the selected batch, retain the status lanes below. A one-prototype approval checkpoint limits production, not the gallery's contents. Separate production directories are fine; reference their assets from the shared sheet.
 
+Keep the contributor-owned manifest at a stable path outside immutable round folders.
+Store each round’s media and snapshot separately, then update that stable manifest with
+the current item versions and previous-version links. A new manifest path is a new
+contribution: it cannot reuse another source’s item or batch IDs merely because the owner
+is the same. Preserve accepted snapshots when explicitly migrating a legacy source path.
+
 Keep immutable round manifests and media as history, then register the updated source into the same format review. An archive is not the next handoff URL. Save the stable hub entry and contributor source paths with the format in project memory/carry-forward so a later session resumes them. If a stray new sheet was created, merge its items into the established sheet, preserve its history, and retire or redirect the stray entry point. Open and link the established sheet; do not present two competing current pages.
 
 ## Make the latest batch easy to find
@@ -36,7 +42,11 @@ Choose checkpoints by uncertainty rather than imposing every stage on every proj
 
 Make the deliverable sufficient to answer the decision. Stills can establish identity, setting and composition; motion/voice require playback; a complete narrative requires a complete cut; a product claim needs the actual UI or export. A short execution sample cannot establish the whole story's pacing. Prefer a reusable segment of the planned piece to a disconnected teaser.
 
+Keep the first review small enough to understand immediately. When a user cannot follow a narrative, lead with its plain-language premise and a concise scene brief or coherent performed scene. A long production packet or disconnected asset assembly does not demonstrate the story. Keep shot inventories, costs and later production steps optional. Put review-status labels outside the creative itself; add in-frame labels only when the brief or a relevant disclosure requirement calls for them.
+
 Lead each round with the current reviewable assets and one short review focus. Keep future checkpoints in the batch plan rather than filling the gallery with empty cards for distant stages. If an asset is the decision, show it as the main preview. Supporting references and production metadata stay secondary.
+
+When the user requests a complete source lineup before animation or editing, record every intended option and its approval state. Approval of a subset preserves those choices but does not complete the full-lineup checkpoint. Reconcile missing options before recommending dependent production; do not regenerate already approved sources.
 
 Preserve exact-version decisions and unresolved feedback. An approved source image does not approve animation or final output. Continue independent preparation while a requested checkpoint is pending; do not execute work whose premise the user explicitly wanted to choose first. Conversely, never turn these recommended phases into new approval gates against existing authorization.
 
@@ -80,7 +90,7 @@ Paths are local filesystem paths relative to the manifest. The existing minimal 
 }
 ```
 
-`kind` supports image, video and audio, including inputs. `generation` is one record per generated asset/job being described. State the actual platform and model; if one was not retained, say “not recorded.” Reused assets retain original provenance; label reuse in `note`, not as a new generation or new charge. Do not include credentials, signed URLs or whole raw API payloads in the gallery.
+`kind` supports image, video, audio and pdf, including inputs. A complete script, storyboard or creative brief can be one `kind: "pdf"` item: keep its scenes, shot list and asset plan inside the document instead of inflating the queue with one card per page. PDF cards span the review width and offer Open full PDF and Download PDF links, with a cover preview when supplied. They preserve the shared security policy rather than embedding a PDF object. Keep the exact PDF as the item's `src`; an optional image `poster` supplies its cover preview and queue thumbnail. The HTTP check verifies its PDF signature and content type; also inspect the document's pages for readability. `generation` is one record per generated asset/job being described. State the actual platform and model; if one was not retained, say “not recorded.” Reused assets retain original provenance; label reuse in `note`, not as a new generation or new charge. Do not include credentials, signed URLs or whole raw API payloads in the gallery.
 
 Cost is `{status: reported|estimated|unknown, amount, unit}`. Amount/unit are required for reported and estimated costs; for unknown omit them. Use the actual unit (`credits`, `USD`, etc.). A returned price estimate is not a charged amount. Keep platform costs separate and never sum a shared job multiple times across reused assets. The gallery deliberately does not calculate a batch total from repeated item rows. Record failures/retries in the production ledger; selected-asset rows are not a full account-spend audit.
 
@@ -99,6 +109,8 @@ Follow [workspace](workspace.md) for explicit registration, scope, progress, nat
 Maintain the existing project + format ID and direct hub link. Keep source manifests independently owned; let the shared runtime generate the canonical index. New batches, prototypes and revisions belong in that format. Register only declared social content; App Store and unrelated deliverables stay in standalone project reviews. Keep other agents' entries available. Reconcile every completed item/current version, cover, prior version and platform description before reporting coverage; distinguish total content from items needing review.
 
 Run `review_hub.py ensure`, then `review_hub.py check <entry> --all-current --seconds 2`. Use the existing visible tab; `review_hub.py open` opens one only if none is connected. Do not make separate browser windows for a new batch. A rebuilt gallery gets an Updated reload control. Leave the server running. Headless decoding verifies media loading, not listening or creative approval.
+
+For a contributor-only change in a large shared format, verify every current preview in that contribution through its exact hub HTTP gallery URL: `review_hub.py check http://127.0.0.1:8765/files/<absolute-path-without-leading-slash>/review.html --all-current --seconds 2` (URL-encode the path). A registered local gallery path resolves to the combined format entry, so it checks the whole format rather than that contribution. Use the format entry for a full-format audit or shared renderer/media-route changes. Record which scope passed, and still link the established format hub for the user. A batch URL fragment does not scope `--all-current`.
 
 Archive removes work from active review without touching publication schedules. Use `archive`/`restore`, never the retired `posted` command. Historical review snapshots and media remain immutable while the current format can continue growing.
 

@@ -30,6 +30,7 @@ STATUSES = REVIEW_STATUSES | PENDING_STATUSES | {"approved"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif", ".avif"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac"}
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".m4v"}
+PDF_EXTENSIONS = {".pdf"}
 KEPT = "kept.json"
 DROPPED = "dropped.json"
 SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -184,6 +185,11 @@ figcaption a { text-decoration:none; font-weight:600; }
 .media { display:flex; align-items:center; justify-content:center; background:#09090f; border-radius:4px; overflow:hidden; }
 .media img,.media video { display:block; width:100%; height:460px; max-height:68vh; min-height:230px; object-fit:contain; }
 .media audio { width:100%; margin:24px 12px; }
+.card[data-kind="pdf"] { grid-column:1 / -1; }
+.media .pdf-cover { display:block; width:100%; }
+.document-actions { display:flex; flex-wrap:wrap; gap:12px; padding:12px; font-size:13px; }
+.document-actions a { color:var(--accent); }
+.pdf-fallback { padding:24px; color:var(--ink); }
 .pending { min-height:190px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:7px; color:var(--muted); border-radius:4px; background:repeating-linear-gradient(135deg,#211c2a,#211c2a 9px,#292233 9px,#292233 10px); text-align:center; padding:28px; }
 .pending strong { font-size:15px; color:var(--ink); } .pending span { font-size:12px; max-width:220px; }
 .focus { margin:0 16px 14px; padding:0 0 0 10px; border-left:2px solid #66517e; color:#bfb4d0; font-size:12px; line-height:1.6; }
@@ -470,7 +476,7 @@ def asset_path(raw, base, context, kind):
         if stored is None or not (stored.is_file() or let_go(stored)):
             raise ValueError(f"{context}: asset does not exist: {path}")
         path = stored
-    allowed = {"video": VIDEO_EXTENSIONS, "image": IMAGE_EXTENSIONS, "audio": AUDIO_EXTENSIONS}[kind]
+    allowed = {"video": VIDEO_EXTENSIONS, "image": IMAGE_EXTENSIONS, "audio": AUDIO_EXTENSIONS, "pdf": PDF_EXTENSIONS}[kind]
     if path.suffix.lower() not in allowed:
         raise ValueError(f"{context}: unsupported {kind} extension {path.suffix!r}")
     return path
@@ -587,8 +593,8 @@ def prepare_manifest(manifest, base):
 
 def prepare_media(source, destination, base, context):
     kind = source.get("kind")
-    if kind not in ("image", "video", "audio"):
-        raise ValueError(f"{context}.kind must be image, video or audio")
+    if kind not in ("image", "video", "audio", "pdf"):
+        raise ValueError(f"{context}.kind must be image, video, audio or pdf")
     destination["kind"] = kind
     destination["src"] = asset_path(source.get("src"), base, f"{context}.src", kind)
     if "poster" in source:
@@ -680,6 +686,12 @@ def render_media(media, title, label, output, preload="metadata"):
         preview = f'<video controls playsinline preload="{preload}" aria-label="{escaped(title)} — {escaped(label)}"{poster}><source src="{src}">Use the file link to play this video.</video>'
     elif kind == "audio":
         preview = f'<audio controls preload="none" aria-label="{escaped(title)} — {escaped(label)}" src="{src}"></audio>'
+    elif kind == "pdf":
+        cover = (f'<img src="{local_url(media["poster"], output)}" alt="{escaped(title)} — PDF cover" loading="lazy">'
+                 if media.get("poster") and "poster" not in dropped else "")
+        preview = (f'<a class="pdf-cover" href="{src}" target="_blank" rel="noopener noreferrer" '
+                   f'aria-label="Open {escaped(title)} — complete PDF">{cover}</a>' if cover else
+                   '<p class="pdf-fallback">Complete PDF document · use Open full PDF to read.</p>')
     else:
         preview = f'<img src="{src}" alt="{escaped(title)} — {escaped(label)}" loading="lazy">'
     kept = media.get("keptInViewPrinter") or []
@@ -687,7 +699,9 @@ def render_media(media, title, label, output, preload="metadata"):
     if kept:
         text = "Cover kept in ViewPrinter" if kept == ["poster"] else "Kept in ViewPrinter"
         note = f' <span class="kept" title="Its local copy was let go; the workspace plays it from ViewPrinter">{text}</span>'
-    return f'<figure><div class="media">{preview}</div><figcaption><span>{escaped(label)}{note}</span><a href="{src}" target="_blank" rel="noopener noreferrer">Open file ↗</a></figcaption></figure>'
+    actions = (f'<div class="document-actions"><a data-review-pdf href="{src}" target="_blank" rel="noopener noreferrer">Open full PDF ↗</a>'
+               f'<a href="{src}" download>Download PDF</a></div>') if kind == "pdf" else ""
+    return f'<figure>{actions}<div class="media">{preview}</div><figcaption><span>{escaped(label)}{note}</span><a href="{src}" target="_blank" rel="noopener noreferrer">Open file ↗</a></figcaption></figure>'
 
 
 def render_card(item, output):
@@ -778,7 +792,7 @@ def render_card(item, output):
             heading = progress.get('state', '').replace('-', ' ').capitalize()
             copy_state = progress.get('copy', 'unverified').replace('-', ' ')
             placement_html = f'<div class="meta" style="padding-top:12px"><b>{escaped(heading)}</b> · Native copy: {escaped(copy_state)}' + (f'<p>{escaped(issues)}</p>' if issues else '') + '</div>' + (disclosure('Delivery receipts', placement_html) if rows else '')
-    return f'''<article class="card" id="{anchor}" data-delivery="{delivery}" data-status="{escaped(item['status'])}" data-format="{escaped(item['format'])}" data-lane="{lane(item)}" data-batch="{escaped(item.get('batch', ''))}" data-variant="{escaped(item.get('variant', ''))}" data-source="{escaped(item.get('sourceId', ''))}">
+    return f'''<article class="card" id="{anchor}" data-kind="{item['kind']}" data-delivery="{delivery}" data-status="{escaped(item['status'])}" data-format="{escaped(item['format'])}" data-lane="{lane(item)}" data-batch="{escaped(item.get('batch', ''))}" data-variant="{escaped(item.get('variant', ''))}" data-source="{escaped(item.get('sourceId', ''))}">
 <div class="card-head"><div class="identity-row"><span class="identity"><a href="#{anchor}">{escaped(reference)}</a><button type="button" class="copy-reference" data-copy-reference="{escaped(reference)}" aria-label="Copy reference {escaped(reference)}" title="Copy reference {escaped(reference)}">Copy ID</button></span><span class="badge">{escaped(status)}</span></div><h3>{escaped(item['title'])}</h3><p class="stage"><span class="stage-dot"></span>{escaped(STAGES[item['stage']])}</p></div>
 <div class="previews">{current}</div>{focus}{placement_html}<div class="meta">{''.join(details)}</div></article>'''
 

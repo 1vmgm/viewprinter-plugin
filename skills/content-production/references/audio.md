@@ -12,6 +12,8 @@ Record the intended delivery: music embedded in the video, with its source, or t
 
 Start with supplied music, the project's source ledger and available media library. Identify existing clips by media ID, sound ID, recording/version and hash where possible; track title alone does not prove identical audio. Do not re-upload a track already represented merely because its local filename changed. Deliberately different arrangements/cuts may be useful; label the distinction.
 
+For a rejected soundtrack revision, shortlist the existing approved excerpts that fit the same format before seeking fresh tracks. Where performance informs the choice, join the exact excerpt to its published creative and dated results; a library label such as "winner" is not performance evidence. Record the emotional fit, reading-time fit and prior approval separately from trend rank or loop measurements. If listening is unavailable, use that prior evidence honestly rather than treating a chart position as proof of musical fit.
+
 If fresh or trending music is requested in the current brief or saved project/format direction, use the available research/music tools and current public examples to find candidates. Record source URL, title/creator, sound ID, observed date and why the excerpt fits. Separate current-use evidence from popularity counts and acceleration; an old track in a new video is not automatically a rising trend. Do not infer branded/cross-platform clearance from a downloadable preview. Record actual restrictions/uncertainty without inventing rights claims.
 
 Record each track's source and any license details the user gives with the clip. Whether to use a track is the user's call; don't block on it.
@@ -30,7 +32,7 @@ An existing instruction to add these clips is sufficient: follow the content-pub
 
 1. Establish the copy/dialogue's comfortable duration and the visual payoff.
 2. Inspect the waveform and listen to phrase boundaries, vocal endings, beats and energy changes. Automated beat detection and ASR are hints, not proof of clean musical boundaries.
-3. Record source in/out separately from timeline placement. Preserve complete syllables and meaningful breaths. Align a useful reveal or action to an accent when it fits the reading time.
+3. Tie waveform, transcription and suggested cut timestamps to the exact recording/hash being edited; timings from another recording or arrangement of the same song are not transferable. Record source in/out separately from timeline placement. Preserve complete syllables and meaningful breaths. Align a useful reveal or action to an accent when it fits the reading time.
 4. Make the opening’s energy audible immediately when the brief calls for it; avoid an accidental silent or lifeless hook. Carry the musical phrase into the demo and choose an accent that reinforces the visible answer without rushing the copy.
 5. Design the ending intentionally: clean resolved ending, phrase restart, or seamless musical loop. Don't label a short crossfade a seamless loop without auditioning it.
 

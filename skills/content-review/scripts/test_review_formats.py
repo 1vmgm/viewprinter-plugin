@@ -95,6 +95,22 @@ class FormatTests(unittest.TestCase):
         ws.atomic(a/'delivery.json',{'placements':[row]})
         view=ws.describe(ws.get(eid));self.assertEqual(view['readiness']['state'],'scheduled')
         b=self.source('b','B');ws.register(b);self.assertEqual(ws.describe(ws.get(eid))['readiness']['state'],'active')
+    def test_unchanged_receipts_are_not_rehashed_and_replacement_is_seen(self):
+        a=self.source('cached','A');data=ws.read(a/'review.json')
+        data['delivery']={'snapshot':'delivery.json'}
+        ws.atomic(a/'review.json',data);receipt=a/'delivery.json'
+        ws.atomic(receipt,{'placements':[]});entry=ws.register(a);record=ws.get(entry)
+        formats.receipt_digest.cache_clear()
+        with patch.object(formats,'digest',wraps=formats.digest) as digest_spy:
+            formats.refresh_receipts(record);formats.refresh_receipts(record)
+            self.assertEqual(digest_spy.call_count,1)
+        # The same accepted record must see new receipt bytes and publish a new generation.
+        ws.atomic(receipt,{'placements':[{'itemId':'A','version':1,'accountId':'a',
+                  'organizationId':'o','postId':'p','status':'scheduled','checkedAt':'2026-10-06T12:00:00Z'}]})
+        refreshed=formats.refresh_receipts(record)
+        self.assertGreater(refreshed['revision'],record['revision'])
+        self.assertEqual(ws.read(Path(refreshed['manifest']).parent/'delivery.json')['placements'][0]['postId'],'p')
+
     def test_guidance_optional_and_contained(self):
         a=self.source('a','A');eid=ws.register(a);self.assertEqual(ws.describe(ws.get(eid))['guidance'],[])
         cfg=self.project/'.viewprinter/content-memory/config.json';config=ws.read(cfg)

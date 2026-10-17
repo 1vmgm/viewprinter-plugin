@@ -100,6 +100,25 @@ class ReviewHubTests(unittest.TestCase):
             error.close()
             return error.code, b""
 
+    def test_presence_is_authenticated_and_background_tab_counts_without_stream(self):
+        self.start_server()
+        _,page=self.get('/')
+        token=re.search(b'name="vp-token" content="([^"]+)"',page).group(1).decode()
+        headers={'Origin':f'http://127.0.0.1:{self.port}','X-ViewPrinter-Token':token}
+        def presence(opened,request_headers):
+            request=urllib.request.Request(f'http://127.0.0.1:{self.port}/api/presence',
+                data=json.dumps({'tab':'test-tab','open':opened}).encode(),headers=request_headers)
+            try:
+                with DIRECT.open(request,timeout=5) as response:return response.status
+            except urllib.error.HTTPError as error:
+                error.close();return error.code
+        self.assertEqual(presence(True,{}),403)
+        self.assertEqual(presence(True,headers),200)
+        _,raw=self.get('/api/ping');state=json.loads(raw)
+        self.assertEqual((state['clients'],state['tabs']),(0,1))
+        self.assertEqual(presence(False,headers),200)
+        _,raw=self.get('/api/ping');self.assertEqual(json.loads(raw)['tabs'],0)
+
     def test_add_links_the_batch_once(self):
         self.hub("add", str(self.batch / "review.html"), "--no-server")
         self.hub("add", str(self.batch), "--no-server")
@@ -311,6 +330,20 @@ class ReviewHubTests(unittest.TestCase):
                 self.assertIsNone(url_path(network), network)
             self.assertEqual(url_path("C%3A/Media/x.png"), os.path.normpath("C:/Media/x.png"))
 
+    def test_pdf_preview_is_served_with_pdf_type_from_registered_project(self):
+        document = self.project / "documents" / "complete.pdf"
+        document.parent.mkdir()
+        document.write_bytes(b"%PDF-1.4\nexample")
+        self.hub("add", str(self.batch), "--no-server")
+        self.start_server()
+        with DIRECT.open(f"http://127.0.0.1:{self.port}" + file_url(document), timeout=5) as response:
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.headers.get("Content-Type", "").startswith("application/pdf"))
+            self.assertTrue(response.read().startswith(b"%PDF-"))
+        outside = self.outside / "private.pdf"
+        outside.write_bytes(b"%PDF-1.4\nprivate")
+        self.assertNotEqual(self.get(file_url(outside))[0], 200)
+
     def test_file_urls_carry_windows_drive_paths(self):
         from pathlib import PureWindowsPath
         self.assertEqual(file_url(PureWindowsPath(r"D:\Media\Clips\a b.mp4")), "/files/D%3A/Media/Clips/a%20b.mp4")
@@ -331,6 +364,29 @@ class ReviewHubTests(unittest.TestCase):
         headers={'Origin':f'http://127.0.0.1:{self.port}','X-ViewPrinter-Token':token}
         self.assertEqual(post(headers,99),409);self.assertEqual(post(headers),200)
         self.assertEqual(self.entries(),[])
+
+    def test_pdf_checker_verifies_attachment_and_rejects_other_origins(self):
+        from review_hub import check_pdf_attachment
+        document = self.project / "complete.pdf"
+        document.write_bytes(b"%PDF-1.4\nexample")
+        self.hub("add", str(self.batch), "--no-server")
+        self.start_server()
+        gallery = f"http://127.0.0.1:{self.port}" + file_url(self.batch / "review.html")
+        attachment = {"src": "complete.pdf", "url": f"http://127.0.0.1:{self.port}" + file_url(document)}
+        self.assertTrue(check_pdf_attachment(attachment, gallery)["ok"])
+        document.write_bytes(b"not a PDF")
+        self.assertFalse(check_pdf_attachment(attachment, gallery)["ok"])
+        attachment["url"] = "https://example.invalid/complete.pdf"
+        self.assertIn("origin", check_pdf_attachment(attachment, gallery)["error"])
+
+    def test_legacy_download_link_survives_a_source_namespace_only_if_unique(self):
+        from review_hub import find_download
+        first = {"id": "source-012345abcdef-brief", "path": "one.pdf"}
+        second = {"id": "source-abcdef012345-brief", "path": "two.pdf"}
+        self.assertEqual(find_download({"downloads": [first]}, "brief"), first)
+        self.assertIsNone(find_download({"downloads": [first, second]}, "brief"))
+        self.assertEqual(find_download({"downloads": [first, second]}, first["id"]), first)
+        self.assertIsNone(find_download({"downloads": [first]}, "unknown"))
 
     def test_symlink_escape_and_explicit_download(self):
         manifest=self.batch/'review.json';data=json.loads(manifest.read_text(encoding="utf-8"));data['downloads']=[{'id':'brief','title':'Brief','path':'review.json'}];manifest.write_text(json.dumps(data), encoding="utf-8")
@@ -409,6 +465,60 @@ class ReviewHubTests(unittest.TestCase):
             self.hub("archive", "project--batch-one")
             update = next_queue()
             self.assertEqual((update["entries"], len(update["posted"])), ([], 1))
+
+
+class HubEfficiencyTests(unittest.TestCase):
+    def make_hub(self):
+        import review_hub
+        from unittest.mock import patch
+        with patch.object(review_hub,'scan',return_value=({'entries':[]},set(),set())):
+            return review_hub.Hub()
+
+    def test_background_tab_is_reused_but_does_not_trigger_fast_polling(self):
+        import review_hub
+        from unittest.mock import patch
+        hub=self.make_hub()
+        with patch.object(review_hub.time,'monotonic',return_value=10):hub.presence('hidden')
+        with patch.object(review_hub.time,'monotonic',return_value=70):
+            self.assertEqual(hub.tab_count(),1)
+            self.assertEqual(hub.poll_interval(),15)
+            with patch.object(review_hub,'ensure_server',return_value='http://127.0.0.1:8765/'), patch.object(review_hub,'ping',return_value={'clients':0,'tabs':hub.tab_count()}), patch.object(review_hub.subprocess,'run') as launch, patch.object(review_hub.webbrowser,'open') as browser:
+                self.assertFalse(review_hub.open_hub()[1]);launch.assert_not_called();browser.assert_not_called()
+        with patch.object(review_hub.time,'monotonic',return_value=191):self.assertEqual(hub.tab_count(),0)
+
+    @unittest.skipUnless(shutil.which("node"), "needs Node.js for the workspace lifecycle check")
+    def test_hidden_workspace_pauses_media_releases_stream_and_keeps_presence(self):
+        script = r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync(process.argv[1],'utf8');
+const source=html.slice(html.lastIndexOf("window.addEventListener('hashchange',route)"),html.lastIndexOf('</script>'));
+const handlers={},nodes={},streams=[],requests=[];let paused=0,refreshes=0,heartbeat;
+class Stream {constructor(){this.closed=false;streams.push(this)}addEventListener(){}close(){this.closed=true}}
+const document={hidden:false,querySelector:()=>({content:'token'}),addEventListener:(name,fn)=>handlers[name]=fn};
+vm.runInNewContext(source,{window:{addEventListener:(name,fn)=>handlers[name]=fn},document,EventSource:Stream,
+crypto:{randomUUID:()=> 'test-tab'},state:{frames:new Map([['review',{}]])},pause:()=>paused++,route(){},apply(){},
+refresh:()=>{refreshes++;return Promise.resolve()},toast(){},$:(id)=>nodes[id]||(nodes[id]={}),
+fetch:(url,options)=>{requests.push({url,...options});return Promise.resolve({ok:true})},
+setInterval:(fn,ms)=>{assert.equal(ms,60000);heartbeat=fn;return 1},clearInterval(){}});
+const connected=()=>streams.filter(s=>!s.closed).length;
+assert.equal(connected(),1);assert.equal(refreshes,1);
+document.hidden=true;handlers.visibilitychange();assert.equal(connected(),0);assert.equal(paused,1);
+heartbeat();assert.equal(JSON.parse(requests.at(-1).body).open,true);
+document.hidden=false;handlers.visibilitychange();assert.equal(connected(),1);assert.equal(refreshes,2);
+handlers.pagehide();assert.equal(connected(),0);assert.equal(JSON.parse(requests.at(-1).body).open,false);
+handlers.pageshow({persisted:true});assert.equal(connected(),1);assert.equal(JSON.parse(requests.at(-1).body).open,true);
+"""
+        result=subprocess.run([shutil.which("node"),"-e",script,str(SCRIPTS.parent/'assets/review-workspace.html')],capture_output=True,text=True,timeout=10,encoding='utf-8')
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_connect_wakes_idle_watcher_and_slow_stream_keeps_only_latest_state(self):
+        import queue
+        hub=self.make_hub();listener=queue.Queue(maxsize=1)
+        hub.join(listener)
+        self.assertTrue(hub.wake.is_set());self.assertEqual(hub.poll_interval(),2)
+        for number in range(1000):hub.offer(listener,str(number))
+        self.assertEqual(listener.qsize(),1);self.assertEqual(listener.get_nowait(),'999')
+        hub.leave(listener);self.assertEqual(hub.poll_interval(),15)
 
 
 if __name__ == "__main__":

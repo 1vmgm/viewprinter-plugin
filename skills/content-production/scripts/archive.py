@@ -660,6 +660,16 @@ def restore(project_dir, asset, source, incoming, rename, before):
     return dict(apply_note(dict(asset), event), duplicate=True, restored=True, file=str(original))
 
 
+def unqualified(identifier, project):
+    """The ID `find` prints as <project>/<id>, accepted wherever --id is; IDs never contain "/"."""
+    if "/" not in identifier:
+        return identifier
+    owner, rest = identifier.split("/", 1)
+    if owner != project:
+        raise ArchiveError("{} belongs to project {}: pass --project {}".format(identifier, owner, owner))
+    return rest
+
+
 def note(root, project, identifier, record):
     """Append a later fact about an asset: status and reason, tags, usage, rights."""
     record = dict(validate(record, note=True))
@@ -1273,6 +1283,9 @@ def main(argv=None):
         else:
             root, project = resolve(arguments.root, arguments.project)
             projects = [project]
+        if arguments.command != "add" and getattr(arguments, "id", None):
+            arguments.id = ([unqualified(i, project) for i in arguments.id] if isinstance(arguments.id, list)
+                            else unqualified(arguments.id, project))
         if arguments.command == "add":
             record = read_json(arguments.record) if arguments.record else {}
             if not isinstance(record, dict):

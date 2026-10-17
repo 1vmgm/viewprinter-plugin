@@ -1,6 +1,6 @@
 """The local review ends at verified scheduling, not publication or performance."""
 from collections import Counter
-from review_delivery import native_copy, rows_for
+from review_delivery import index_rows, native_copy, rows_for
 
 ACCEPTED = {'scheduled', 'queued', 'publishing', 'processing', 'published'}
 LABELS = {'needs-review':'Needs review', 'changes-requested':'Changes requested',
@@ -78,6 +78,7 @@ def attach(manifest, rows):
 
 
 def summarize(manifest, rows):
+    rows = index_rows(rows)
     archived={b['id'] for b in manifest.get('batches',[]) if b.get('lifecycle')=='archived'}
     items=[i for i in manifest.get('items',[]) if i.get('batch') not in archived]
     phases=[(i,item_state(i,rows_for(i,rows))) for i in items]

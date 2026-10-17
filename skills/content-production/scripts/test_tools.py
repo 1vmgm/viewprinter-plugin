@@ -118,6 +118,17 @@ class ToolsTests(unittest.TestCase):
         self.assertTrue(found["hyperframes"]["ready"])
         self.assertIn(str(on_path), found["hyperframes"]["detail"])
 
+    def test_remotion_counts_when_its_skills_are_installed_and_is_never_run(self):
+        _, found = self.check()
+        self.assertFalse(found["remotion"]["ready"])
+        skill = self.home / ".agents/skills/remotion-best-practices/SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("---\nname: remotion-best-practices\nversion: 4.0.534\n---\n", encoding="utf-8")
+        with patch.object(tools, "version") as probe:
+            _, found = self.check(cwd=self.home / "project")
+        self.assertEqual((found["remotion"]["ready"], found["remotion"]["detail"]), (True, f"skills 4.0.534 at {skill}"))
+        self.assertFalse([c for c in probe.call_args_list if c.args[0] == str(skill)])
+
     def test_node_reports_its_own_version_not_npms(self):
         npx = fake_program(self.home / "bin", "npx", "11.0.0")
         node = fake_program(self.home / "bin", "node", "v24.0.0")

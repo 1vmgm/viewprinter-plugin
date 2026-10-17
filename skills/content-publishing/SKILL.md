@@ -87,7 +87,7 @@ Read the one that covers what you are about to do. Do not read all of them.
 | `scheduling` | CRITICAL | Approval, opt-in labels, trial audiences, absolute times, and safe retries |
 | `drafts` | HIGH | The word means two unrelated things |
 | `refusals` | HIGH | A refused post was never saved, and is not a sales opening |
-| `amend-and-cancel` | HIGH | What can still be changed, and what cannot be recalled |
+| `amend-and-cancel` | HIGH | Priority cascades, capacity, exclusive account transfers, and amendment limits |
 | `captions` | MEDIUM | Native descriptions per platform, and editing words without touching delivery |
 | `connecting` | MEDIUM | Only the user can finish it |
 | `reading-results` | MEDIUM | Measured when it was measured, and missing is not zero |

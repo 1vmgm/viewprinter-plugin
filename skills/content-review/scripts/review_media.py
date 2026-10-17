@@ -375,7 +375,7 @@ def provenance(used):
     return {k: v for k, v in record.items() if v not in (None, "", [])}
 
 
-def save(project, dry_run=False):
+def save(project, dry_run=False, batch=None):
     project = project_root(project)
     archive = archive_module()
     root, archive_project = archive.resolve(start=project)
@@ -386,6 +386,8 @@ def save(project, dry_run=False):
     counts = {"alreadyArchived": 0, "activeWork": 0, "notInAnyReview": 0, "notMedia": 0, "dropped": 0}
     seen = set()
     for entry in files(project):
+        if batch and not any(u.get("batch") == batch for u in usage.get(entry["sha"], [])):
+            continue
         if entry["kept"] or entry["dropped"] or entry["sha"] in seen:
             continue
         where = group(entry, usage)
@@ -462,7 +464,7 @@ def republish(project, shas):
     return updated
 
 
-def release(project, answer, approval=None, dry_run=False):
+def release(project, answer, approval=None, dry_run=False, batch=None):
     if not dry_run and not (isinstance(approval, str) and approval.strip()):
         raise MediaError("release removes local files: pass --approval with the user's words agreeing to it")
     project = project_root(project)
@@ -475,6 +477,8 @@ def release(project, answer, approval=None, dry_run=False):
         skipped[reason] = skipped.get(reason, 0) + 1
 
     for entry in files(project):
+        if batch and not any(u.get("batch") == batch for u in usage.get(entry["sha"], [])):
+            continue
         if entry["kept"] or entry["dropped"]:
             continue
         where = group(entry, usage)
@@ -513,7 +517,7 @@ def release(project, answer, approval=None, dry_run=False):
     return result
 
 
-def drop(project, approval=None, dry_run=False):
+def drop(project, approval=None, dry_run=False, batch=None):
     """Delete the finished files the project keeps no copy of (reviewMedia.dropWhenFinished),
     with the user's words. dropped.json stays beside each so the reviews still build; nothing
     can bring a dropped file back, so ViewPrinter's copies are never touched here."""
@@ -530,6 +534,8 @@ def drop(project, approval=None, dry_run=False):
         skipped[reason] = skipped.get(reason, 0) + 1
 
     for entry in files(project):
+        if batch and not any(u.get("batch") == batch for u in usage.get(entry["sha"], [])):
+            continue
         if entry["kept"] or entry["dropped"]:
             continue
         reason = drop_reason(usage.get(entry["sha"]), policy)
@@ -566,7 +572,7 @@ def drop(project, approval=None, dry_run=False):
             "byReason": by_reason, "skipped": skipped, "reviewsUpdated": updated}
 
 
-def clean_sources(project, approval=None, dry_run=False):
+def clean_sources(project, approval=None, dry_run=False, batch=None):
     """Delete the batch-folder files of finished work once the workspace holds them: each
     registered review keeps its own copy of what it accepted (or ViewPrinter does, or the
     project dropped it), and the review builds from that when the batch file is gone. Only files
@@ -584,6 +590,8 @@ def clean_sources(project, approval=None, dry_run=False):
                 or Path(record.get("projectRoot", "/")).resolve() != project):
             continue
         for source in record.get("sources") or []:
+            if batch and batch not in (source.get("batchIds") or []):
+                continue
             for raw, name in (source.get("frozenMedia") or {}).items():
                 if not isinstance(raw, str) or not isinstance(name, str) or raw in plan:
                     continue
@@ -594,6 +602,8 @@ def clean_sources(project, approval=None, dry_run=False):
                     skip("outside the project's batch folders")
                     continue
                 used = usage.get(sha)
+                if batch and not any(u.get("batch") == batch for u in (used or [])):
+                    continue
                 if not used or not all(u["finished"] for u in used):
                     skip("work still in review")
                     continue
@@ -700,6 +710,7 @@ def main(argv=None):
                                  help="A fresh media_list answer (purpose: source); - reads stdin")
         if name in ("save", "release", "drop", "clean-sources"):
             command.add_argument("--dry-run", action="store_true")
+            command.add_argument("--batch", help="Limit to this batch; all shared-file guards still apply")
         if name in ("release", "drop", "clean-sources"):
             command.add_argument("--approval", help="The user's words agreeing to let the local copies go")
         if name == "restore":
@@ -711,13 +722,13 @@ def main(argv=None):
         if args.command == "status":
             result = status(args.project, read_answer(args.listed) if args.listed else None)
         elif args.command == "save":
-            result = save(args.project, args.dry_run)
+            result = save(args.project, args.dry_run, args.batch)
         elif args.command == "release":
-            result = release(args.project, read_answer(args.listed), args.approval, args.dry_run)
+            result = release(args.project, read_answer(args.listed), args.approval, args.dry_run, args.batch)
         elif args.command == "drop":
-            result = drop(args.project, args.approval, args.dry_run)
+            result = drop(args.project, args.approval, args.dry_run, args.batch)
         elif args.command == "clean-sources":
-            result = clean_sources(args.project, args.approval, args.dry_run)
+            result = clean_sources(args.project, args.approval, args.dry_run, args.batch)
         else:
             if not args.sha and not (args.item and args.version):
                 parser.error("restore takes --sha, or --item and --version")

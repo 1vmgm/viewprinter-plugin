@@ -39,6 +39,11 @@ TOOLS = [
     {"id": "tesseract", "task": "Video editing, motion graphics and sound design", "tool": "Tesseract by Mirage",
      "local": True, "unlocks": "cuts footage into finished videos with motion graphics and sound, as editable projects",
      "install": "npx skills add mirage-hq/Tesseract, then follow its installation guide to set up the matching tsrct CLI"},
+    {"id": "remotion", "task": "3D device shots and motion graphics written as code", "tool": "Remotion", "local": True,
+     "unlocks": "renders 3D device shots, openers and motion graphics from code, with a real recording on the device's "
+                "screen, as clips the video editor imports",
+     "install": "npx skills add remotion-dev/skills (needs Node.js); each video project then installs remotion and "
+                "@remotion/three with npm"},
     {"id": "hyperframes", "task": "HTML motion graphics, explainers, slideshows and templated batches",
      "tool": "HyperFrames by HeyGen", "local": True,
      "unlocks": "renders motion graphics, explainers, captioned clips, slideshows and product-launch videos from HTML, "
@@ -52,8 +57,10 @@ TOOLS = [
      "install": "npx @swmansion/argent@latest init -y (iOS needs Xcode; Android needs an emulator from Android Studio)"},
     {"id": "browser", "task": "Checking that review media plays", "tool": "Chrome, Chromium or Microsoft Edge",
      "local": True, "unlocks": "plays every review file before handoff", "install": "install Google Chrome, Chromium or Microsoft Edge"},
-    {"id": "node", "task": "Installing Tesseract, HyperFrames and Argent", "tool": "Node.js (npx)", "local": True,
-     "unlocks": "runs the installers for Tesseract, HyperFrames and Argent",
+    {"id": "node", "task": "Installing the Tesseract, Remotion and HyperFrames skills, and Argent",
+     "tool": "Node.js (npx)", "local": True,
+     "unlocks": "runs the installers for Tesseract, Remotion, HyperFrames and Argent, and renders Remotion "
+                "and HyperFrames projects",
      "install": "install Node.js from https://nodejs.org"},
     {"id": "higgsfield", "task": "Generating video and images", "tool": "Higgsfield", "local": False,
      "unlocks": "generates people, scenes, b-roll and motion transfer",
@@ -99,6 +106,24 @@ def tesseract_paths(platform=sys.platform, env=os.environ, home=None):
     if platform.startswith("win"):
         return [Path(env["LOCALAPPDATA"]) / "Tesseract/bin/tsrct.cmd"] if env.get("LOCALAPPDATA") else []
     return [Path(env.get("XDG_DATA_HOME") or home / ".local/share") / "Tesseract/bin/tsrct"]
+
+
+def remotion_skill_paths(cwd, home=None):
+    """Remotion's agent skills, installed for the project or for the user. They are read, never run."""
+    home = Path(home) if home else Path.home()
+    folders = [Path(cwd) / ".agents/skills", Path(cwd) / ".claude/skills",
+               home / ".agents/skills", home / ".claude/skills", home / ".codex/skills"]
+    return [folder / "remotion-best-practices/SKILL.md" for folder in folders]
+
+
+def skill_version(path):
+    """The version a skill's front matter declares, or ""."""
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    match = re.search(r"^version:\s*(\S+)", text.split("\n---", 1)[0], re.MULTILINE)
+    return match.group(1) if match else ""
 
 
 def browser_paths(platform=sys.platform, env=os.environ, home=None):
@@ -165,8 +190,9 @@ def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
     ffmpeg = shutil.which("ffmpeg") if shutil.which("ffprobe") else None
     browser = found(browser_paths(platform, env, home),
                     ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"])
+    remotion = next((str(path) for path in remotion_skill_paths(cwd or Path.cwd(), home) if path.is_file()), None)
     hyperframes = found(hyperframes_paths(cwd or Path.cwd(), platform), ["hyperframes"])
-    places = {"tesseract": tsrct, "ffmpeg": ffmpeg, "hyperframes": hyperframes,
+    places = {"tesseract": tsrct, "remotion": remotion, "ffmpeg": ffmpeg, "hyperframes": hyperframes,
               "argent": found(argent_paths(cwd or Path.cwd(), platform), ["argent"]),
               "browser": browser, "node": shutil.which("npx")}
     notes = {"tesseract": "The tesseract on PATH is an unrelated OCR engine, not the video editor." if ocr else "",
@@ -176,6 +202,9 @@ def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
         if tool == "node":  # npx --version is npm's version; say which Node.js it is
             named = path and version(shutil.which("node") or "")
             detail = f"Node.js {named}; npx at {path}" if named else path
+        elif tool == "remotion":  # a skill file, not a program: read its version, never run it
+            named = path and skill_version(path)
+            detail = f"skills {named} at {path}" if named else path
         else:
             named = path and tool != "browser" and version(path)
             detail = f"{named} at {path}" if named else path

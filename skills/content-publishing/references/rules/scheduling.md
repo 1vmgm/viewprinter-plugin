@@ -24,6 +24,13 @@ count. Keep source batch, item and final version with every placement; the most
 recent gallery section is not necessarily the complete requested scope. State
 the resolved inventory and use the authorization already given.
 
+Before uploading, reconcile that inventory with the currently registered review
+source and its exact item/version/hash. A handoff note or batch inventory can lag
+behind a newer accepted review. Inspect the current media paths and checksums,
+preserve the user's scope, and synchronize stale records before scheduling; do
+not silently publish an older export or omit a finished item because an earlier
+summary lists fewer. Record the resolved versions with the publishing receipts.
+
 ## Promotional-content and AI labels require an explicit choice
 
 **Always ask whether the user wants promotional-content and AI labels before
@@ -143,6 +150,8 @@ Keep the returned post id and each destination's account id with what was posted
 the file, its version and the batch it came from. A result can only be traced back
 to the version that earned it if that record is made now: `<skill-directory>/scripts/learn.py link`,
 described in `learning`.
+
+A future post normally reads back as `post.status: scheduled` with destination `status: pending`. This means it is queued, not failed or published. Verify the account, time, caption, returned media reference and absence of `lastError`; do not require a destination status named `scheduled` or recreate an accepted post because its destination is pending.
 
 Separate accepted request settings from independent readback evidence. Verify
 the fields `posts_list` actually returns, and keep the exact accepted value in the

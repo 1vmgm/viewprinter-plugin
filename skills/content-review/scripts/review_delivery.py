@@ -103,7 +103,17 @@ def attach(manifest, base):
         item['_progress'] = item_progress(item, item['_placements'])
 
 
+def index_rows(rows):
+    """Group once per summary instead of searching every receipt for every item."""
+    indexed = {}
+    for row in rows:
+        indexed.setdefault((row.get('itemId'), str(row.get('version'))), []).append(row)
+    return indexed
+
+
 def rows_for(item, rows):
+    if isinstance(rows, dict):
+        return rows.get((item['id'], str(item['version'])), [])
     return [r for r in rows if r.get('itemId') == item['id'] and str(r.get('version')) == str(item['version'])]
 
 
@@ -179,6 +189,7 @@ def item_progress(item, rows):
 
 
 def summarize(manifest, placements):
+    placements = index_rows(placements)
     archived_batches = {b['id'] for b in manifest.get('batches', []) if b.get('lifecycle') == 'archived'}
     items = [i for i in manifest.get('items', []) if i.get('batch') not in archived_batches]
     progress = [item_progress(i, rows_for(i, placements)) for i in items]
