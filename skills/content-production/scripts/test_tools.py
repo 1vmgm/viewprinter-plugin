@@ -96,6 +96,28 @@ class ToolsTests(unittest.TestCase):
         self.assertEqual((found["argent"]["ready"], found["argent"]["mention"]), (True, "ready"))
         self.assertTrue(found["argent"]["detail"].startswith("0.27.0 at "))
 
+    def test_hyperframes_cli_in_the_project_or_on_path_is_ready(self):
+        self.assertEqual(tools.hyperframes_paths(self.home, "linux"),
+                         [self.home / "node_modules/.bin/hyperframes"])
+        self.assertEqual(tools.hyperframes_paths(self.home, "win32"),
+                         [self.home / "node_modules/.bin/hyperframes.cmd"])
+        _, found = self.check()
+        self.assertFalse(found["hyperframes"]["ready"])
+        self.assertIn("npx hyperframes skills update", found["hyperframes"]["install"])
+        self.assertIn("npx skills add heygen-com/hyperframes", found["hyperframes"]["install"])
+        platform = "win32" if os.name == "nt" else "linux"
+        project = self.home / "project"
+        program = fake_program(project / "node_modules/.bin", "hyperframes", "0.8.168")
+        _, found = self.check(platform=platform, cwd=project)
+        self.assertEqual((found["hyperframes"]["ready"], found["hyperframes"]["mention"]), (True, "ready"))
+        self.assertEqual(found["hyperframes"]["detail"], "0.8.168 at " + str(program))
+        self.assertEqual(found["hyperframes"]["install"], "")
+        on_path = fake_program(self.home / "bin", "hyperframes", "0.8.168")
+        with patch.object(tools.shutil, "which", side_effect={"hyperframes": str(on_path)}.get):
+            _, found = self.check()
+        self.assertTrue(found["hyperframes"]["ready"])
+        self.assertIn(str(on_path), found["hyperframes"]["detail"])
+
     def test_node_reports_its_own_version_not_npms(self):
         npx = fake_program(self.home / "bin", "npx", "11.0.0")
         node = fake_program(self.home / "bin", "node", "v24.0.0")

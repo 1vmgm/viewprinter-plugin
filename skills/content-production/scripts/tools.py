@@ -39,6 +39,12 @@ TOOLS = [
     {"id": "tesseract", "task": "Video editing, motion graphics and sound design", "tool": "Tesseract by Mirage",
      "local": True, "unlocks": "cuts footage into finished videos with motion graphics and sound, as editable projects",
      "install": "npx skills add mirage-hq/Tesseract, then follow its installation guide to set up the matching tsrct CLI"},
+    {"id": "hyperframes", "task": "HTML motion graphics, explainers, slideshows and templated batches",
+     "tool": "HyperFrames by HeyGen", "local": True,
+     "unlocks": "renders motion graphics, explainers, captioned clips, slideshows and product-launch videos from HTML, "
+                "and fills a template's variables for a batch",
+     "install": "npx hyperframes skills update, or npx skills add heygen-com/hyperframes "
+                "(needs Node.js 22+ and Chromium; a local render also needs FFmpeg)"},
     {"id": "ffmpeg", "task": "Converting and trimming media; covers and frames", "tool": "ffmpeg and ffprobe",
      "local": True, "unlocks": "converts, trims and inspects media and pulls covers and frames", "install": None},
     {"id": "argent", "task": "App demos and screen recordings", "tool": "Argent", "local": True,
@@ -46,8 +52,9 @@ TOOLS = [
      "install": "npx @swmansion/argent@latest init -y (iOS needs Xcode; Android needs an emulator from Android Studio)"},
     {"id": "browser", "task": "Checking that review media plays", "tool": "Chrome, Chromium or Microsoft Edge",
      "local": True, "unlocks": "plays every review file before handoff", "install": "install Google Chrome, Chromium or Microsoft Edge"},
-    {"id": "node", "task": "Installing Tesseract's skills and Argent", "tool": "Node.js (npx)", "local": True,
-     "unlocks": "runs the installers for Tesseract and Argent", "install": "install Node.js from https://nodejs.org"},
+    {"id": "node", "task": "Installing Tesseract, HyperFrames and Argent", "tool": "Node.js (npx)", "local": True,
+     "unlocks": "runs the installers for Tesseract, HyperFrames and Argent",
+     "install": "install Node.js from https://nodejs.org"},
     {"id": "higgsfield", "task": "Generating video and images", "tool": "Higgsfield", "local": False,
      "unlocks": "generates people, scenes, b-roll and motion transfer",
      "install": "a Higgsfield account with credits, connected as an MCP connector or with an API key",
@@ -144,6 +151,12 @@ def argent_paths(cwd, platform=sys.platform):
     return [Path(cwd) / "node_modules/.bin" / name]
 
 
+def hyperframes_paths(cwd, platform=sys.platform):
+    """A project-local HyperFrames CLI. The npm package `hyperframes` installs this command."""
+    name = "hyperframes.cmd" if platform.startswith("win") else "hyperframes"
+    return [Path(cwd) / "node_modules/.bin" / name]
+
+
 def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
     """Each local program: (path or None, detail, note). A browser is located but never run:
     on Windows its --version can open a window."""
@@ -152,7 +165,9 @@ def locate(platform=sys.platform, env=os.environ, home=None, cwd=None):
     ffmpeg = shutil.which("ffmpeg") if shutil.which("ffprobe") else None
     browser = found(browser_paths(platform, env, home),
                     ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"])
-    places = {"tesseract": tsrct, "ffmpeg": ffmpeg, "argent": found(argent_paths(cwd or Path.cwd(), platform), ["argent"]),
+    hyperframes = found(hyperframes_paths(cwd or Path.cwd(), platform), ["hyperframes"])
+    places = {"tesseract": tsrct, "ffmpeg": ffmpeg, "hyperframes": hyperframes,
+              "argent": found(argent_paths(cwd or Path.cwd(), platform), ["argent"]),
               "browser": browser, "node": shutil.which("npx")}
     notes = {"tesseract": "The tesseract on PATH is an unrelated OCR engine, not the video editor." if ocr else "",
              "argent": "Argent's MCP tools in the agent's tool list also count as installed."}

@@ -218,6 +218,32 @@
         "Never uses media_delete or deletes files outside the archive to free space",
         "Explains how to bring one back: its media_list url, a download, then archive.py restore --id <id> --file <download>"
       ]
+    },
+    {
+      "id": 18,
+      "prompt": "HyperFrames is installed. From one HTML template, make a batch of six short value-first slideshow explainers: same layout, a different claim and still on each, filled in at render time. Do not recut footage, do not publish, and do not claim a file you did not render.",
+      "expected_output": "Uses HyperFrames, not Tesseract. One HTML, CSS and JS composition; the six variants come from render-time variables. A navigable slideshow is presented or snapshotted rather than rendered as a deck. No publish and no invented render.",
+      "files": [],
+      "expectations": [
+        "Chooses HyperFrames for this templated slideshow and explainer batch",
+        "Produces the variants from the composition's render-time variables, such as render --batch or --variables",
+        "Does not edit the batch in Tesseract",
+        "Does not run hyperframes render on a slideshow deck; a deck is presented or snapshotted",
+        "Publishes nothing and claims no render it did not make"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "HyperFrames is installed. Here are four clips from the launch shoot. Cut them into a 30-second vertical ad with captions and music. I don't think I have a video editor set up. Do not render or publish for this exercise.",
+      "expected_output": "Footage editing still defaults to Tesseract. HyperFrames being installed does not take a clip edit. Recommends Tesseract once, with what it unlocks and npx skills add mirage-hq/Tesseract, records not-now, and prepares the edit plan without claiming a render.",
+      "files": [],
+      "expectations": [
+        "Treats the request as a footage edit and chooses Tesseract",
+        "Does not switch the edit to HyperFrames because that CLI is installed",
+        "Says the edit needs Tesseract, what it unlocks, and npx skills add mirage-hq/Tesseract",
+        "Runs tools.py remember tesseract not-now right after recommending, so no answer counts as not now",
+        "Does not install the OCR program named tesseract, installs nothing without the user's OK, and claims no render"
+      ]
     }
   ]
 }
